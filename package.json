@@ -1,0 +1,25 @@
+{
+  "name": "loop",
+  "private": true,
+  "version": "0.0.0",
+  "description": "LOOP Contractor MVP monorepo",
+  "packageManager": "pnpm@12.11.2",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "e2e": "pnpm --filter @loop/e2e e2e",
+    "db:migrate": "pnpm --filter @loop/db migrate",
+    "db:seed": "pnpm --filter @loop/db seed",
+    "api:generate": "pnpm --filter @loop/api openapi && pnpm --filter @loop/api-client generate"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.8",
+    "typescript": "^7.0.2"
+  }
+}

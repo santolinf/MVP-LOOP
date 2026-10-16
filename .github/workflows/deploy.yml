@@ -1,0 +1,11 @@
+name: deploy
+on:
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions: { id-token: write, contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      # TODO(spec): assume AWS role (eu-west-2), build and push image, cdk deploy.
+      - run: docker build .

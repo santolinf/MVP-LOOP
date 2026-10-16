@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EmploymentSituation {
+  CONTRACTING
+  PERMANENT
+  BETWEEN_CONTRACTS
+}
+
+enum ConfirmationSource {
+  CV_PROFILE
+  SMS_REPLY
+  WEB
+  ADMIN_CALL
+}
+
+model Contractor {
+  id                  String               @id @default(uuid())
+  phone               String               @unique
+  email               String?              @unique
+  firstName           String?
+  lastName            String?
+  employmentSituation EmploymentSituation?
+  availableFrom       DateTime?            @db.Date
+  contractEndDate     DateTime?            @db.Date
+  lastConfirmedAt     DateTime?            @db.Timestamptz
+  confirmationSource  ConfirmationSource?
+  live                Boolean              @default(false)
+  paused              Boolean              @default(false)
+  searchSuppressed    Boolean              @default(false)
+  operationalSmsConsent Boolean            @default(false)
+  marketingConsent    Boolean              @default(false)
+  searchColour        String?
+  createdAt           DateTime             @default(now()) @db.Timestamptz
+  updatedAt           DateTime             @updatedAt @db.Timestamptz
+}
+
+model ExtractionRun {
+  id           String   @id @default(uuid())
+  contractorId String
+  fields       Json
+  createdAt    DateTime @default(now()) @db.Timestamptz
+
+  @@index([contractorId])
+}
+
+model FoundingCounter {
+  id        Int @id @default(1)
+  allocated Int @default(0)
+  cap       Int @default(50000)
+}
+
+model Reward {
+  id                    String   @id @default(uuid())
+  type                  String
+  beneficiaryId         String
+  qualifyingContractorId String
+  amountPence           Int?
+  status                String   @default("PENDING")
+  createdAt             DateTime @default(now()) @db.Timestamptz
+
+  @@unique([type, beneficiaryId, qualifyingContractorId])
+}
+
+model IdempotencyKey {
+  key       String   @id
+  response  Json?
+  createdAt DateTime @default(now()) @db.Timestamptz
+}
+
+model AuditEvent {
+  id         String   @id @default(uuid())
+  actorId    String?
+  entityType String
+  entityId   String
+  action     String
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  @@index([entityType, entityId])
+}
+
+model FeatureFlag {
+  key     String  @id
+  enabled Boolean @default(false)
+}

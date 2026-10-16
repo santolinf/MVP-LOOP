@@ -1,0 +1,1 @@
+{ "extends": "@loop/config/tsconfig/node.json", "include": ["tests", "playwright.config.ts"] }

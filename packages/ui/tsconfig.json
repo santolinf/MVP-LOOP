@@ -1,0 +1,1 @@
+{ "extends": "@loop/config/tsconfig/react.json", "include": ["src"] }

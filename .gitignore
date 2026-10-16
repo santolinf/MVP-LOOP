@@ -1,0 +1,32 @@
+node_modules/
+dist/
+build/
+.turbo/
+.react-router/
+coverage/
+playwright-report/
+test-results/
+cdk.out/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+packages/db/src/generated/
+
+# IDE & Editors
+.idea/
+.vscode/
+
+# Bundler & Tooling Caches
+.vite/
+.cache/
+
+# Additional Test & Report Artifacts
+blob-report/
+
+# Temporary directories
+tmp/
+.tmp/
+temp/

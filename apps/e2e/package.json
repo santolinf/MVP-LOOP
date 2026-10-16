@@ -1,0 +1,19 @@
+{
+  "name": "@loop/e2e",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "echo no tests"
+  },
+  "devDependencies": {
+    "@loop/config": "workspace:*",
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.5",
+    "eslint": "^10.12.0",
+    "typescript": "^7.0.2"
+  }
+}

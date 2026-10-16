@@ -1,0 +1,1 @@
+{ "extends": "@loop/config/tsconfig/react.json", "compilerOptions": { "rootDirs": [".", "./.react-router/types"], "noEmit": true }, "include": ["app", ".react-router/types/**/*", "*.ts"] }

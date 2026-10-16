@@ -1,0 +1,28 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "infra"
+allowBuilds:
+  '@scarf/scarf': true
+  cpu-features: true
+  esbuild: true
+  protobufjs: true
+  ssh2: true
+  workerd: true
+minimumReleaseAgeExclude:
+  - "@prisma/config@7.10.1"
+  - "@prisma/debug@7.10.1"
+  - "@prisma/engines@7.10.1"
+  - "@prisma/fetch-engine@7.10.1"
+  - "@prisma/get-platform@7.10.1"
+  - prisma@7.10.1
+  - "@prisma/client-runtime-utils@7.10.1"
+  - "@prisma/client@7.10.1"
+permissions:
+  '@prisma/engines':
+    build: true
+  '@tanstack/react-table':
+    skills: true
+  prisma:
+    build: true
+    skills: true
