@@ -11,3 +11,12 @@ pnpm dev
 ```
 
 Run `pnpm lint && pnpm typecheck && pnpm test` before committing.
+
+
+## Development
+
+### OpenAPI
+
+```bash
+pnpm api:generate
+```
