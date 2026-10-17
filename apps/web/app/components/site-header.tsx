@@ -18,7 +18,7 @@ export function SiteHeader() {
             <strong className="text-lime">{COPY.tagline[1]}</strong>
           </span>
         </Link>
-        <nav aria-label="Main navigation" className="hidden gap-6 md:flex">
+        <nav aria-label="Main navigation" className="flex flex-wrap justify-end gap-x-6 gap-y-1">
           {NAV.map((n) => (
             <NavLink key={n.to} to={n.to} end className="text-sm text-slate-200 hover:text-lime">
               {n.label}

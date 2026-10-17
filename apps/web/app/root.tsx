@@ -28,6 +28,12 @@ export default function App() {
   return (
     <Providers>
       <ReferralAttribution />
+      <a
+        href="#app"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-full focus:bg-lime focus:px-4 focus:py-2 focus:font-semibold focus:text-bg"
+      >
+        Skip to main content
+      </a>
       <SiteHeader />
       <main id="app" tabIndex={-1}>
         <Outlet />
