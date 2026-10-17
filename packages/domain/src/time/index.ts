@@ -16,3 +16,8 @@ export function londonDaysBetween(from: Date, to: Date): number {
   const b = Date.parse(`${londonDate(to)}T00:00:00Z`);
   return Math.round((b - a) / 86_400_000);
 }
+
+/** Midnight-UTC Date representing the London calendar date of `instant` plus `days` (date-only arithmetic). */
+export function addLondonDays(instant: Date, days: number): Date {
+  return new Date(Date.parse(`${londonDate(instant)}T00:00:00Z`) + days * 86_400_000);
+}

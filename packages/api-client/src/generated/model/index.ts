@@ -13,6 +13,8 @@ export * from './foundingStatusDto';
 export * from './meDto';
 export * from './meDtoAvailability';
 export * from './meDtoAvailabilityColour';
+export * from './meDtoAvailabilityFreshnessState';
+export * from './meDtoAvailabilityUnderlyingStatus';
 export * from './meDtoEmployment';
 export * from './publicConfigDto';
 export * from './publicConfigDtoFlags';

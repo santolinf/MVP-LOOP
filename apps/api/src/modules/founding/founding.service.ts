@@ -3,6 +3,8 @@ import { prisma } from "@loop/db";
 import { FOUNDING_REQUIRED_REFERRALS, describeAvailability, isFoundingEligible } from "@loop/domain";
 import type { FoundingStatus } from "@loop/contracts";
 import { AuditService } from "../../common/audit.service.js";
+import { loadFreshnessThresholds } from "../../common/freshness-config.js";
+import { factsFor } from "../me/me.service.js";
 
 class AlreadyAllocated extends Error {}
 
@@ -21,10 +23,7 @@ export class FoundingService {
       : 0;
     // "Current" = availability confirmed and not stale (anything but grey).
     const isCurrent =
-      describeAvailability(
-        { employment: c.employmentSituation ?? "CONTRACTING", availableFrom: c.availableFrom, lastConfirmedAt: c.lastConfirmedAt },
-        now,
-      ).colour !== "GREY";
+      describeAvailability(factsFor(c, now), await loadFreshnessThresholds(), now).colour !== "GREY";
     return { place: c.foundingPlace, registeredReferrals, isCurrent };
   }
 

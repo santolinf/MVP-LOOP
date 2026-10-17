@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const db = vi.hoisted(() => ({
   contractor: { findUnique: vi.fn(), count: vi.fn(), updateMany: vi.fn() },
   referral: { findMany: vi.fn() },
+  reminderConfig: { findMany: vi.fn() },
   queryRaw: vi.fn(),
   $transaction: vi.fn(),
 }));
@@ -10,6 +11,7 @@ vi.mock("@loop/db", () => ({
   prisma: {
     contractor: db.contractor,
     referral: db.referral,
+    reminderConfig: db.reminderConfig,
     $transaction: db.$transaction,
   },
 }));
@@ -23,7 +25,7 @@ function eligibleContractor(foundingPlace: number | null = null) {
   db.contractor.findUnique.mockResolvedValue({
     id: "c1",
     foundingPlace,
-    employmentSituation: "CONTRACTING",
+    employmentSituation: "BETWEEN_CONTRACTS",
     availableFrom: new Date("2026-10-01T00:00:00Z"),
     lastConfirmedAt: new Date("2026-10-16T00:00:00Z"),
   });
@@ -34,6 +36,7 @@ function eligibleContractor(foundingPlace: number | null = null) {
 describe("FoundingService", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    db.reminderConfig.findMany.mockResolvedValue([]);
     db.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
       fn({ $queryRaw: db.queryRaw, contractor: { updateMany: db.contractor.updateMany } }),
     );
@@ -84,8 +87,8 @@ describe("FoundingService", () => {
     db.contractor.updateMany.mockResolvedValue({ count: 0 });
     // The retry snapshot sees the place the winning request set.
     db.contractor.findUnique
-      .mockResolvedValueOnce({ id: "c1", foundingPlace: null, employmentSituation: "CONTRACTING", availableFrom: new Date("2026-10-01T00:00:00Z"), lastConfirmedAt: NOW })
-      .mockResolvedValueOnce({ id: "c1", foundingPlace: 8, employmentSituation: "CONTRACTING", availableFrom: new Date("2026-10-01T00:00:00Z"), lastConfirmedAt: NOW });
+      .mockResolvedValueOnce({ id: "c1", foundingPlace: null, employmentSituation: "BETWEEN_CONTRACTS", availableFrom: new Date("2026-10-01T00:00:00Z"), lastConfirmedAt: NOW })
+      .mockResolvedValueOnce({ id: "c1", foundingPlace: 8, employmentSituation: "BETWEEN_CONTRACTS", availableFrom: new Date("2026-10-01T00:00:00Z"), lastConfirmedAt: NOW });
     expect(await new FoundingService(audit as never).allocateIfEligible("c1", NOW)).toBe(8);
     expect(audit.record).not.toHaveBeenCalled();
   });
@@ -99,7 +102,7 @@ describe("FoundingService", () => {
     db.contractor.findUnique.mockImplementation(async ({ where }: { where: { id: string } }) => ({
       id: where.id,
       foundingPlace: null,
-      employmentSituation: "CONTRACTING",
+      employmentSituation: "BETWEEN_CONTRACTS",
       availableFrom: new Date("2026-10-01T00:00:00Z"),
       lastConfirmedAt: new Date("2026-10-16T00:00:00Z"),
     }));

@@ -1,5 +1,13 @@
-import { RECONFIRM_INTERVAL_DAYS } from "../freshness/index.js";
-import { deriveAvailabilityColour, type AvailabilityColour, type AvailabilityFacts } from "./index.js";
+import {
+  colourForStatus,
+  deriveUnderlyingStatus,
+  type AvailabilityColour,
+  type AvailabilityFacts,
+  type AvailabilityOptions,
+  type UnderlyingStatus,
+  DEFAULT_AVAILABILITY_OPTIONS,
+} from "./index.js";
+import { deriveFreshness, isFreshnessGrey, type FreshnessState, type FreshnessThresholds } from "../freshness/index.js";
 
 export const AVAILABILITY_LABELS: Record<AvailabilityColour, string> = {
   LIME: "Available now",
@@ -10,20 +18,23 @@ export const AVAILABILITY_LABELS: Record<AvailabilityColour, string> = {
 };
 
 export interface AvailabilityStatusResult {
+  /** Colour to display (grey when freshness is UNCONFIRMED). */
   colour: AvailabilityColour;
   label: string;
+  underlyingStatus: UnderlyingStatus;
+  freshnessState: FreshnessState;
   lastConfirmedAt: Date | null;
-  /** Next scheduled reconfirmation; null when the schedule is event-driven or nothing is confirmed. */
-  nextCheckAt: Date | null;
 }
 
-/** Computed status returned to every client (rule 13): colour, label and next check. */
-export function describeAvailability(facts: AvailabilityFacts, now: Date): AvailabilityStatusResult {
-  const colour = deriveAvailabilityColour(facts, now);
-  const interval = RECONFIRM_INTERVAL_DAYS[colour];
-  const nextCheckAt =
-    facts.lastConfirmedAt && interval !== null
-      ? new Date(facts.lastConfirmedAt.getTime() + interval * 86_400_000)
-      : null;
-  return { colour, label: AVAILABILITY_LABELS[colour], lastConfirmedAt: facts.lastConfirmedAt, nextCheckAt };
+/** Computed status returned to every client (rule 13). Reminder scheduling lives in `reminders`. */
+export function describeAvailability(
+  facts: AvailabilityFacts,
+  thresholds: FreshnessThresholds,
+  now: Date,
+  options: AvailabilityOptions = DEFAULT_AVAILABILITY_OPTIONS,
+): AvailabilityStatusResult {
+  const underlyingStatus = deriveUnderlyingStatus(facts, now, options);
+  const freshnessState = deriveFreshness(underlyingStatus, facts.lastConfirmedAt, thresholds, now);
+  const colour = isFreshnessGrey(freshnessState) ? "GREY" : colourForStatus(underlyingStatus);
+  return { colour, label: AVAILABILITY_LABELS[colour], underlyingStatus, freshnessState, lastConfirmedAt: facts.lastConfirmedAt };
 }

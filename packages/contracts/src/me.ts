@@ -2,11 +2,22 @@ import { z } from "zod";
 import { AvailabilityColourSchema } from "./common.js";
 
 /** Computed status returned to clients; clients never derive colour themselves. */
+export const UnderlyingStatusSchema = z.enum([
+  "PERMANENT",
+  "AVAILABLE_NOW",
+  "ENDING_SOON",
+  "IN_CONTRACT",
+  "END_DATE_REACHED",
+  "UNCONFIRMED",
+]);
+export const FreshnessStateSchema = z.enum(["CURRENT", "NEEDS_CONFIRMATION", "UNCONFIRMED"]);
+
 export const AvailabilityStatusSchema = z.object({
   colour: AvailabilityColourSchema,
   label: z.string(),
   lastConfirmedAt: z.string().datetime().nullable(),
-  nextCheckAt: z.string().datetime().nullable(),
+  underlyingStatus: UnderlyingStatusSchema,
+  freshnessState: FreshnessStateSchema,
 });
 export type AvailabilityStatus = z.infer<typeof AvailabilityStatusSchema>;
 

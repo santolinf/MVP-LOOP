@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const db = vi.hoisted(() => ({ findUnique: vi.fn(), update: vi.fn() }));
-vi.mock("@loop/db", () => ({ prisma: { contractor: db } }));
+vi.mock("@loop/db", () => ({ prisma: { contractor: db, reminderConfig: { findMany: vi.fn().mockResolvedValue([]) } } }));
 
 import { MeService } from "../me.service.js";
 import { resolveContractorId } from "../current-contractor.js";
