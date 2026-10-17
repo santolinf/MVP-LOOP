@@ -3,10 +3,12 @@ import { prisma } from "./client.js";
 // payouts.live, agency.access and profit_sharing stay disabled in every seed.
 const FLAGS = ["payouts.live", "agency.access", "profit_sharing.live"];
 // New in the change plan; both default off.
-const NEW_FLAGS = ["freshness.visibilityEffects", "reminders.paused"];
+const NEW_FLAGS = ["freshness.visibilityEffects", "reminders.paused", "auth.attestation"];
 
 // TODO(spec): Q3 thresholds and plan 3.3 reminder defaults; editable at runtime.
 const CONFIG: Record<string, object> = {
+  // TODO(spec): default email OTP limits; editable at runtime.
+  "auth.otp": { codeLength: 6, ttlMinutes: 10, maxAttempts: 5, resendCooldownSeconds: 60, maxSendsPerHourPerEmail: 5, maxSendsPerHourPerIp: 20 },
   "freshness.thresholds.AVAILABLE_NOW": { currentDays: 7, needsConfirmationDays: 14 },
   "freshness.thresholds.ENDING_SOON": { currentDays: 14, needsConfirmationDays: 28 },
   "freshness.thresholds.IN_CONTRACT": { currentDays: 30, needsConfirmationDays: 60 },

@@ -29,3 +29,11 @@ open questions Q1–Q15 are implemented behind config/flags with a `TODO(spec): 
 3. `packages/domain/freshness`: `CURRENT | NEEDS_CONFIRMATION | UNCONFIRMED` from `lastConfirmedAt` + status + configured thresholds (Q3 placeholders). Freshness never alters underlying status; UNCONFIRMED displays grey (Q4).
 4. `packages/domain/reminders`: `planReminders(state, config, today)` and `onEvent(event, state, config)`.
 5. Table-driven tests for every §3.1 row and §3.3 rule; delete old B4 constants.
+
+## Phase 2 detail (WP2)
+1. Prisma (migration `add_email_otp_and_session`): `EmailOtp` (HMAC email hash, HMAC code hash, purpose, expiry, attempts, consumedAt, ip hash), `Session` (WEB | MOBILE_APP, hashed refresh token, expiry, revokedAt), `Contractor.firstAppSignInAt` / `firstAppSignInSessionId` (columns only, CH-06). No password column anywhere.
+2. `packages/domain/auth`: pure rules — `decideOtpSend` (cooldown, per-email and per-IP hourly limits), `checkOtpUsable` (single use, expiry, attempts), `generateOtpCode`, `normaliseEmail`, `normaliseUkMobile`; table-driven tests.
+3. API `modules/auth`: `OtpService` (CSPRNG codes, hashed storage, constant-time compare, enumeration-safe responses), `SessionService` (30-day web cookie + CSRF; 15-min JWT + rotating hashed refresh token on app, 90 days), `AuthController`: `POST /auth/otp/request`, `POST /auth/otp/verify`, `POST /auth/token/refresh`, `POST /auth/logout`, `GET /auth/sessions`. Registration account is created on verify; mobile verification is Q1.
+4. Email templates for registration and sign-in codes; `EmailSender` abstraction (production provider is a TODO(spec)).
+5. `AuthGuard` resolves Bearer or cookie sessions; non-production `LOOP_DEV_CONTRACTOR_ID` fallback retained. Magic-link and SMS-OTP (Twilio Verify) paths removed.
+6. Open questions: Q1 (mobile ownership verification), Q8 (`auth.attestation` flag stays off), default OTP limits, CH-06 first-app-sign-in behaviour, operational SMS consent at registration.

@@ -19,6 +19,52 @@ enum ConfirmationSource {
   ADMIN_CALL
 }
 
+enum OtpPurpose {
+  REGISTER
+  SIGN_IN
+}
+
+enum ClientType {
+  WEB
+  MOBILE_APP
+}
+
+enum AppPlatform {
+  IOS
+  ANDROID
+}
+
+model EmailOtp {
+  id         String      @id @default(uuid())
+  emailHash  String
+  purpose    OtpPurpose
+  codeHash   String
+  expiresAt  DateTime    @db.Timestamptz
+  attempts   Int         @default(0)
+  consumedAt DateTime?   @db.Timestamptz
+  clientType ClientType
+  requestIp  String?
+  createdAt  DateTime    @default(now()) @db.Timestamptz
+
+  @@index([emailHash, createdAt])
+  @@index([requestIp, createdAt])
+}
+
+model Session {
+  id                  String       @id @default(uuid())
+  contractorId        String
+  clientType          ClientType
+  appPlatform         AppPlatform?
+  attestationVerified Boolean      @default(false)
+  refreshTokenHash    String?      @unique
+  expiresAt           DateTime     @db.Timestamptz
+  revokedAt           DateTime?    @db.Timestamptz
+  lastUsedAt          DateTime?    @db.Timestamptz
+  createdAt           DateTime     @default(now()) @db.Timestamptz
+
+  @@index([contractorId])
+}
+
 model Contractor {
   id                  String               @id @default(uuid())
   phone               String               @unique
@@ -41,6 +87,9 @@ model Contractor {
   confirmationChannel String?
   referralCode        String?              @unique
   foundingPlace       Int?                 @unique
+  // CH-06: set on first successful MOBILE_APP sign-in (behaviour lands in a later phase).
+  firstAppSignInAt        DateTime?        @db.Timestamptz
+  firstAppSignInSessionId String?
   createdAt           DateTime             @default(now()) @db.Timestamptz
   updatedAt           DateTime             @updatedAt @db.Timestamptz
 }

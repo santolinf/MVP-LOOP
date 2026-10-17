@@ -1,3 +1,4 @@
+export * from './auth/auth';
 export * from './founding/founding';
 export * from './health/health';
 export * from './me/me';

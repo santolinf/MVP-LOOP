@@ -5,3 +5,4 @@ export * from "./referrals.js";
 export * from "./founding.js";
 export * from "./rewards.js";
 export * from "./public-config.js";
+export * from "./auth.js";

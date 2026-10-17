@@ -18,7 +18,7 @@ export function MyLoopPage() {
       <section className="mx-auto w-[min(40rem,calc(100%-30px))] py-16">
         <Card>
           <h1 className="mb-3 text-3xl font-bold">Sign in required</h1>
-          {/* TODO(spec): link to Log in once auth (magic link / OTP) exists. */}
+          {/* TODO(spec): link to Log in once the email OTP sign-in screen exists (API: /auth/otp/*). */}
           <Muted>Please sign in to see My LOOP.</Muted>
         </Card>
       </section>

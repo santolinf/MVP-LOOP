@@ -5,4 +5,5 @@ export * from "./reminders/index.js";
 export * from "./founding/index.js";
 export * from "./rewards/index.js";
 export * from "./referrals/index.js";
+export * from "./auth/index.js";
 export * from "./availability/status.js";
