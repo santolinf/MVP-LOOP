@@ -6,4 +6,6 @@ export default [
   route("founding", "routes/founding.tsx"),
   route("join", "routes/join.tsx"),
   route("join/cv", "routes/join.cv.tsx"),
+  route("my-loop", "routes/my-loop.tsx"),
+  route("my-loop/availability", "routes/my-loop.availability.tsx"),
 ] satisfies RouteConfig;

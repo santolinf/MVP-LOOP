@@ -9,7 +9,7 @@ describe("deriveAvailabilityColour (B3)", () => {
     ["permanent stays blue", { employment: "PERMANENT", availableFrom: null, lastConfirmedAt: null }, "BLUE"],
     ["unconfirmed is grey", { employment: "CONTRACTING", availableFrom: new Date("2026-10-01"), lastConfirmedAt: null }, "GREY"],
     ["no confirmed start date never green", { employment: "CONTRACTING", availableFrom: null, lastConfirmedAt: confirmed }, "GREY"],
-    ["available now is lime", { employment: "BETWEEN_ROLES", availableFrom: new Date("2026-10-15"), lastConfirmedAt: confirmed }, "LIME"],
+    ["available now is lime", { employment: "BETWEEN_CONTRACTS", availableFrom: new Date("2026-10-15"), lastConfirmedAt: confirmed }, "LIME"],
     ["within 28 days is orange", { employment: "CONTRACTING", availableFrom: new Date("2026-11-05"), lastConfirmedAt: confirmed }, "ORANGE"],
     ["beyond 28 days is red", { employment: "CONTRACTING", availableFrom: new Date("2026-12-31"), lastConfirmedAt: confirmed }, "RED"],
   ];

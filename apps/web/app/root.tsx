@@ -1,6 +1,7 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import { SiteFooter } from "./components/site-footer";
 import { SiteHeader } from "./components/site-header";
+import { Providers } from "./providers";
 import "./app.css";
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -24,12 +25,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <>
+    <Providers>
       <SiteHeader />
       <main id="app" tabIndex={-1}>
         <Outlet />
       </main>
       <SiteFooter />
-    </>
+    </Providers>
   );
 }

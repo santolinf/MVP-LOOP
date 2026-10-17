@@ -1,7 +1,7 @@
 import { londonDaysBetween } from "../time/index.js";
 
 export type AvailabilityColour = "LIME" | "ORANGE" | "RED" | "BLUE" | "GREY";
-export type EmploymentSituation = "CONTRACTING" | "PERMANENT" | "BETWEEN_ROLES";
+export type EmploymentSituation = "CONTRACTING" | "PERMANENT" | "BETWEEN_CONTRACTS";
 
 export interface AvailabilityFacts {
   employment: EmploymentSituation;
