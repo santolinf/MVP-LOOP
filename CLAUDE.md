@@ -75,6 +75,7 @@ infra            AWS CDK stacks
 - Request/response shapes are Zod schemas in `packages/contracts`; DTOs derive from them. After changing an endpoint, run `pnpm api:generate` and commit the generated client.
 - Prisma: one migration per change, descriptive names (`add_referral_attribution`). Never edit an applied migration. Money is stored as integer pence.
 - Dates: store UTC (`timestamptz`); compute date-only rules (availability, contract end) in `Europe/London` via `packages/domain` helpers.
+- Nest DI: always inject constructor dependencies with an explicit `@Inject(Token)` (e.g. `constructor(@Inject(MeService) private readonly me: MeService) {}`). `tsx` (dev) and Vitest use esbuild, which does not emit `design:paramtypes`, so implicit injection yields `undefined` at runtime and a 500.
 - Errors: throw typed domain errors; the global filter maps them to RFC 9457 problem responses.
 - Jobs: one handler per job name in `apps/api/src/jobs`, idempotent, with retry limits. Scheduled sweeps use pg-boss singleton keys.
 - Frontend: feature folders under `app/features/*`; server state only via generated hooks; status colour always rendered with label + icon (`<AvailabilityBadge>`).

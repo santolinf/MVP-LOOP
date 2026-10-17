@@ -1,8 +1,9 @@
 import "reflect-metadata";
+// Must stay before AppModule: importing it loads .env, and @loop/db reads DATABASE_URL at import time.
+import { loadEnv } from "./config/index.js";
 import { NestFactory } from "@nestjs/core";
 import { PgBoss } from "pg-boss";
 import { AppModule } from "./app.module.js";
-import { loadEnv } from "./config/index.js";
 import { ProblemFilter } from "./common/problem.filter.js";
 import { registerJobs } from "./jobs/freshness-sweep.job.js";
 

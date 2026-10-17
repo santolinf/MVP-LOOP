@@ -1,9 +1,7 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { prisma } from "@loop/db";
 import { describeAvailability, londonDate } from "@loop/domain";
 import type { ConfirmAvailabilityRequest, Me } from "@loop/contracts";
-// Nest DI needs the runtime class reference for constructor injection.
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import { AuditService } from "../../common/audit.service.js";
 
 type Row = NonNullable<Awaited<ReturnType<typeof prisma.contractor.findUnique>>>;
@@ -36,7 +34,8 @@ export function toMe(c: Row, now: Date): Me {
 
 @Injectable()
 export class MeService {
-  constructor(private readonly audit: AuditService) {}
+  // Explicit @Inject: the dev runner (tsx/esbuild) does not emit design:paramtypes metadata.
+  constructor(@Inject(AuditService) private readonly audit: AuditService) {}
 
   async get(id: string, now = new Date()): Promise<Me> {
     const c = await prisma.contractor.findUnique({ where: { id } });

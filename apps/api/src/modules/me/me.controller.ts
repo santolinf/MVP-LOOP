@@ -1,10 +1,8 @@
-import { Body, Controller, Get, Headers, HttpCode, Post } from "@nestjs/common";
+import { Body, Controller, Get, Headers, HttpCode, Inject, Post } from "@nestjs/common";
 import { ApiBody, ApiHeader, ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { createZodDto } from "nestjs-zod";
 import { ConfirmAvailabilityRequestSchema, MeSchema } from "@loop/contracts";
 import { CurrentContractor } from "./current-contractor.js";
-// Nest DI needs the runtime class reference for constructor injection.
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import { MeService } from "./me.service.js";
 
 class ConfirmAvailabilityDto extends createZodDto(ConfirmAvailabilityRequestSchema) {}
@@ -13,7 +11,8 @@ class MeDto extends createZodDto(MeSchema) {}
 @ApiTags("me")
 @Controller("me")
 export class MeController {
-  constructor(private readonly me: MeService) {}
+  // Explicit @Inject: the dev runner (tsx/esbuild) does not emit design:paramtypes metadata.
+  constructor(@Inject(MeService) private readonly me: MeService) {}
 
   @Get()
   @ApiOperation({ operationId: "getMe" })
