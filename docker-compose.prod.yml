@@ -3,7 +3,7 @@
 #
 #   cp .env.prod.example .env.prod      # then fill in real values
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
-name: loop
+name: loop-prod
 
 services:
   postgres:
