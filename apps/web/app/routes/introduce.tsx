@@ -1,4 +1,5 @@
 import { ButtonLink, Card, Lead, Section } from "../features/marketing/primitives";
+import { ReferralLinkCard, useHasReferralLink } from "../features/referrals/referral-link-card";
 import { JOIN_PATH } from "../features/marketing/home-sections";
 
 export function meta() {
@@ -6,6 +7,7 @@ export function meta() {
 }
 
 export default function Introduce() {
+  const { has } = useHasReferralLink();
   return (
     <Section narrow>
       <span className="mb-3 block text-sm font-semibold uppercase tracking-wide text-cyan">Grow the network</span>
@@ -34,12 +36,15 @@ export default function Introduce() {
           <br />
           Keep introducing more. Each different qualifying contractor can earn you another one-off £50 reward.
         </p>
-        {/* TODO(spec): signed-in/LIVE users should see their referral link from the real backend (Phase 5). Every visitor sees the join invitation for now. */}
-        <p className="mb-4 text-muted">
-          Join LOOP to get your personal introduction link and start inviting fellow IT contractors.
-        </p>
+        {has ? (
+          <ReferralLinkCard />
+        ) : (
+          <p className="mb-4 text-muted">
+            Join LOOP to get your personal introduction link and start inviting fellow IT contractors.
+          </p>
+        )}
         <div className="flex flex-wrap gap-3">
-          <ButtonLink to={JOIN_PATH}>Introduce IT Contractors →</ButtonLink>
+          {!has && <ButtonLink to={JOIN_PATH}>Introduce IT Contractors →</ButtonLink>}
           <ButtonLink to="/" outline>
             Back to homepage
           </ButtonLink>

@@ -1,6 +1,7 @@
 import { AvailabilityBadge } from "@loop/ui";
 import { Link } from "react-router";
 import { Card, Eyebrow, Muted } from "../marketing/primitives";
+import { RewardsFoundingCard } from "../rewards/rewards-founding-card";
 import { useMe } from "./use-me";
 
 export function MyLoopPage() {
@@ -65,9 +66,7 @@ export function MyLoopPage() {
           </Link>
         </Card>
         <Card>
-          <h2 className="mb-2 text-xl font-semibold">Rewards and Founding status</h2>
-          {/* TODO(spec): rewards ledger and founding progress come from Phase 4/5 APIs. */}
-          <Muted>Not activated yet.</Muted>
+          <RewardsFoundingCard />
         </Card>
       </div>
     </section>

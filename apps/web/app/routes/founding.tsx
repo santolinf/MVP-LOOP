@@ -1,4 +1,5 @@
 import { JOIN_PATH } from "../features/marketing/home-sections";
+import { FoundingProgress } from "../features/marketing/founding-progress";
 import { ButtonLink, Eyebrow, Lead, Muted, Section } from "../features/marketing/primitives";
 
 export function meta() {
@@ -11,6 +12,7 @@ export default function Founding() {
       <Eyebrow>Founding Membership</Eyebrow>
       <h1 className="mb-4 text-4xl font-bold leading-tight">Become a Founding Member for life</h1>
       <Lead>The first 50,000 qualifying UK IT contractors.</Lead>
+      <FoundingProgress />
       <Muted className="mb-3">
         Join LOOP and activate your profile. Introduce 5 UK IT contractors who successfully register. Keep your
         availability up to date. Complete these steps while places remain.

@@ -1,6 +1,7 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import { SiteFooter } from "./components/site-footer";
 import { SiteHeader } from "./components/site-header";
+import { ReferralAttribution } from "./features/referrals/referral-attribution";
 import { Providers } from "./providers";
 import "./app.css";
 
@@ -26,6 +27,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Providers>
+      <ReferralAttribution />
       <SiteHeader />
       <main id="app" tabIndex={-1}>
         <Outlet />

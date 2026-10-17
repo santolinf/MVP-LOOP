@@ -36,8 +36,19 @@ model Contractor {
   operationalSmsConsent Boolean            @default(false)
   marketingConsent    Boolean              @default(false)
   searchColour        String?
+  referralCode        String?              @unique
+  foundingPlace       Int?                 @unique
   createdAt           DateTime             @default(now()) @db.Timestamptz
   updatedAt           DateTime             @updatedAt @db.Timestamptz
+}
+
+model Referral {
+  id         String   @id @default(uuid())
+  referrerId String
+  refereeId  String   @unique
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  @@index([referrerId])
 }
 
 model ExtractionRun {

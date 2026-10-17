@@ -77,6 +77,188 @@
           "me"
         ]
       }
+    },
+    "/api/v1/referrals/link": {
+      "get": {
+        "operationId": "getReferralLink",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralLinkDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "referrals"
+        ]
+      }
+    },
+    "/api/v1/referrals": {
+      "get": {
+        "operationId": "listReferrals",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralListDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "referrals"
+        ]
+      }
+    },
+    "/api/v1/referrals/code/{code}": {
+      "get": {
+        "operationId": "checkReferralCode",
+        "parameters": [
+          {
+            "name": "code",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralCodeCheckDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "referrals"
+        ]
+      }
+    },
+    "/api/v1/referrals/attribute": {
+      "post": {
+        "operationId": "attributeReferral",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttributeReferralRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeReferralResultDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "referrals"
+        ]
+      }
+    },
+    "/api/v1/founding/status": {
+      "get": {
+        "operationId": "getFoundingStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoundingStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "founding"
+        ]
+      }
+    },
+    "/api/v1/rewards": {
+      "get": {
+        "operationId": "listRewards",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RewardListDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "rewards"
+        ]
+      }
+    },
+    "/api/v1/public/config": {
+      "get": {
+        "operationId": "getPublicConfig",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicConfigDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "public"
+        ]
+      }
     }
   },
   "info": {
@@ -194,6 +376,222 @@
         "required": [
           "employment",
           "availableFrom"
+        ]
+      },
+      "ReferralLinkDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "url"
+        ]
+      },
+      "ReferralListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "refereeFirstName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "registeredAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                },
+                "counted": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "refereeFirstName",
+                "registeredAt",
+                "counted"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ReferralCodeCheckDto": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "referrerFirstName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "valid",
+          "referrerFirstName"
+        ]
+      },
+      "AttributeReferralRequestDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "AttributeReferralResultDto": {
+        "type": "object",
+        "properties": {
+          "attributed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "attributed"
+        ]
+      },
+      "FoundingStatusDto": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "registeredReferrals": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "isCurrentProfile": {
+            "type": "boolean"
+          },
+          "eligible": {
+            "type": "boolean"
+          },
+          "place": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "nullable": true
+          }
+        },
+        "required": [
+          "required",
+          "registeredReferrals",
+          "isCurrentProfile",
+          "eligible",
+          "place"
+        ]
+      },
+      "RewardListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string"
+                },
+                "amountPence": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "nullable": true
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                }
+              },
+              "required": [
+                "id",
+                "type",
+                "status",
+                "amountPence",
+                "createdAt"
+              ]
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "PublicConfigDto": {
+        "type": "object",
+        "properties": {
+          "flags": {
+            "type": "object",
+            "properties": {
+              "payoutsLive": {
+                "type": "boolean"
+              },
+              "agencyAccess": {
+                "type": "boolean"
+              },
+              "profitShare": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "payoutsLive",
+              "agencyAccess",
+              "profitShare"
+            ]
+          },
+          "founding": {
+            "type": "object",
+            "properties": {
+              "cap": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "claimed": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "cap",
+              "claimed"
+            ]
+          }
+        },
+        "required": [
+          "flags",
+          "founding"
         ]
       }
     }
