@@ -7,7 +7,7 @@ function loadEnvironmentFiles(): void {
     const searchPaths = [
       resolve(process.cwd(), ".env"),
       resolve(process.cwd(), "../../.env"),
-      resolve(__dirname, "../../../.env"),
+      resolve(import.meta.dirname, "../../../.env"),
     ];
 
     for (const envPath of searchPaths) {

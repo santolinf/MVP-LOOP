@@ -1,5 +1,6 @@
 import { useAttributeReferral, useGetMe } from "@loop/api-client";
 import { useEffect, useRef, useState } from "react";
+import { uuid } from "../../lib/uuid";
 import { captureReferralFromUrl, clearReferralCode, readReferralCode } from "./referral-capture";
 
 // Captures ?ref= on any page; once a session exists, attributes it exactly once and clears it.
@@ -12,7 +13,7 @@ export function ReferralAttribution() {
   }, []);
 
   const me = useGetMe({ query: { enabled: code !== null } });
-  const idempotencyKey = useRef(crypto.randomUUID());
+  const idempotencyKey = useRef(uuid());
   const attribute = useAttributeReferral({ request: { headers: { "Idempotency-Key": idempotencyKey.current } } });
   const signedIn = me.isSuccess;
   const { mutate } = attribute;

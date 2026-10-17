@@ -3,6 +3,7 @@ import { AvailabilityBadge } from "@loop/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
+import { uuid } from "../../lib/uuid";
 import { Card, Eyebrow, Muted } from "../marketing/primitives";
 import { useMe } from "../my-loop/use-me";
 
@@ -19,7 +20,7 @@ export function AvailabilityForm() {
   const [employment, setEmployment] = useState<ConfirmAvailabilityDtoEmployment | null>(null);
   const [availableFrom, setAvailableFrom] = useState<string | null>(null);
   // One key per form instance: a retry of the same confirmation replays instead of duplicating.
-  const idempotencyKey = useRef(crypto.randomUUID());
+  const idempotencyKey = useRef(uuid());
   const confirm = useConfirmAvailability({
     request: { headers: { "Idempotency-Key": idempotencyKey.current } },
     mutation: {
