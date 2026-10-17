@@ -1,4 +1,7 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
+import { SiteFooter } from "./components/site-footer";
+import { SiteHeader } from "./components/site-header";
+import "./app.css";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -6,6 +9,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#061526" />
         <Meta />
         <Links />
       </head>
@@ -19,5 +23,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (
+    <>
+      <SiteHeader />
+      <main id="app" tabIndex={-1}>
+        <Outlet />
+      </main>
+      <SiteFooter />
+    </>
+  );
 }

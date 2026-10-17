@@ -1,8 +1,23 @@
-export default function Landing() {
+import {
+  FinalCta,
+  FoundingSection,
+  Hero,
+  IntroductionsSection,
+  OverviewStrip,
+  ProfitSharingSection,
+  RadarSection,
+} from "../features/marketing/home-sections";
+
+export default function Home() {
   return (
-    <main>
-      <h1>LOOP</h1>
-      <p>The live, confirmed network for UK IT contractors.</p>
-    </main>
+    <>
+      <Hero />
+      <OverviewStrip />
+      <FoundingSection />
+      <ProfitSharingSection />
+      <IntroductionsSection />
+      <RadarSection />
+      <FinalCta />
+    </>
   );
 }

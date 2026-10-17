@@ -1,11 +1,11 @@
 import type { AvailabilityColour } from "@loop/contracts";
 
 const META: Record<AvailabilityColour, { label: string; icon: string; className: string }> = {
-  LIME: { label: "Available now", icon: "✓", className: "bg-lime-100 text-lime-900" },
-  ORANGE: { label: "Available soon", icon: "◔", className: "bg-orange-100 text-orange-900" },
-  RED: { label: "Unavailable", icon: "✕", className: "bg-red-100 text-red-900" },
-  BLUE: { label: "Permanent, open to contract", icon: "▣", className: "bg-blue-100 text-blue-900" },
-  GREY: { label: "Unconfirmed", icon: "?", className: "bg-gray-100 text-gray-800" },
+  LIME: { label: "Available now", icon: "✓", className: "bg-panel-2 text-lime" },
+  ORANGE: { label: "Available soon", icon: "◔", className: "bg-panel-2 text-orange" },
+  RED: { label: "Unavailable", icon: "✕", className: "bg-panel-2 text-red" },
+  BLUE: { label: "Permanent, open to contract", icon: "▣", className: "bg-panel-2 text-blue" },
+  GREY: { label: "Unconfirmed", icon: "?", className: "bg-panel-2 text-grey" },
 };
 
 /** Colour is always rendered with label + icon; the colour value comes from the API. */
