@@ -1,6 +1,8 @@
+> **SUPERSEDED (18 Oct 2026):** replaced by `docs/LOOP_V33_Phased_Implementation_Plan.md`. Do not continue this plan.
+
 # LOOP change set — phased approach
 
-Source: `LOOP_Change_Implementation_Plan_2026-10-17.md` (precedence M > P > R > J > E > V2.0).
+Source: `requirements/LOOP_Change_Implementation_Plan_2026-10-17.md` (archived) (precedence M > P > R > J > E > V2.0).
 Rules for every phase: nothing is committed during this change set; new Prisma migrations only (never edit applied ones);
 `pnpm api:generate` after API changes; `pnpm lint && pnpm typecheck && pnpm test` green at the end of each phase;
 open questions Q1–Q15 are implemented behind config/flags with a `TODO(spec): Qn` marker; no new runtime dependency

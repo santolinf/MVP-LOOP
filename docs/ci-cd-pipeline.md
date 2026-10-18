@@ -1,7 +1,8 @@
 # CI/CD pipeline for the Docker deployment
 
-Turns the manual steps in [deploy-docker.md](deploy-docker.md) into an automated pipeline. Nothing here is
-implemented yet beyond `.github/workflows/ci.yml` (verify only); `deploy.yml` is a stub with a `TODO(spec)`.
+Turns the manual steps in [deploy-docker.md](deploy-docker.md) into an automated pipeline. The SSH variant is now
+in `.github/workflows/deploy.yml` (untested until the `production` Environment and secrets exist); `ci.yml` has `workflow_call`.
+The AWS path remains a `TODO(spec)`.
 
 ## Pipeline overview
 

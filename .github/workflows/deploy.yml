@@ -1,11 +1,68 @@
 name: deploy
 on:
+  push: { branches: [main] }
   workflow_dispatch:
+
+concurrency: { group: deploy-production, cancel-in-progress: false }
+
 jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+
   deploy:
+    needs: verify
     runs-on: ubuntu-latest
-    permissions: { id-token: write, contents: read }
+    environment: production # approval gate
+    permissions: { contents: read }
+    env:
+      DOCKER_HOST: ssh://${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}
+      LOOP_TAG: ${{ github.sha }}
+      COMPOSE: docker compose -f docker-compose.prod.yml --env-file .env.prod
     steps:
       - uses: actions/checkout@v4
-      # TODO(spec): assume AWS role (eu-west-2), build and push image, cdk deploy.
-      - run: docker build .
+
+      - name: SSH setup
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$DEPLOY_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Write .env.prod (runner only, never committed)
+        env:
+          ENV_PROD: ${{ secrets.ENV_PROD }}
+        run: |
+          printf '%s\n' "$ENV_PROD" > .env.prod
+          echo "LOOP_TAG=${LOOP_TAG}" >> .env.prod
+
+      - name: Build and start (migrate runs first)
+        run: $COMPOSE up -d --build --remove-orphans
+
+      - name: Wait for healthy
+        run: |
+          for i in $(seq 1 30); do
+            s=$($COMPOSE ps app --format '{{.Health}}')
+            [ "$s" = healthy ] && exit 0
+            sleep 5
+          done
+          $COMPOSE logs --tail=100 app migrate
+          exit 1
+
+      - name: Smoke test
+        env:
+          BASE: ${{ vars.PUBLIC_BASE_URL }}
+        run: |
+          curl -fsS "$BASE/api/v1/health" | grep '"ok"'
+          for p in / /admin/ /my-loop; do curl -fsS -o /dev/null "$BASE$p"; done
+          if curl -fsS "$BASE/api/v1/public/config" | grep -q '"payouts[^}]*true'; then
+            echo "payout flag is on"; exit 1
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: rm -f .env.prod ~/.ssh/id_ed25519
+
+# TODO(spec): AWS path — assume OIDC role (eu-west-2), push to ECR, cdk deploy (needs `id-token: write`).
+# See docs/ci-cd-pipeline.md.
