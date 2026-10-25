@@ -21,7 +21,7 @@ import type {
   ReferralList,
 } from "@loop/contracts";
 import { AuditService } from "../../common/audit.service.js";
-import { RateLimitedException, RateLimitStore, WINDOW_SECONDS } from "../../common/rate-limit.js";
+import { hashKey, RateLimitedException, RateLimitStore, WINDOW_SECONDS } from "../../common/rate-limit.js";
 import { FoundingService } from "../founding/founding.service.js";
 
 const isUniqueViolation = (e: unknown) => typeof e === "object" && e !== null && (e as { code?: string }).code === "P2002";
@@ -34,7 +34,18 @@ export const LOOKUP_LIMIT_PER_IP = 20;
 export interface AttributionContext {
   source: IntroducerSource;
   deviceId?: string;
+  /** Raw request evidence; only hashes are stored (B5 dispute evidence). */
+  ip?: string;
+  userAgent?: string;
 }
+
+/** Evidence stored with every attribution: the code used plus hashed device, IP and user agent. */
+const evidenceOf = (code: string, ctx: AttributionContext) => ({
+  codeUsed: code,
+  deviceHash: ctx.deviceId ? hashDevice(ctx.deviceId) : null,
+  ipHash: ctx.ip ? hashKey(ctx.ip) : null,
+  userAgentHash: ctx.userAgent ? hashKey(ctx.userAgent) : null,
+});
 
 @Injectable()
 export class ReferralsService {
@@ -163,7 +174,7 @@ export class ReferralsService {
           referrerId: referrer.id,
           refereeId,
           source: ctx.source,
-          deviceHash: ctx.deviceId ? hashDevice(ctx.deviceId) : null,
+          ...evidenceOf(code, ctx),
         },
       });
     } catch (e) {
@@ -175,7 +186,7 @@ export class ReferralsService {
       entityType: "Referral",
       entityId: created.id,
       action: "referral.attributed",
-      after: { referrerId: referrer.id, refereeId, source: ctx.source },
+      after: { referrerId: referrer.id, refereeId, source: ctx.source, codeUsed: code },
     });
     return { attributed: true };
   }
@@ -186,15 +197,14 @@ export class ReferralsService {
    */
   async setIntroducer(refereeId: string, raw: string, ctx: AttributionContext): Promise<AttributeReferralResult> {
     const code = normaliseReferralCode(raw);
-    const referrer = code
-      ? await prisma.contractor.findUnique({ where: { referralCode: code }, select: { id: true } })
-      : null;
+    if (!code) return { attributed: false };
+    const referrer = await prisma.contractor.findUnique({ where: { referralCode: code }, select: { id: true } });
     if (!referrer) return { attributed: false };
     const existing = await prisma.referral.findUnique({ where: { refereeId } });
     if (existing?.lockedAt) throw new ConflictException("Your introducer is locked; contact LOOP support to change it.");
     if (!isReferralValid({ referrerId: referrer.id, refereeId, refereeAlreadyAttributed: false })) return { attributed: false };
     if (existing?.referrerId === referrer.id) return { attributed: true };
-    const data = { referrerId: referrer.id, source: ctx.source, deviceHash: ctx.deviceId ? hashDevice(ctx.deviceId) : null };
+    const data = { referrerId: referrer.id, source: ctx.source, ...evidenceOf(code, ctx) };
     let row;
     try {
       row = existing
@@ -210,7 +220,7 @@ export class ReferralsService {
       entityId: row.id,
       action: existing ? "referral.introducer_changed" : "referral.attributed",
       before: existing ? { referrerId: existing.referrerId } : undefined,
-      after: { referrerId: referrer.id, source: ctx.source },
+      after: { referrerId: referrer.id, source: ctx.source, codeUsed: code },
     });
     return { attributed: true };
   }

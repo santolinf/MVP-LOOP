@@ -48,7 +48,15 @@ describe("ReferralsService", () => {
     db.contractor.findUnique.mockResolvedValue({ id: "ref1" });
     db.referral.findUnique.mockResolvedValue(null);
     db.referral.create.mockResolvedValue({ id: "x1" });
-    expect(await make().attribute("new1", "abcd2345")).toEqual({ attributed: true });
+    expect(await make().attribute("new1", "abcd2345", { source: "LINK", deviceId: "d1", ip: "1.2.3.4", userAgent: "UA" })).toEqual({
+      attributed: true,
+    });
+    const data = db.referral.create.mock.calls[0]?.[0].data;
+    expect(data).toMatchObject({ referrerId: "ref1", refereeId: "new1", codeUsed: "ABCD2345" });
+    // Evidence is stored hashed, never raw.
+    expect(data.ipHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(data.userAgentHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(JSON.stringify(data)).not.toContain("1.2.3.4");
     expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: "referral.attributed" }));
     expect(founding.allocateIfEligible).not.toHaveBeenCalled();
   });

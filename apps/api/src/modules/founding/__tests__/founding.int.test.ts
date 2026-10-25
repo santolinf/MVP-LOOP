@@ -51,8 +51,14 @@ async function eligibleContractor(): Promise<string> {
       lastConfirmedAt: new Date(),
     },
   });
+  // Referral has foreign keys (B5), so each introduced contractor must exist.
+  const referees = await Promise.all(
+    Array.from({ length: 5 }, (_, i) =>
+      prisma.contractor.create({ data: { phone: `+4477008${String(n).padStart(3, "0")}${String(i).padStart(2, "0")}` } }),
+    ),
+  );
   await prisma.referral.createMany({
-    data: Array.from({ length: 5 }, (_, i) => ({ referrerId: c.id, refereeId: `ref-${n}-${i}`, lockedAt: new Date() })),
+    data: referees.map((r) => ({ referrerId: c.id, refereeId: r.id, lockedAt: new Date() })),
   });
   return c.id;
 }

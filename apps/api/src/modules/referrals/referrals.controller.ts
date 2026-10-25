@@ -26,6 +26,11 @@ class IntroducerLookupResultDto extends createZodDto(IntroducerLookupResultSchem
 class SetIntroducerRequestDto extends createZodDto(SetIntroducerRequestSchema) {}
 
 const deviceOf = (v: string | string[] | undefined) => (typeof v === "string" && v.length <= 128 ? v : undefined);
+const evidenceCtx = (req: { ip?: string; headers: Record<string, string | string[] | undefined> }) => ({
+  deviceId: deviceOf(req.headers["x-device-id"]),
+  ip: req.ip,
+  userAgent: typeof req.headers["user-agent"] === "string" ? req.headers["user-agent"].slice(0, 512) : undefined,
+});
 interface HttpReq {
   ip?: string;
   headers: Record<string, string | string[] | undefined>;
@@ -72,7 +77,7 @@ export class ReferralsController {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- documented header, enforced by the interceptor
     @Headers("idempotency-key") _key: string,
   ): Promise<AttributeReferralResultDto> {
-    return this.referrals.attribute(id, body.code, { source: "LINK", deviceId: deviceOf(req.headers["x-device-id"]) });
+    return this.referrals.attribute(id, body.code, { source: "LINK", ...evidenceCtx(req) });
   }
 
   @Get("introducer")
@@ -104,6 +109,6 @@ export class ReferralsController {
     @Body() body: SetIntroducerRequestDto,
     @Req() req: HttpReq,
   ): Promise<AttributeReferralResultDto> {
-    return this.referrals.setIntroducer(id, body.code, { source: body.source, deviceId: deviceOf(req.headers["x-device-id"]) });
+    return this.referrals.setIntroducer(id, body.code, { source: body.source, ...evidenceCtx(req) });
   }
 }

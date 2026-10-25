@@ -98,6 +98,9 @@ model Contractor {
   erasedAt            DateTime?            @db.Timestamptz
   createdAt           DateTime             @default(now()) @db.Timestamptz
   updatedAt           DateTime             @updatedAt @db.Timestamptz
+  /// B5: introductions this contractor made, and the single introduction (if any) that brought them in.
+  introductionsMade   Referral[]           @relation("ReferralReferrer")
+  introducedBy        Referral?            @relation("ReferralReferee")
 }
 
 /// Append-only history of every availability confirmation (Phase 5, B2). Contractor.lastConfirmedAt
@@ -146,7 +149,17 @@ model Referral {
   lockedAt   DateTime? @db.Timestamptz
   /// SHA-256 of the x-device-id header at attribution; used only to cluster same-device registrations.
   deviceHash String?
+  /// B5 attribution evidence for disputes. The code string survives erasure of the introducer (it is random, not personal).
+  codeUsed   String?
+  /// SHA-256 of the client IP and of the user agent at attribution; never the raw values.
+  ipHash        String?
+  userAgentHash String?
   createdAt  DateTime @default(now()) @db.Timestamptz
+
+  /// RESTRICT: contractors are anonymised on erasure, never deleted, so the link can never be orphaned.
+  /// A CHECK (referrerId <> refereeId) lives in the migration.
+  referrer   Contractor @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Restrict)
+  referee    Contractor @relation("ReferralReferee", fields: [refereeId], references: [id], onDelete: Restrict)
 
   @@index([referrerId])
   @@index([referrerId, deviceHash])
