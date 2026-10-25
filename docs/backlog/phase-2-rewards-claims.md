@@ -29,13 +29,12 @@ attribution and permanent account linking, B5) is delivered; see `Referral` in `
 
 - `Referral`: introducer, introduced contractor, registration time, `source`, `codeUsed`, hashed IP / user agent / device,
   locked at GO LIVE, FK-constrained, no self-referral. Phase 2 adds claims that point at these rows; the rows do not change.
-- `Reward` ledger with `@@unique([type, beneficiaryId, qualifyingContractorId])`, statuses PENDING, UNDER_VERIFICATION, APPROVED, PAID.
+- `Reward` ledger (foreign-keyed to contractors at both ends) with `@@unique([type, beneficiaryId, qualifyingContractorId])`, statuses PENDING, UNDER_VERIFICATION, APPROVED, PAID.
 - `RewardsService.openForPlacement`, admin approval with four-eyes, read-only `GET /rewards`.
 - `payouts.live` feature flag (off); `AuditEvent` for every change.
 
 ## Known work when this is picked up
 
-- Add foreign keys on `Reward.beneficiaryId` and `Reward.qualifyingContractorId` (left out of B5 to keep it small).
 - Decide retention for referral and reward evidence after erasure (`TODO(spec)` in `privacy/erasure.ts`).
 - Worked example to test: John introduces Sarah, David and Mike. Sarah qualifies, so John's reward is assessed for Sarah only;
   David and Mike are unaffected.

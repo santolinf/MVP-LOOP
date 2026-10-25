@@ -101,6 +101,9 @@ model Contractor {
   /// B5: introductions this contractor made, and the single introduction (if any) that brought them in.
   introductionsMade   Referral[]           @relation("ReferralReferrer")
   introducedBy        Referral?            @relation("ReferralReferee")
+  /// B5: rewards this contractor is paid, and rewards that exist because this contractor qualified.
+  rewardsEarned       Reward[]             @relation("RewardBeneficiary")
+  rewardsQualified    Reward[]             @relation("RewardQualifier")
 }
 
 /// Append-only history of every availability confirmation (Phase 5, B2). Contractor.lastConfirmedAt
@@ -243,7 +246,12 @@ model Reward {
   verificationRecordedBy String?
   createdAt             DateTime @default(now()) @db.Timestamptz
 
+  /// RESTRICT: contractors are anonymised on erasure, never deleted, so a reward can never be orphaned.
+  beneficiary          Contractor @relation("RewardBeneficiary", fields: [beneficiaryId], references: [id], onDelete: Restrict)
+  qualifyingContractor Contractor @relation("RewardQualifier", fields: [qualifyingContractorId], references: [id], onDelete: Restrict)
+
   @@unique([type, beneficiaryId, qualifyingContractorId])
+  @@index([qualifyingContractorId])
 }
 
 model IdempotencyKey {

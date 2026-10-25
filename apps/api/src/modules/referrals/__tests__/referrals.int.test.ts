@@ -28,7 +28,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  await prisma.$executeRaw`TRUNCATE "Referral", "ReferralFlag", "Contractor" CASCADE`;
+  await prisma.$executeRaw`TRUNCATE "Referral", "ReferralFlag", "Reward", "Contractor" CASCADE`;
 });
 
 describe("Referral integrity against Postgres (B5)", () => {
@@ -69,5 +69,14 @@ describe("Referral integrity against Postgres (B5)", () => {
     const [a, b] = [await contractor(), await contractor()];
     await prisma.referral.create({ data: { referrerId: a.id, refereeId: b.id } });
     await expect(prisma.contractor.delete({ where: { id: a.id } })).rejects.toThrow();
+  });
+
+  it("rejects a reward that points at a contractor that does not exist", async () => {
+    const a = await contractor();
+    const base = { type: "CONTRACTOR_PLACEMENT", amountPence: 5000 };
+    await expect(prisma.reward.create({ data: { ...base, beneficiaryId: a.id, qualifyingContractorId: "missing" } })).rejects.toThrow();
+    await expect(prisma.reward.create({ data: { ...base, beneficiaryId: "missing", qualifyingContractorId: a.id } })).rejects.toThrow();
+    const ok = await prisma.reward.create({ data: { ...base, beneficiaryId: a.id, qualifyingContractorId: a.id } });
+    expect(ok.status).toBe("PENDING");
   });
 });
