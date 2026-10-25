@@ -8,4 +8,10 @@ import type { ReferralListDtoItemsItem } from './referralListDtoItemsItem';
 
 export interface ReferralListDto {
   items: ReferralListDtoItemsItem[];
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  lifetimeCount: number;
+  milestoneReached: boolean;
 }

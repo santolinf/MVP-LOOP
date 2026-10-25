@@ -21,4 +21,8 @@ export interface OtpVerifyDto {
   purpose?: OtpVerifyDtoPurpose;
   registration?: OtpVerifyDtoRegistration;
   attestation?: OtpVerifyDtoAttestation;
+  /** @maxLength 512 */
+  returnToken?: string;
+  /** @maxLength 128 */
+  draftToken?: string;
 }

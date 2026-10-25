@@ -13,10 +13,10 @@ enum EmploymentSituation {
 }
 
 enum ConfirmationSource {
-  CV_PROFILE
-  SMS_REPLY
   WEB
-  ADMIN_CALL
+  APP
+  EMAIL_LINK
+  ADMIN
 }
 
 enum OtpPurpose {
@@ -79,19 +79,54 @@ model Contractor {
   live                Boolean              @default(false)
   paused              Boolean              @default(false)
   searchSuppressed    Boolean              @default(false)
-  operationalSmsConsent Boolean            @default(false)
   marketingConsent    Boolean              @default(false)
   searchColour        String?
   underlyingStatus    String?
   freshnessState      String?
   confirmationChannel String?
+  /// Phase 8: when freshness last became UNCONFIRMED (grey); null while confirmed. Drives escalation.
+  unconfirmedSince    DateTime?            @db.Timestamptz
+  /// Phase 8: CALL_TASK | SUPPRESS once escalation has reached that step; cleared on confirmation.
+  escalationStage     String?
   referralCode        String?              @unique
   foundingPlace       Int?                 @unique
   // CH-06: set on first successful MOBILE_APP sign-in (behaviour lands in a later phase).
   firstAppSignInAt        DateTime?        @db.Timestamptz
   firstAppSignInSessionId String?
+  /// Phase 7: set when the contractor asks to delete their account; the erasure job anonymises the row.
+  erasureRequestedAt  DateTime?            @db.Timestamptz
+  erasedAt            DateTime?            @db.Timestamptz
   createdAt           DateTime             @default(now()) @db.Timestamptz
   updatedAt           DateTime             @updatedAt @db.Timestamptz
+}
+
+/// Append-only history of every availability confirmation (Phase 5, B2). Contractor.lastConfirmedAt
+/// and confirmationSource hold only the latest one.
+model ConfirmationEvent {
+  id                  String               @id @default(uuid())
+  contractorId        String
+  source              ConfirmationSource
+  employmentSituation EmploymentSituation
+  availableFrom       DateTime?            @db.Date
+  contractEndDate     DateTime?            @db.Date
+  confirmedAt         DateTime             @db.Timestamptz
+  createdAt           DateTime             @default(now()) @db.Timestamptz
+
+  @@index([contractorId, confirmedAt])
+}
+
+/// Contractor preferences (Phase 5). Values are validated against the shared enums in
+/// `@loop/contracts` on write; stored as text so adding a value needs no enum migration.
+model ContractorPreferences {
+  contractorId String   @id
+  workTypes    String[]
+  rateBand     String?
+  remote       String?
+  regions      String[]
+  sectors      String[]
+  noticePeriod String?
+  createdAt    DateTime @default(now()) @db.Timestamptz
+  updatedAt    DateTime @updatedAt @db.Timestamptz
 }
 
 model ReminderConfig {
@@ -105,18 +140,66 @@ model Referral {
   id         String   @id @default(uuid())
   referrerId String
   refereeId  String   @unique
+  /// LINK | CODE | VERBAL | ADMIN (Phase 10 override). How the introducer was recorded.
+  source     String   @default("LINK")
+  /// Phase 9: set at completed registration (GO LIVE). Only an audited Admin override changes it afterwards.
+  lockedAt   DateTime? @db.Timestamptz
+  /// SHA-256 of the x-device-id header at attribution; used only to cluster same-device registrations.
+  deviceHash String?
   createdAt  DateTime @default(now()) @db.Timestamptz
 
   @@index([referrerId])
+  @@index([referrerId, deviceHash])
+}
+
+/// Phase 9: same-device and duplicate-identity clusters are flagged for review rather than silently counted.
+model ReferralFlag {
+  id         String    @id @default(uuid())
+  referralId String
+  /// SAME_DEVICE | SELF_IDENTITY
+  reason     String
+  /// OPEN | CLEARED | CONFIRMED. OPEN and CONFIRMED stop the introduction counting.
+  status     String    @default("OPEN")
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+  resolvedAt DateTime? @db.Timestamptz
+  resolvedBy String?
+
+  @@unique([referralId, reason])
+  @@index([status])
 }
 
 model ExtractionRun {
   id           String   @id @default(uuid())
-  contractorId String
-  fields       Json
+  contractorId String?
+  cvUploadId   String   @unique
+  /// PENDING | READY | COULD_NOT_READ | FAILED
+  status       String   @default("PENDING")
+  /// Verified AI suggestions only: [{ id, key, value, sourceExcerpt, confidence }]. Never contractor-confirmed data (A5).
+  fields       Json     @default("[]")
+  error        String?
   createdAt    DateTime @default(now()) @db.Timestamptz
+  completedAt  DateTime? @db.Timestamptz
 
   @@index([contractorId])
+}
+
+/// Values the contractor has confirmed or edited from an extraction run (A5). Separate from AI output.
+model ConfirmedProfileField {
+  id              String   @id @default(uuid())
+  /// Null while the confirmation belongs to an anonymous upload draft; set when the draft is adopted.
+  contractorId    String?
+  draftId         String?
+  extractionRunId String
+  fieldId         String
+  key             String
+  value           String
+  edited          Boolean  @default(false)
+  createdAt       DateTime @default(now()) @db.Timestamptz
+  updatedAt       DateTime @updatedAt @db.Timestamptz
+
+  @@unique([extractionRunId, fieldId])
+  @@index([contractorId])
+  @@index([draftId])
 }
 
 model FoundingCounter {
@@ -131,7 +214,20 @@ model Reward {
   beneficiaryId         String
   qualifyingContractorId String
   amountPence           Int?
+  /// PENDING | UNDER_VERIFICATION | APPROVED | PAID
   status                String   @default("PENDING")
+  assignmentId          String?
+  supplyingCompany      String?
+  serviceStart          DateTime? @db.Date
+  serviceEnd            DateTime? @db.Date
+  /// Agency-supplied evidence reference(s); never contractor-typed (B7).
+  evidence              Json?
+  agencyVerifiedAt      DateTime? @db.Timestamptz
+  approvedAt            DateTime? @db.Timestamptz
+  approvedBy            String?
+  paidAt                DateTime? @db.Timestamptz
+  /// Phase 10: staff member who recorded the agency evidence ("requester" for the four-eyes approval rule).
+  verificationRecordedBy String?
   createdAt             DateTime @default(now()) @db.Timestamptz
 
   @@unique([type, beneficiaryId, qualifyingContractorId])
@@ -143,9 +239,12 @@ model IdempotencyKey {
   createdAt DateTime @default(now()) @db.Timestamptz
 }
 
+/// Append-only (Phase 10): a trigger rejects DELETE and any UPDATE other than the erasure scrub of before/after.
 model AuditEvent {
   id         String   @id @default(uuid())
   actorId    String?
+  /// CONTRACTOR | STAFF | SYSTEM. Staff ids live in StaffUser, a separate realm from Contractor.
+  actorType  String   @default("CONTRACTOR")
   entityType String
   entityId   String
   action     String
@@ -154,9 +253,415 @@ model AuditEvent {
   createdAt  DateTime @default(now()) @db.Timestamptz
 
   @@index([entityType, entityId])
+  @@index([createdAt])
 }
 
 model FeatureFlag {
   key     String  @id
   enabled Boolean @default(false)
+}
+
+/// Fixed-window request counters for global rate limiting (Phase 1). keyHash is SHA-256 of the
+/// IP / account / device identifier, so no personal data is stored. Old windows are purged by a job.
+model RateLimitBucket {
+  scope       String
+  keyHash     String
+  windowStart DateTime @db.Timestamptz
+  count       Int      @default(0)
+
+  @@id([scope, keyHash, windowStart])
+  @@index([windowStart])
+}
+
+/// Immutable record that a person confirmed the eligibility declaration (Phase 3). Never updated.
+/// ipHash is a SHA-256 of the client IP, not the address itself.
+model EligibilityDeclaration {
+  id             String   @id @default(uuid())
+  contractorId   String?
+  draftId        String?
+  ukBased        Boolean
+  rightToWork    Boolean
+  wordingVersion String
+  ipHash         String?
+  createdAt      DateTime @default(now()) @db.Timestamptz
+
+  @@index([contractorId])
+  @@index([draftId])
+}
+
+/// Short-lived anonymous token that binds pre-registration uploads and the declaration to a browser
+/// session until the account adopts them at registration. Only the token hash is stored.
+model UploadDraft {
+  id           String    @id @default(uuid())
+  tokenHash    String    @unique
+  ipHash       String?
+  expiresAt    DateTime  @db.Timestamptz
+  adoptedById  String?
+  adoptedAt    DateTime? @db.Timestamptz
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+
+  @@index([expiresAt])
+  @@index([ipHash, createdAt])
+}
+
+/// A CV file in the private bucket. Status: PENDING (presigned, not yet uploaded) -> SCANNING -> READY,
+/// or REJECTED (object deleted). The object key is never exposed to clients.
+model CvUpload {
+  id           String    @id @default(uuid())
+  contractorId String?
+  draftId      String?
+  status       String    @default("PENDING")
+  declaredMime String
+  declaredSize Int
+  sizeBytes    Int?
+  detectedType String?
+  quarantineKey String
+  objectKey    String?
+  ipHash       String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+  completedAt  DateTime? @db.Timestamptz
+
+  @@index([contractorId])
+  @@index([draftId])
+  @@index([status, createdAt])
+  @@index([ipHash, createdAt])
+}
+
+/// One consent grant per purpose (Phase 6, ADR 0006). Withdrawal stamps `withdrawnAt`; a later re-grant is a new row,
+/// so the history is kept. At most one row per (contractor, purpose) is active (partial unique index in the migration).
+/// ipHash is a SHA-256 of the client IP, not the address itself.
+model ConsentRecord {
+  id             String    @id @default(uuid())
+  contractorId   String
+  /// PROFILE_VISIBILITY | OPERATIONAL_EMAIL | LOOP_MARKETING | PARTNER_MARKETING (validated in @loop/domain)
+  purpose        String
+  wordingVersion String
+  /// WEB | APP | ADMIN
+  source         String
+  ipHash         String?
+  grantedAt      DateTime  @db.Timestamptz
+  withdrawnAt    DateTime? @db.Timestamptz
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+
+  @@index([contractorId, purpose, grantedAt])
+}
+
+/// Phase 7: one row per CV the contractor has uploaded, numbered per contractor. The file lives in CvUpload;
+/// deleting the CV removes the versions with it.
+model CvVersion {
+  id            String   @id @default(uuid())
+  contractorId  String
+  cvUploadId    String   @unique
+  versionNumber Int
+  createdAt     DateTime @default(now()) @db.Timestamptz
+
+  @@unique([contractorId, versionNumber])
+}
+
+/// Phase 7: a difference between a newer CV and the confirmed profile. Nothing applies until the contractor
+/// accepts it (A5). `material` marks roles, dates, skills and clearance.
+model CvChange {
+  id               String    @id @default(uuid())
+  contractorId     String
+  cvVersionId      String
+  key              String
+  /// ADDED | REMOVED | CHANGED
+  kind             String
+  material         Boolean
+  previousFieldId  String?
+  previousValue    String?
+  proposedFieldId  String?
+  proposedValue    String?
+  proposedExcerpt  String?
+  /// PENDING | ACCEPTED | REJECTED
+  status           String    @default("PENDING")
+  resolvedAt       DateTime? @db.Timestamptz
+  createdAt        DateTime  @default(now()) @db.Timestamptz
+
+  @@index([contractorId, status])
+  @@index([cvVersionId])
+}
+
+/// Phase 7: assignment history typed by the contractor. Also the evidence source for the Phase 9 reward.
+model Assignment {
+  id              String    @id @default(uuid())
+  contractorId    String
+  clientName      String
+  supplyingCompany String?
+  role            String
+  startDate       DateTime  @db.Date
+  endDate         DateTime? @db.Date
+  assignmentRef   String?
+  createdAt       DateTime  @default(now()) @db.Timestamptz
+  updatedAt       DateTime  @updatedAt @db.Timestamptz
+
+  @@index([contractorId, startDate])
+}
+
+/// Phase 7 app-spec fields. Text values validated against the shared enums in `@loop/contracts` on write.
+model ContractorProfileDetails {
+  contractorId      String   @id
+  /// YES | NO
+  securityClearance String?
+  /// INSIDE | OUTSIDE | EITHER | UNSURE
+  ir35Status        String?
+  /// FULL_TIME | PART_TIME | FLEXIBLE
+  workPattern       String?
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @updatedAt @db.Timestamptz
+}
+
+// ---- Phase 8: messaging engine and reminders ------------------------------------------------------------------
+
+/// Append-only history of the admin-editable cadence config. The engine reads the highest version and records it
+/// on each ScheduledReminder, so a send can be traced to the thresholds in force. Shape: `ReminderConfig` in @loop/domain.
+model ReminderConfigVersion {
+  version   Int      @id @default(autoincrement())
+  config    Json
+  note      String?
+  createdBy String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+}
+
+/// One planned reminder occurrence. (contractorId, dedupeKey) is the idempotency key: contractor + cadence + window.
+model ScheduledReminder {
+  id            String    @id @default(uuid())
+  contractorId  String
+  /// ReminderType from @loop/domain
+  type          String
+  dedupeKey     String
+  dueAt         DateTime  @db.Timestamptz
+  /// PENDING | SENT | CANCELLED | SKIPPED
+  status        String    @default("PENDING")
+  /// STALE | OBSOLETE | SATISFIED (set with CANCELLED / SKIPPED)
+  resolution    String?
+  configVersion Int
+  resolvedAt    DateTime? @db.Timestamptz
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @db.Timestamptz
+
+  @@unique([contractorId, dedupeKey])
+  @@index([status, dueAt])
+}
+
+/// An outbound message on one channel (EMAIL now; PUSH later). The recipient address is not stored: it is read from
+/// the contractor at send time, so erasure leaves nothing behind here.
+model Message {
+  id                String    @id @default(uuid())
+  contractorId      String
+  channel           String    @default("EMAIL")
+  /// REMINDER | SECURITY | CONFIRMATION | ADMIN
+  kind              String
+  templateKey       String
+  templateVersion   Int
+  /// At most one message per reminder.
+  reminderId        String?   @unique
+  /// Phase 12: set for an admin broadcast or targeted send; at most one message per contractor per campaign.
+  campaignId        String?
+  /// QUEUED | SENT | FAILED | BOUNCED | COMPLAINED
+  status            String    @default("QUEUED")
+  providerMessageId String?   @unique
+  sentAt            DateTime? @db.Timestamptz
+  createdAt         DateTime  @default(now()) @db.Timestamptz
+
+  @@unique([campaignId, contractorId])
+  @@index([contractorId, createdAt])
+}
+
+/// Append-only delivery events for a Message. providerEventId makes webhook retries idempotent.
+model DeliveryLog {
+  id              String   @id @default(uuid())
+  messageId       String
+  /// QUEUED | SENT | FAILED | DELIVERED | BOUNCED | COMPLAINED
+  event           String
+  detail          Json?
+  providerEventId String?  @unique
+  occurredAt      DateTime @db.Timestamptz
+  createdAt       DateTime @default(now()) @db.Timestamptz
+
+  @@index([messageId, occurredAt])
+}
+
+/// Addresses we must not email. Keyed by SHA-256 of the lower-cased address, so no address is stored.
+model EmailSuppression {
+  emailHash String   @id
+  /// HARD_BOUNCE | COMPLAINT | MANUAL
+  reason    String
+  createdAt DateTime @default(now()) @db.Timestamptz
+}
+
+/// Single-purpose "still the same" link. Only the SHA-256 of the token is stored.
+model ConfirmLink {
+  id           String    @id @default(uuid())
+  contractorId String
+  reminderId   String?
+  /// AVAILABILITY_STILL_SAME
+  action       String
+  tokenHash    String    @unique
+  /// factsFingerprint() of the availability facts when the link was issued
+  fingerprint  String
+  expiresAt    DateTime  @db.Timestamptz
+  usedAt       DateTime? @db.Timestamptz
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+
+  @@index([contractorId])
+}
+
+/// One-way messages from the LOOP team to a contractor (no recruiter chat). Separate from Notification.
+model LoopMessage {
+  id           String    @id @default(uuid())
+  contractorId String
+  subject      String
+  body         String
+  sentBy       String?
+  readAt       DateTime? @db.Timestamptz
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+
+  @@index([contractorId, createdAt])
+}
+
+/// System notifications (reminders, confirmations, security). Separate from LoopMessage.
+model Notification {
+  id           String    @id @default(uuid())
+  contractorId String
+  /// REMINDER | CONFIRMATION | SECURITY
+  kind         String
+  title        String
+  body         String
+  /// Optional in-site return target id (RETURN_TARGETS), never a URL.
+  target       String?
+  readAt       DateTime? @db.Timestamptz
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+
+  @@index([contractorId, createdAt])
+}
+
+/// Escalation step 2: an Admin phones the contractor. One open task per contractor (partial unique index in the migration).
+model ManualCallTask {
+  id           String    @id @default(uuid())
+  contractorId String
+  reason       String
+  /// OPEN | DONE | CANCELLED
+  status       String    @default("OPEN")
+  resolvedAt   DateTime? @db.Timestamptz
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+
+  @@index([contractorId, status])
+}
+
+// ---- Phase 10: admin and operations ---------------------------------------------------------------------------
+// Staff are a separate auth realm from contractors: own accounts, OTP, mandatory TOTP, short sessions.
+
+model StaffUser {
+  id             String    @id @default(uuid())
+  /// Lower-cased.
+  email          String    @unique
+  name           String?
+  /// READ_ONLY | OPERATOR | ADMIN (see @loop/domain admin permissions)
+  role           String
+  active         Boolean   @default(true)
+  /// AES-256-GCM encrypted TOTP secret (`iv.tag.ciphertext`, base64url). Set at enrolment start.
+  totpSecretEnc  String?
+  /// Set once the first code has been verified; until then the account is not enrolled.
+  totpEnrolledAt DateTime? @db.Timestamptz
+  /// Time step of the last accepted code, so a code cannot be replayed.
+  lastTotpStep   Int?
+  lastSignInAt   DateTime? @db.Timestamptz
+  createdBy      String?
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @db.Timestamptz
+}
+
+/// Staff email sign-in code. Keyed by HMAC of the address so unknown addresses look identical (like EmailOtp).
+model StaffOtp {
+  id         String    @id @default(uuid())
+  emailHash  String
+  codeHash   String
+  expiresAt  DateTime  @db.Timestamptz
+  attempts   Int       @default(0)
+  consumedAt DateTime? @db.Timestamptz
+  requestIp  String?
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+
+  @@index([emailHash, createdAt])
+  @@index([requestIp, createdAt])
+}
+
+/// `mfaVerifiedAt` null = OTP passed but TOTP outstanding; such a session can only complete the second factor.
+model StaffSession {
+  id            String    @id @default(uuid())
+  staffId       String
+  mfaVerifiedAt DateTime? @db.Timestamptz
+  expiresAt     DateTime  @db.Timestamptz
+  revokedAt     DateTime? @db.Timestamptz
+  lastUsedAt    DateTime? @db.Timestamptz
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+
+  @@index([staffId])
+}
+
+/// Append-only versions of admin-managed templates. The latest version of a key wins; code defaults apply until a
+/// key has a version. kind: REMINDER_EMAIL | LOOP_MESSAGE | NOTIFICATION.
+model TemplateVersion {
+  id        String   @id @default(uuid())
+  kind      String
+  key       String
+  version   Int
+  subject   String
+  /// Paragraphs; `{{name}}` placeholders are merge fields (allow-listed per kind in @loop/domain).
+  body      String[]
+  note      String?
+  createdBy String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@unique([key, version])
+  @@index([kind])
+}
+
+// ---- Phase 12: admin communications ---------------------------------------------------------------------------
+
+/// A broadcast or targeted admin send. Content is snapshotted here so the log shows exactly what went out.
+model Campaign {
+  id                String    @id @default(uuid())
+  name              String
+  /// BROADCAST | TARGETED (see @loop/domain campaigns)
+  kind              String
+  /// BROADCAST: { liveOnly, situations, colours }. TARGETED: { contractorIds }.
+  audience          Json
+  subject           String
+  body              String[]
+  /// PENDING_APPROVAL | SENDING | SENT | REJECTED | CANCELLED
+  status            String
+  /// Eligible recipients when submitted (after the consent filter); skipped ones are not counted.
+  recipientCount    Int
+  skippedCount      Int
+  approvalRequired  Boolean
+  thresholdAtSubmit Int
+  createdBy         String
+  approvedBy        String?
+  approvedAt        DateTime? @db.Timestamptz
+  decisionNote      String?
+  sentAt            DateTime? @db.Timestamptz
+  createdAt         DateTime  @default(now()) @db.Timestamptz
+  updatedAt         DateTime  @updatedAt @db.Timestamptz
+
+  @@index([status, createdAt])
+}
+
+/// One row per contractor the audience resolved to. Holds no address; the email is read at send time.
+model CampaignRecipient {
+  id           String    @id @default(uuid())
+  campaignId   String
+  contractorId String
+  /// QUEUED | SENT | FAILED | SKIPPED
+  status       String    @default("QUEUED")
+  /// SkipReason from @loop/domain, or CANCELLED
+  skipReason   String?
+  messageId    String?
+  processedAt  DateTime? @db.Timestamptz
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+
+  @@unique([campaignId, contractorId])
+  @@index([campaignId, status])
+  @@index([contractorId])
 }

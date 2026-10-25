@@ -43,6 +43,14 @@ describe("bearer", () => {
   });
 });
 
+describe("staff realm", () => {
+  it("ignores a contractor session cookie on admin routes (no contractor CSRF demanded)", async () => {
+    const r = run({ method: "POST", url: "/api/v1/admin/auth/otp/verify", headers: { cookie: cookie() } });
+    await expect(r.result).resolves.toBe(true);
+    expect(r.req.contractorId).toBeUndefined();
+  });
+});
+
 describe("cookie", () => {
   it("passes through with no cookie or a stale one", async () => {
     const none = run({});
@@ -65,10 +73,10 @@ describe("cookie", () => {
     await expect(ok.result).resolves.toBe(true);
     expect(ok.req.contractorId).toBe("c1");
   });
-  it.each(["/api/v1/auth/otp/request", "/api/v1/auth/otp/verify", "/api/v1/auth/token/refresh"])("exempts %s from CSRF", async (url) => {
+  it.each(["/api/v1/auth/otp/request", "/api/v1/auth/otp/verify", "/api/v1/auth/token/refresh", "/api/v1/auth/return-target"])("exempts %s from CSRF", async (url) => {
     await expect(run({ method: "POST", url, headers: { cookie: cookie() } }).result).resolves.toBe(true);
   });
-  it("does not exempt logout", async () => {
-    await expect(run({ method: "POST", url: "/api/v1/auth/logout", headers: { cookie: cookie() } }).result).rejects.toThrow("CSRF");
+  it.each(["/api/v1/auth/logout", "/api/v1/auth/logout-all"])("does not exempt %s", async (url) => {
+    await expect(run({ method: "POST", url, headers: { cookie: cookie() } }).result).rejects.toThrow("CSRF");
   });
 });

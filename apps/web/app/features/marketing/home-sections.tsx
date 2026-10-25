@@ -1,188 +1,318 @@
-import { ButtonLink, Card, Eyebrow, Lead, Muted, Section, Standout } from "./primitives";
+import { Fragment } from "react";
+import { COPY } from "../../lib/copy";
+import { ButtonLink, Eyebrow, Lead, Muted, Section, Standout } from "./primitives";
+import { INVITE_PATH, JOIN_PATH, useSignedIn } from "./use-member-cta";
 
-// "Join LOOP" leads to the UK eligibility gate, which then continues to the CV step.
-export const JOIN_PATH = "/join";
+export { JOIN_PATH };
 
-const OVERVIEW = [
-  { title: "Why LOOP?", text: "Help your next contract find you.", href: "#why-loop" },
-  { title: "Founding Membership", text: "Join early. Introduce five. Qualify for life.", href: "#founding" },
-  { title: "Share in our success", text: "Proposed 5% profit and sale participation.", href: "#profit-sharing" },
-  { title: "Introduce IT Contractors", text: "£50 qualifying rewards.", href: "#introductions" },
-  { title: "LOOP Radar", text: "More opportunities finding you. Stage 2.", href: "#radar" },
-];
+const H = COPY.home;
+
+const H2 = "mb-5 mt-3 text-[clamp(35px,4vw,55px)] font-black leading-[1.12] tracking-[-0.04em] text-fg";
+const H3 = "text-[23px] font-bold tracking-[-0.02em]";
+
+function PhoneMock() {
+  const p = H.phone;
+  return (
+    <div className="relative flex flex-col items-center">
+      <div
+        aria-hidden="true"
+        className="w-[310px] max-w-full rounded-[44px] border-[9px] border-[#2b3544] bg-[#101722] p-5 shadow-phone md:rotate-[5deg]"
+      >
+        <div className="mx-auto -mt-[11px] mb-[30px] h-5 w-[88px] rounded-[20px] bg-[#060a10]" />
+        <div className="flex items-center justify-between text-[23px] font-black">
+          <span>{p.title}</span>
+          <span className="h-[9px] w-[9px] rounded-full bg-lime" />
+        </div>
+        <p className="my-[13px] text-[13px] text-muted">{p.sub}</p>
+        <div className="mt-7 rounded-2xl border border-[#466944] bg-[#1c2b23] p-[22px]">
+          <span className="text-xs font-extrabold uppercase leading-[1.55] tracking-[0.08em] text-lime">
+            <span aria-hidden="true">●</span> {p.badge}
+          </span>
+          <strong className="my-[10px] block text-[25px] font-bold leading-[1.55]">{p.status}</strong>
+          <span className="text-[13px] text-[#c4d4c9]">{p.ends}</span>
+          <div className="mt-4 rounded-[10px] bg-lime p-[13px] text-center font-[850] text-[#10150c]">{p.confirm}</div>
+          <div className="mt-2 rounded-[10px] bg-[#293747] p-[13px] text-center font-[850] text-[#f3f5f8]">{p.update}</div>
+        </div>
+        <dl className="text-[13px]">
+          {p.rows.map(([k, v]) => (
+            <div key={k} className="flex justify-between border-b border-[#2a3544] py-[13px] text-[#bdc7d3]">
+              <dt>{k}</dt>
+              <dd className="font-bold text-fg">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      <p className="absolute inset-x-0 -bottom-8 text-center text-xs uppercase tracking-wide text-muted">{H.hero.mockLabel}</p>
+    </div>
+  );
+}
 
 export function Hero() {
+  const h = H.hero;
   return (
-    <Section id="why-loop">
-      <h1 className="mb-4 text-4xl font-bold leading-tight md:text-5xl">
-        Your next contract. Your network. <em className="not-italic text-lime">Your share.</em>
-      </h1>
-      <Lead>We’re building LOOP with UK IT contractors, for UK IT contractors.</Lead>
-      <Muted className="mb-3">
-        One live profile. Better visibility to recruitment agencies. Less time searching for your next contract.
-      </Muted>
-      <Muted className="mb-6">And if you help us build the network, we want you to share in its success.</Muted>
-      <ul className="mb-6 flex flex-wrap gap-x-6 gap-y-2 text-lime">
-        <li>✓ Free to join</li>
-        <li>✓ Easy availability updates</li>
-      </ul>
-      <ButtonLink to={JOIN_PATH}>Join LOOP →</ButtonLink>
+    <section id="top" className="scroll-mt-20 overflow-hidden border-b border-[#202a37] bg-hero">
+      <div className="mx-auto grid max-w-page items-center gap-10 px-[26px] pb-[50px] pt-[50px] md:min-h-[690px] md:grid-cols-[1.06fr_.94fr] md:pb-[70px] md:pt-[65px]">
+        <div>
+          <Eyebrow>{h.eyebrow}</Eyebrow>
+          <h1 className="mb-[25px] mt-[15px] text-[clamp(48px,6vw,79px)] font-black leading-[1.06] tracking-[-0.055em] text-fg">
+            {h.titleA}
+            <span className="text-lime">{h.titleB}</span>
+          </h1>
+          <Lead className="my-5">{h.lead}</Lead>
+          <Muted className="my-4 max-w-[560px]">{h.body}</Muted>
+          <div className="mt-[30px] flex flex-wrap gap-[13px]">
+            <ButtonLink to={JOIN_PATH}>{h.join}</ButtonLink>
+            <ButtonLink to="/#how" outline>
+              {h.how}
+            </ButtonLink>
+          </div>
+          <p className="my-[13px] text-[13px] text-[#b0bdcc]">{h.micro}</p>
+        </div>
+        <PhoneMock />
+      </div>
+    </section>
+  );
+}
+
+function Intro({
+  eyebrow,
+  title,
+  body,
+  lime,
+}: {
+  eyebrow: string;
+  title: readonly string[];
+  body?: string;
+  lime?: boolean;
+}) {
+  return (
+    <div className="text-center">
+      <Eyebrow>{eyebrow}</Eyebrow>
+      <h2 className={H2}>
+        {title.map((line, i) => (
+          <Fragment key={line}>
+            {i > 0 && <br />}
+            {lime && i === title.length - 1 ? <span className="text-lime">{line}</span> : line}
+          </Fragment>
+        ))}
+      </h2>
+      {body && <Muted className="mx-auto max-w-[670px]">{body}</Muted>}
+    </div>
+  );
+}
+
+export function TodayVsLoop() {
+  const w = H.why;
+  return (
+    <Section id="why">
+      <Intro eyebrow={w.eyebrow} title={w.title} body={w.body} lime />
+      <div className="mt-[52px] grid gap-[55px] md:grid-cols-2">
+        <div className="rounded-[20px] border border-[#4a3e45] bg-[#1c171f] p-7">
+          <h3 className={`${H3} mb-3 text-[#ffb4bb]`}>{w.todayTitle}</h3>
+          <ul>
+            {w.today.map((t) => (
+              <li key={t} className="mt-[13px] border-t border-[#ffffff20] py-[13px] text-[#c4cdd7]">
+                <span aria-hidden="true" className="mr-2 text-red">
+                  ✕
+                </span>
+                {t}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="rounded-[20px] border border-[#4b7542] bg-[#15221b] p-7">
+          <h3 className={`${H3} mb-3 text-lime`}>{w.loopTitle}</h3>
+          <ul>
+            {w.loop.map((t) => (
+              <li key={t} className="mt-[13px] border-t border-[#ffffff20] py-[13px] text-[#c4cdd7]">
+                <span aria-hidden="true" className="mr-2 text-lime">
+                  ✓
+                </span>
+                {t}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
     </Section>
   );
 }
 
-export function OverviewStrip() {
+export function HowItWorks() {
+  const s = H.how;
   return (
-    <nav aria-label="Page sections" className="mx-auto max-w-page px-5">
-      <ul className="grid grid-cols-2 gap-3 md:grid-cols-5">
-        {OVERVIEW.map((o) => (
-          <li key={o.href}>
-            <a href={o.href} className="block h-full rounded-card border border-line bg-panel p-4 hover:border-cyan">
-              <strong className="block text-fg">{o.title}</strong>
-              <span className="text-sm text-muted">{o.text}</span>
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
-
-const STEPS = [
-  { n: "01", title: "Join LOOP", text: "Activate your profile" },
-  { n: "02", title: "Introduce 5", text: "UK IT contractors who register" },
-  { n: "03", title: "Stay current", text: "Keep availability updated" },
-];
-
-export function FoundingSection() {
-  return (
-    <Section id="founding" alt>
-      <h2 className="mb-3 text-3xl font-bold">Become a Founding Member for life</h2>
-      <Lead>The first 50,000 qualifying UK IT contractors.</Lead>
-      <Muted className="mb-8">
-        Help us build LOOP and secure your Founding Membership before commercial launch.
-      </Muted>
-      <ol className="mb-8 grid gap-4 md:grid-cols-3">
-        {STEPS.map((s) => (
-          <li key={s.n}>
-            <Card className="h-full">
-              <span className="text-2xl font-bold text-cyan">{s.n}</span>
-              <h3 className="mt-2 text-xl font-semibold">{s.title}</h3>
-              <Muted>{s.text}</Muted>
-            </Card>
+    <Section id="how" dark>
+      <Intro eyebrow={s.eyebrow} title={s.title} body={s.body} />
+      <ol className="mt-[45px] grid gap-4 md:grid-cols-3">
+        {s.steps.map((st) => (
+          <li key={st.n} className="rounded-[18px] border border-[#344354] bg-[#121a26] px-[25px] pb-[25px] pt-[31px]">
+            <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-lime">
+              {st.n} / {st.tag}
+            </p>
+            <h3 className={`${H3} mb-[15px] mt-[13px] text-fg`}>{st.title}</h3>
+            <Muted className="mb-4">{st.text}</Muted>
           </li>
         ))}
       </ol>
-      <p className="rounded-card border border-lime p-4 text-fg">
-        Once qualified, your Founding Membership is locked in for life. Complete the criteria while places remain. No
-        need to wait for LOOP to launch commercially.
-      </p>
+      <Standout>{s.closing}</Standout>
     </Section>
   );
 }
 
-export function ProfitSharingSection() {
+export function LiveAndRadar() {
+  const r = H.radar;
   return (
-    <Section id="profit-sharing">
-      <h2 className="mb-3 text-3xl font-bold">Share in LOOP’s success</h2>
-      <Lead>Help us build LOOP. Share in what we achieve.</Lead>
-      {/* Percentages are display copy only; eligibility is stored, never calculated here (B10). */}
-      <div className="my-8 grid gap-4 md:grid-cols-2">
-        <Card>
-          <span className="text-4xl font-bold text-lime">5%</span>
-          <h3 className="mt-2 text-xl font-semibold">Of LOOP’s annual net profits</h3>
-          <Muted>Shared between eligible Founding Members when LOOP makes a profit.</Muted>
-        </Card>
-        <Card>
-          <span className="text-4xl font-bold text-lime">5%</span>
-          <h3 className="mt-2 text-xl font-semibold">If LOOP is sold</h3>
-          <Muted>Shared between eligible Founding Members if LOOP is sold.</Muted>
-        </Card>
+    <Section id="radar">
+      <Intro eyebrow={r.eyebrow} title={r.title} />
+      <div className="mt-11 grid items-center gap-[15px] md:grid-cols-[1fr_90px_1fr]">
+        <div className="min-h-[254px] rounded-3xl border border-[#354556] bg-[#141d2a] p-8">
+          <p className="text-xs font-[850] uppercase tracking-[0.12em] text-lime">{r.liveBadge}</p>
+          <h3 className="my-3 text-[26px] font-bold leading-[1.55] tracking-[-0.02em] text-fg">{r.liveTitle}</h3>
+          <Muted>{r.liveText}</Muted>
+        </div>
+        <div aria-hidden="true" className="rotate-90 text-center text-[45px] text-lime md:rotate-0">
+          ↔
+        </div>
+        <div className="min-h-[254px] rounded-3xl border border-[#3e4a6b] bg-[#161b2b] p-8">
+          <p className="text-xs font-[850] uppercase leading-[19px] tracking-[0.12em] text-indigo">{r.radarLabel}</p>
+          <span className="mt-2.5 inline-block rounded-full border border-[#3e4a6b] px-3 py-1 text-xs font-[850] uppercase leading-[18px] tracking-[0.12em] text-indigo">
+            {r.radarBadge}
+          </span>
+          <h3 className="my-3 text-[26px] font-bold leading-[1.55] tracking-[-0.02em] text-fg">{r.radarTitle}</h3>
+          <Muted>{r.radarText}</Muted>
+        </div>
       </div>
-      <Muted className="mb-6 text-sm">
-        Proposed benefits, subject to final legal, tax and eligibility rules. Founding Membership is for life once
-        earned, but payments are not guaranteed. The scheme is intended as contractual participation, not company
-        equity.
-      </Muted>
-      <ButtonLink to="/founding" outline>
-        Learn about Founding Membership →
-      </ButtonLink>
+      <Muted className="mx-auto mb-4 mt-[25px] max-w-[670px] text-center text-sm leading-[25px]">{r.note}</Muted>
     </Section>
   );
 }
 
-export function IntroductionsSection() {
+function InviteLink({ outline, guestLabel }: { outline?: boolean; guestLabel: string }) {
+  const signedIn = useSignedIn();
+  const to = signedIn ? INVITE_PATH : JOIN_PATH;
+  const label = signedIn ? H.rewards.ctaIn : guestLabel;
   return (
-    <Section id="introductions" alt>
-      <Eyebrow>Introduce IT Contractors</Eyebrow>
-      <h2 className="mb-3 text-3xl font-bold">Help us grow. Get rewarded.</h2>
-      <Muted className="mb-8">
-        Introduce five UK IT contractors who successfully register to qualify for Founding Membership.{" "}
-        <strong className="text-fg">But why stop at five?</strong> Keep introducing more and increase your potential
-        £50 rewards.
-      </Muted>
-      <div className="mb-6 grid gap-4 md:grid-cols-2">
-        <Card>
-          <span className="text-3xl font-bold text-lime">£50</span>
-          <h3 className="mt-2 text-xl font-semibold">For you</h3>
-          <Muted>Complete your first qualifying LOOP contract.</Muted>
-        </Card>
-        <Card>
-          <span className="text-3xl font-bold text-lime">£50</span>
-          <h3 className="mt-2 text-xl font-semibold">For every successful introduction</h3>
-          <Muted>
-            When someone you’ve introduced completes their first qualifying LOOP contract.
-          </Muted>
-        </Card>
+    <ButtonLink to={to} outline={outline}>
+      {label} →
+    </ButtonLink>
+  );
+}
+
+export function Rewards() {
+  const r = H.rewards;
+  return (
+    <Section id="rewards" dark>
+      <Intro eyebrow={r.eyebrow} title={r.title} body={r.body} lime />
+      <div className="mt-[42px] grid gap-5 md:grid-cols-2">
+        <div className="rounded-[23px] border border-[#3c4a58] bg-reward-grad p-[35px]">
+          <Eyebrow compact>{r.foundingEyebrow}</Eyebrow>
+          <h3 className={`${H3} my-[10px] text-fg`}>{r.foundingTitle}</h3>
+          <ul className="mt-4 space-y-2">
+            {r.pools.map((p) => (
+              <li key={p.title} className="flex items-baseline gap-3">
+                <span className="text-[clamp(38px,5vw,56px)] font-black leading-none tracking-[-0.04em] text-fg">
+                  {p.big}
+                </span>
+                <span className="font-[750] text-fg">{p.title}</span>
+              </li>
+            ))}
+          </ul>
+          <Muted className="mt-4">{r.foundingText}</Muted>
+          <p className="my-[13px] text-xs leading-[1.65] text-[#99a8b7]">{r.disclaimer}</p>
+          <div className="mt-[23px] border-t border-[#ffffff25] pt-5">
+            <InviteLink outline guestLabel={r.ctaOutFounding} />
+          </div>
+        </div>
+        <div className="rounded-[23px] border border-[#3c4a58] bg-reward-grad p-[35px]">
+          <Eyebrow compact>{r.exampleEyebrow}</Eyebrow>
+          <h3 className={`${H3} my-[10px] text-fg`}>{r.exampleTitle}</h3>
+          <Muted className="mt-4">{r.example}</Muted>
+          <div className="my-[30px] flex flex-wrap items-center gap-4">
+            {r.persons.map((p, i) => (
+              <Fragment key={p.name}>
+                {i > 0 && (
+                  <span aria-hidden="true" className="text-[30px] font-black text-lime">
+                    +
+                  </span>
+                )}
+                <div className="min-w-[150px] flex-1 rounded-[17px] border border-[#34475b] bg-[#1d2a38] p-[22px] text-center">
+                  <span aria-hidden="true">👤</span>
+                  <p className="text-[23px] font-bold">{p.name}</p>
+                  <p className="text-[30px] font-black text-lime">{p.amount}</p>
+                  <p className="text-xs text-[#99a8b7]">{p.caption}</p>
+                </div>
+              </Fragment>
+            ))}
+          </div>
+          <p className="mt-4 text-muted">
+            <strong className="font-bold text-lime">{r.inviteMany}</strong>
+            {r.inviteManyRest}
+          </p>
+          {r.exampleNotes.map((n) => (
+            <p key={n} className="mt-[14px] border-l-[3px] border-lime pl-4 text-sm text-[#bec8d5]">
+              {n}
+            </p>
+          ))}
+          <div className="mt-[23px] border-t border-[#ffffff25] pt-5">
+            <p className="mb-4 text-muted">
+              <strong className="font-bold text-fg">{r.invitePrompt}</strong>
+              <br />
+              {r.invitePromptRest}
+            </p>
+            <InviteLink guestLabel={r.ctaOut} />
+          </div>
+        </div>
       </div>
-      <Muted className="mb-6 text-sm">
-        <strong className="text-fg">Unlimited direct introductions.</strong> £50 per successful introduction, paid
-        once the referred contractor completes three months of agency-verified service on their first qualifying LOOP
-        contract. One-off reward per qualifying contractor.
-      </Muted>
-      <ButtonLink to="/introduce">Introduce IT Contractors →</ButtonLink>
     </Section>
   );
 }
 
-export function RadarSection() {
+export function NetworkLoop() {
+  const n = H.network;
   return (
-    <Section id="radar" narrow>
-      <Eyebrow>LOOP Radar</Eyebrow>
-      <span className="mb-3 inline-block rounded-full border border-line px-3 py-1 text-xs font-semibold text-cyan">
-        COMING IN STAGE 2
-      </span>
-      <h2 className="mb-3 text-3xl font-bold">Less searching. More opportunities finding you.</h2>
-      <Muted>
-        Live IT contract requirements matching your skills, rate, location and availability — brought together for
-        you.
-      </Muted>
-      <Standout>One profile. Relevant opportunities. Less searching.</Standout>
-      <Muted className="text-sm">
-        Planned for Stage 2, not available at initial launch. Coverage will grow as LOOP develops.
-      </Muted>
+    <Section id="network">
+      <Intro eyebrow={n.eyebrow} title={n.title} body={n.body} />
+      <ol className="my-[45px] grid grid-cols-2 gap-3 md:grid-cols-4">
+        {n.steps.map((s, i) => (
+          <li
+            key={s}
+            className="relative rounded-2xl border border-[#435266] bg-[#17202d] p-[23px] text-center font-[750]"
+          >
+            <span className="sr-only">{i + 1}. </span>
+            {s}
+            {i < n.steps.length - 1 && (
+              <span
+                aria-hidden="true"
+                className="absolute -right-[11px] top-1/2 hidden -translate-y-1/2 text-lime md:block"
+              >
+                →
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+      <p className="mb-4 text-center font-[850] text-lime">{n.closing}</p>
     </Section>
   );
 }
 
 export function FinalCta() {
+  const f = H.final;
   return (
-    <Section alt narrow>
-      <h2 className="mb-4 text-3xl font-bold">Let’s build LOOP together.</h2>
-      <Muted className="mb-3">
-        We’re starting with UK IT contractors and building the network before launching agency access at scale.
-      </Muted>
-      <Muted className="mb-3">
-        Join now, keep your availability current and introduce 5 UK IT contractors who register to qualify for
-        Founding Membership.{" "}
-        <strong className="text-fg">
-          Introduce more than five to increase your potential £50 referral rewards.
-        </strong>{" "}
-        Give us a little time to build something worthwhile.
-      </Muted>
-      <Standout>Join early. Secure your place. Share in our future.</Standout>
-      <ButtonLink to={JOIN_PATH}>Join LOOP →</ButtonLink>
-      <p className="mt-8 text-muted">Stay current. Stay visible. Stay in the LOOP.</p>
+    <Section id="join" line>
+      <div className="rounded-[30px] border border-[#425d4c] bg-cta-grad px-[30px] py-[68px] text-center">
+        <Eyebrow>{f.eyebrow}</Eyebrow>
+        <h2 className={`${H2} mx-auto mb-[22px] mt-[14px] max-w-[760px]`}>
+          {f.title[0]}
+          <br />
+          {f.title[1]}
+          <br />
+          <span className="text-lime">{f.title[2]}</span>
+        </h2>
+        <Muted className="mx-auto mb-7 max-w-[630px]">{f.body}</Muted>
+        <ButtonLink to={JOIN_PATH}>{COPY.primary} →</ButtonLink>
+      </div>
+      <p className="mx-auto mt-5 max-w-[900px] text-center text-xs text-[#99a8b7]">{f.disclaimer}</p>
     </Section>
   );
 }

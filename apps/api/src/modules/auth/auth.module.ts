@@ -26,6 +26,7 @@ import { AUTH_SETTINGS, SessionService, type AuthSettings } from "./session.serv
           from: env.EMAIL_FROM,
           smtpHost: env.SMTP_HOST,
           smtpPort: env.SMTP_PORT,
+          postmarkToken: env.POSTMARK_SERVER_TOKEN,
           production: env.NODE_ENV === "production",
         });
       },
@@ -34,6 +35,6 @@ import { AUTH_SETTINGS, SessionService, type AuthSettings } from "./session.serv
     OtpService,
     AuditService,
   ],
-  exports: [SessionService, AUTH_SETTINGS],
+  exports: [SessionService, AUTH_SETTINGS, EMAIL_SENDER],
 })
 export class AuthModule {}

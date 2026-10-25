@@ -1,5 +1,6 @@
 import type { CanActivate, ExecutionContext } from "@nestjs/common";
 import { ForbiddenException, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
+import { readCookie } from "./cookies.js";
 import { SESSION_COOKIE, SessionService } from "../modules/auth/session.service.js";
 
 interface AuthRequest {
@@ -10,22 +11,19 @@ interface AuthRequest {
   sessionId?: string;
 }
 
+/** Staff realm routes: StaffGuard owns authentication, CSRF and permissions for these. */
+const STAFF_REALM_PATH = /^\/api\/v1\/admin(\/|\?|$)/;
+
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
-/** Sign-in endpoints take no session, so a stale cookie must not trip the CSRF check. */
-const CSRF_EXEMPT = /\/auth\/(otp\/(request|verify)|token\/refresh)(\?|$)/;
+/**
+ * Sign-in endpoints take no session, so a stale cookie must not trip the CSRF check. The confirm-link and webhook
+ * endpoints carry their own credential (link token / shared secret) instead of a session.
+ */
+const CSRF_EXEMPT = /\/(auth\/(otp\/(request|verify)|token\/refresh|return-target)|confirm-links\/redeem|webhooks\/postmark)(\?|$)/;
 
 function header(req: AuthRequest, name: string): string | undefined {
   const v = req.headers[name];
   return Array.isArray(v) ? v[0] : v;
-}
-
-function readCookie(raw: string | undefined, name: string): string | undefined {
-  if (!raw) return undefined;
-  for (const part of raw.split(";")) {
-    const i = part.indexOf("=");
-    if (i > 0 && part.slice(0, i).trim() === name) return decodeURIComponent(part.slice(i + 1).trim());
-  }
-  return undefined;
 }
 
 /**
@@ -40,6 +38,8 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     if (context.getType() !== "http") return true;
     const req = context.switchToHttp().getRequest<AuthRequest>();
+    // The staff realm (Phase 10) has its own guard and cookies; a contractor session must neither apply nor be checked there.
+    if (STAFF_REALM_PATH.test(req.url)) return true;
 
     const authz = header(req, "authorization");
     if (authz?.startsWith("Bearer ")) {

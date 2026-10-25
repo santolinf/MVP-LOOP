@@ -13,7 +13,7 @@ export type FreshnessThresholds = Partial<Record<UnderlyingStatus, FreshnessThre
 /**
  * Freshness is computed from lastConfirmedAt, the underlying status and configured
  * thresholds. It never changes the underlying status (plan §3.2).
- * TODO(spec): Q3 — threshold values are placeholders supplied by config.
+ * Thresholds are supplied by config (ReminderConfig `freshness.thresholds.<status>`).
  */
 export function deriveFreshness(
   status: UnderlyingStatus,
@@ -37,7 +37,12 @@ export function isFreshnessGrey(freshness: FreshnessState): boolean {
   return freshness === "UNCONFIRMED";
 }
 
-/** TODO(spec): Q3 — placeholder thresholds; runtime values come from ReminderConfig `freshness.thresholds.<status>`. */
+/**
+ * Defaults aligned to the V33 app-spec reminder cadences: Available now 7 days,
+ * Ending soon 14 (prompts at 28/14/7 before end), In contract 30, Permanent 60.
+ * `currentDays` follows the spec; `needsConfirmationDays` (grace before UNCONFIRMED) is not
+ * defined by the spec and is an assumption of 2x. Runtime values come from ReminderConfig.
+ */
 export const DEFAULT_FRESHNESS_THRESHOLDS: FreshnessThresholds = {
   AVAILABLE_NOW: { currentDays: 7, needsConfirmationDays: 14 },
   ENDING_SOON: { currentDays: 14, needsConfirmationDays: 28 },

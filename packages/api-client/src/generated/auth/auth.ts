@@ -25,11 +25,14 @@ import type {
 
 import type {
   AuthResultDto,
+  LogoutAllResultDto,
   LogoutResultDto,
   OtpRequestDto,
   OtpRequestResultDto,
   OtpVerifyDto,
   RefreshRequestDto,
+  ReturnTargetRequestDto,
+  ReturnTargetResultDto,
   SessionListDto
 } from '../model';
 
@@ -412,6 +415,178 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getLogoutMutationOptions(options), queryClient);
+    }
+    export type logoutAllResponse200 = {
+  data: LogoutAllResultDto
+  status: 200
+}
+
+export type logoutAllResponseSuccess = (logoutAllResponse200) & {
+  headers: Headers;
+};
+;
+
+export type logoutAllResponse = (logoutAllResponseSuccess)
+
+export const getLogoutAllUrl = () => {
+
+
+
+
+  return `/api/v1/auth/logout-all`
+}
+
+export const logoutAll = async ( options?: Parameters<typeof customFetch>[1]): Promise<logoutAllResponse> => {
+
+  return customFetch<logoutAllResponse>(getLogoutAllUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getLogoutAllMutationKey = () => ['logoutAll'] as const;
+
+export const getLogoutAllMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutAll>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof logoutAll>>, TError,void, TContext> => {
+
+const mutationKey = getLogoutAllMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logoutAll>>, void> = () => {
+
+
+          return  logoutAll(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LogoutAllMutationResult = NonNullable<Awaited<ReturnType<typeof logoutAll>>>
+
+    export type LogoutAllMutationError = unknown
+
+
+    export const useLogoutAll = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutAll>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof logoutAll>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getLogoutAllMutationOptions(options), queryClient);
+    }
+    export type createReturnTargetResponse200 = {
+  data: ReturnTargetResultDto
+  status: 200
+}
+
+export type createReturnTargetResponseSuccess = (createReturnTargetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type createReturnTargetResponse = (createReturnTargetResponseSuccess)
+
+export const getCreateReturnTargetUrl = () => {
+
+
+
+
+  return `/api/v1/auth/return-target`
+}
+
+export const createReturnTarget = async (returnTargetRequestDto: ReturnTargetRequestDto, options?: Parameters<typeof customFetch>[1]): Promise<createReturnTargetResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<createReturnTargetResponse>(getCreateReturnTargetUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(returnTargetRequestDto)
+  }
+);}
+
+
+
+
+
+export const getCreateReturnTargetMutationKey = () => ['createReturnTarget'] as const;
+
+export const getCreateReturnTargetMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReturnTarget>>, TError,CreateReturnTargetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createReturnTarget>>, TError,CreateReturnTargetMutationVariables, TContext> => {
+
+const mutationKey = getCreateReturnTargetMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createReturnTarget>>, CreateReturnTargetMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createReturnTarget(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateReturnTargetMutationResult = NonNullable<Awaited<ReturnType<typeof createReturnTarget>>>
+    export type CreateReturnTargetMutationBody = ReturnTargetRequestDto
+    export type CreateReturnTargetMutationError = unknown
+    export type CreateReturnTargetMutationVariables = {data: ReturnTargetRequestDto}
+
+    export const useCreateReturnTarget = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReturnTarget>>, TError,CreateReturnTargetMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createReturnTarget>>,
+        TError,
+        CreateReturnTargetMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateReturnTargetMutationOptions(options), queryClient);
     }
     export type listSessionsResponse200 = {
   data: SessionListDto

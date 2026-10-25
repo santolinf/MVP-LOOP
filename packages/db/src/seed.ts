@@ -3,7 +3,7 @@ import { prisma } from "./client.js";
 // payouts.live, agency.access and profit_sharing stay disabled in every seed.
 const FLAGS = ["payouts.live", "agency.access", "profit_sharing.live"];
 // New in the change plan; both default off.
-const NEW_FLAGS = ["freshness.visibilityEffects", "reminders.paused", "auth.attestation"];
+const NEW_FLAGS = ["freshness.visibilityEffects", "reminders.paused", "auth.attestation", "founding.require_app_signin"];
 
 // TODO(spec): Q3 thresholds and plan 3.3 reminder defaults; editable at runtime.
 const CONFIG: Record<string, object> = {
@@ -25,6 +25,20 @@ const CONFIG: Record<string, object> = {
   },
 };
 
+/**
+ * Phase 10: the first admin. Set ADMIN_BOOTSTRAP_EMAIL to create or re-activate one (any environment); the person then
+ * signs in with an emailed code and enrols an authenticator. Development gets a default so the portal is reachable.
+ */
+async function seedBootstrapAdmin() {
+  const email = (process.env.ADMIN_BOOTSTRAP_EMAIL ?? (process.env.NODE_ENV === "production" ? "" : "admin@loop.local")).trim().toLowerCase();
+  if (!email) return;
+  await prisma.staffUser.upsert({
+    where: { email },
+    update: { active: true, role: "ADMIN" },
+    create: { email, name: "Bootstrap admin", role: "ADMIN" },
+  });
+}
+
 async function main() {
   for (const key of [...FLAGS, ...NEW_FLAGS]) {
     await prisma.featureFlag.upsert({ where: { key }, update: {}, create: { key, enabled: false } });
@@ -32,6 +46,7 @@ async function main() {
   for (const [key, value] of Object.entries(CONFIG)) {
     await prisma.reminderConfig.upsert({ where: { key }, update: {}, create: { key, value } });
   }
+  await seedBootstrapAdmin();
   await prisma.foundingCounter.upsert({ where: { id: 1 }, update: {}, create: { id: 1 } });
   await prisma.contractor.upsert({
     where: { phone: "+447700900001" },

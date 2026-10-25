@@ -9,6 +9,9 @@ allowBuilds:
   protobufjs: true
   ssh2: true
   workerd: true
+overrides:
+  body-parser: ">=2.4.0"
+  multer: ">=2.5.0"
 minimumReleaseAgeExclude:
   - "@prisma/config@7.10.1"
   - "@prisma/debug@7.10.1"

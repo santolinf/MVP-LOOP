@@ -95,6 +95,7 @@ const reg = { firstName: "Sam", lastName: "Lee", mobile: "07700 900001", termsAc
 describe("OtpService", () => {
   const sender = { send: vi.fn() };
   const audit = { record: vi.fn() };
+  const drafts = { adopt: vi.fn().mockResolvedValue(false) };
   let svc: OtpService;
 
   const advance = (s: number) => (h.clock.now = new Date(h.clock.now.getTime() + s * 1000));
@@ -111,7 +112,7 @@ describe("OtpService", () => {
     h.contractors.length = 0;
     h.clock.now = new Date("2026-10-17T12:00:00Z");
     h.sessionCreate.mockImplementation(async ({ data }: { data: { contractorId: string } }) => ({ id: "sess1", ...data }));
-    svc = new OtpService(settings, sender as never, new SessionService(settings), audit as never);
+    svc = new OtpService(settings, sender as never, new SessionService(settings), audit as never, drafts as never);
   });
 
   const request = (email: string, purpose: "SIGN_IN" | "REGISTER" = "SIGN_IN", ip = "1.1.1.1") =>
@@ -247,6 +248,45 @@ describe("OtpService", () => {
       expect(msgs[0]).toContain("UnauthorizedException");
     });
 
+    it("audits every sign-in without the code or any token", async () => {
+      known();
+      await request("known@example.com");
+      const code = sentCode();
+      const res = await verify("known@example.com", code);
+      const call = audit.record.mock.calls.find((c) => (c[0] as { action: string }).action === "SIGNED_IN")?.[0] as Record<string, unknown>;
+      expect(call).toMatchObject({ entityType: "Contractor", entityId: "c0", after: { clientType: "WEB", purpose: "SIGN_IN", sessionId: res.sessionId } });
+      const dump = JSON.stringify(call);
+      expect(dump).not.toContain(code);
+      expect(dump).not.toContain(res.csrfToken ?? "x");
+    });
+
+    it("resolves a signed return token to a fixed route", async () => {
+      known();
+      await request("known@example.com");
+      const token = new SessionService(settings).signReturnToken("INTRODUCE", h.clock.now);
+      const res = await verify("known@example.com", sentCode(), { returnToken: token });
+      expect(res.returnTo).toBe("/introduce");
+    });
+
+    it.each(["garbage", "a.b", ""])("ignores a bad return token %j", async (returnToken) => {
+      known();
+      await request("known@example.com");
+      const res = await verify("known@example.com", sentCode(), { returnToken });
+      expect(res.returnTo).toBeUndefined();
+      expect(res.contractorId).toBe("c0");
+    });
+
+    it("lets a provisional contractor resume from a second device only after OTP", async () => {
+      known();
+      await request("known@example.com");
+      const first = await verify("known@example.com", sentCode());
+      advance(61);
+      await request("known@example.com");
+      const second = await verify("known@example.com", sentCode());
+      expect(second.contractorId).toBe(first.contractorId);
+      expect(h.sessionCreate).toHaveBeenCalledTimes(2);
+    });
+
     it("never creates an account on SIGN_IN", async () => {
       await request("unknown@example.com");
       await expect(verify("unknown@example.com", "123456")).rejects.toThrow();
@@ -290,6 +330,40 @@ describe("OtpService", () => {
       h.contractors.push({ id: "c0", email: "other@example.com", phone: "+447700900001", firstAppSignInAt: null });
       await request("new@example.com", "REGISTER");
       await expect(verifyReg("new@example.com", sentCode())).rejects.toThrow("Could not complete registration");
+    });
+  });
+
+  describe("upload draft adoption", () => {
+    const signIn = async (extra: Record<string, unknown>) => {
+      h.contractors.push({ id: "c0", email: "known@example.com", phone: "+447700900009", firstAppSignInAt: null });
+      await request("known@example.com");
+      return svc.verify({ email: "known@example.com", code: sentCode(), purpose: "SIGN_IN", clientType: "WEB", ...extra } as never, h.clock.now);
+    };
+
+    it("adopts the draft and audits it when a draft token is supplied", async () => {
+      drafts.adopt.mockResolvedValue(true);
+      await signIn({ draftToken: "tok" });
+      expect(drafts.adopt).toHaveBeenCalledWith("tok", "c0", h.clock.now);
+      expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: "UPLOAD_DRAFT_ADOPTED", entityId: "c0" }));
+      expect(JSON.stringify(audit.record.mock.calls)).not.toContain("tok");
+    });
+
+    it("does not audit when nothing was adopted, and skips adoption without a token", async () => {
+      drafts.adopt.mockResolvedValue(false);
+      await signIn({ draftToken: "stale" });
+      expect(audit.record).not.toHaveBeenCalledWith(expect.objectContaining({ action: "UPLOAD_DRAFT_ADOPTED" }));
+      drafts.adopt.mockClear();
+      advance(61);
+      await request("known@example.com");
+      await svc.verify({ email: "known@example.com", code: sentCode(), purpose: "SIGN_IN", clientType: "WEB" } as never, h.clock.now);
+      expect(drafts.adopt).not.toHaveBeenCalled();
+    });
+
+    it("never blocks sign-in when adoption throws", async () => {
+      drafts.adopt.mockRejectedValue(new Error("db down"));
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const res = await signIn({ draftToken: "tok" });
+      expect(res.contractorId).toBe("c0");
     });
   });
 

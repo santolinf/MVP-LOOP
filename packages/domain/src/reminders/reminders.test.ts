@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_REMINDER_CONFIG as cfg, canSendIntroProgress, planReminders, type ReminderContext } from "./index.js";
+import { DEFAULT_REMINDER_CONFIG as cfg, canSendIntroProgress, planReminders, validateReminderConfig, type ReminderContext } from "./index.js";
 
 const d = (s: string) => new Date(`${s}T00:00:00Z`);
 const ctx = (over: Partial<ReminderContext>): ReminderContext => ({
@@ -52,5 +52,23 @@ describe("planReminders (3.3)", () => {
     expect(canSendIntroProgress(d("2026-10-10"), d("2026-10-17"), cfg)).toBe(false);
     expect(canSendIntroProgress(d("2026-10-03"), d("2026-10-17"), cfg)).toBe(true);
     expect(canSendIntroProgress(null, d("2026-10-17"), cfg)).toBe(true);
+  });
+});
+
+describe("Phase 8 additions", () => {
+  it("plans one follow-up on the day a LIVE contractor turned grey, and none otherwise", () => {
+    const r = planReminders(ctx({ unconfirmedSince: new Date("2026-10-20T14:00:00Z") }), cfg);
+    expect(by(r, "UNCONFIRMED_FOLLOW_UP")).toEqual(["2026-10-20"]);
+    expect(by(planReminders(ctx({}), cfg), "UNCONFIRMED_FOLLOW_UP")).toEqual([]);
+  });
+  it("never plans an automatic +3 follow-up for green (available now)", () => {
+    const r = planReminders(ctx({}), cfg);
+    expect(r.filter((x) => x.type === "AVAILABLE_NOW_CHECK")).toHaveLength(1);
+    expect(r.some((x) => x.type === "CONTRACT_END_FOLLOW_UP")).toBe(false);
+  });
+  it("validates admin config", () => {
+    expect(validateReminderConfig(cfg)).toEqual([]);
+    expect(validateReminderConfig({ ...cfg, availableNow: { intervalDays: 0 } })).toHaveLength(1);
+    expect(validateReminderConfig({ ...cfg, escalation: { callTaskAfterDays: 7, suppressAfterDays: 7 } })).toHaveLength(1);
   });
 });

@@ -1,10 +1,12 @@
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import { ConflictException, BadRequestException, HttpException, HttpStatus, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
 import { Prisma, prisma } from "@loop/db";
-import { checkOtpUsable, decideOtpSend, generateOtpCode, normaliseEmail, normaliseUkMobile } from "@loop/domain";
+import { CONSENT_WORDING, checkOtpUsable, decideOtpSend, generateOtpCode, normaliseEmail, normaliseUkMobile, routeForReturnTarget } from "@loop/domain";
 import type { AuthResult, OtpRequest, OtpRequestResult, OtpVerify } from "@loop/contracts";
 import { AuditService } from "../../common/audit.service.js";
 import { loadOtpConfig } from "../../common/auth-config.js";
+import { logger } from "../../common/logger.js";
+import { DraftService } from "../cv/draft.service.js";
 import { EMAIL_SENDER, type EmailSender } from "./email-sender.js";
 import { renderOtpEmail } from "./email-templates.js";
 import { AUTH_SETTINGS, SessionService, type AuthSettings } from "./session.service.js";
@@ -32,6 +34,7 @@ export class OtpService {
     @Inject(EMAIL_SENDER) private readonly sender: EmailSender,
     @Inject(SessionService) private readonly sessions: SessionService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(DraftService) private readonly drafts: DraftService,
   ) {}
 
   private hmac(data: string): string {
@@ -94,7 +97,7 @@ export class OtpService {
       await this.sender.send(to, message);
     } catch (e) {
       // Never log the address or code; a delivery failure must not change the response either.
-      console.error("OTP email delivery failed:", e instanceof Error ? e.message : "unknown error");
+      logger.error({ errorName: e instanceof Error ? e.name : "unknown" }, "OTP email delivery failed");
     }
   }
 
@@ -145,7 +148,33 @@ export class OtpService {
         data: { firstAppSignInAt: now, firstAppSignInSessionId: result.sessionId },
       });
     }
-    return result;
+    await this.audit.record({
+      actorId: contractor.id,
+      entityType: "Contractor",
+      entityId: contractor.id,
+      action: "SIGNED_IN",
+      after: { clientType: input.clientType, purpose: input.purpose, sessionId: result.sessionId },
+    });
+
+    if (input.draftToken) {
+      // Best-effort: a stale or foreign draft token must never block sign-in.
+      try {
+        const adopted = await this.drafts.adopt(input.draftToken, contractor.id, now);
+        if (adopted) {
+          await this.audit.record({
+            actorId: contractor.id,
+            entityType: "Contractor",
+            entityId: contractor.id,
+            action: "UPLOAD_DRAFT_ADOPTED",
+          });
+        }
+      } catch (e) {
+        logger.error({ errorName: e instanceof Error ? e.name : "unknown" }, "Upload draft adoption failed");
+      }
+    }
+
+    const target = input.returnToken ? this.sessions.verifyReturnToken(input.returnToken, now) : null;
+    return target ? { ...result, returnTo: routeForReturnTarget(target) } : result;
   }
 
   private async createContractor(
@@ -160,18 +189,28 @@ export class OtpService {
           phone,
           firstName: reg.firstName,
           lastName: reg.lastName,
-          marketingConsent: reg.marketingOptIn,
-          // TODO(spec): confirm accepting the terms is the operational-SMS consent; marketing is separate.
-          operationalSmsConsent: true,
+          marketingConsent: reg.marketingOptIn === true,
         },
         select: { id: true, firstAppSignInAt: true },
       });
+      if (reg.marketingOptIn === true) {
+        // Deprecated field: only an explicit true from an older client is honoured, as a versioned grant.
+        await prisma.consentRecord.create({
+          data: {
+            contractorId: created.id,
+            purpose: "LOOP_MARKETING",
+            wordingVersion: CONSENT_WORDING.LOOP_MARKETING.version,
+            source: "WEB",
+            grantedAt: new Date(),
+          },
+        });
+      }
       await this.audit.record({
         actorId: created.id,
         entityType: "Contractor",
         entityId: created.id,
         action: "REGISTERED",
-        after: { marketingConsent: reg.marketingOptIn, termsAccepted: true },
+        after: { marketingConsent: reg.marketingOptIn === true, termsAccepted: true },
       });
       return created;
     } catch (e) {

@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const db = vi.hoisted(() => ({
   contractor: { findUnique: vi.fn(), count: vi.fn(), updateMany: vi.fn() },
   referral: { findMany: vi.fn() },
+  referralFlag: { findMany: vi.fn() },
+  featureFlag: { findUnique: vi.fn() },
   reminderConfig: { findMany: vi.fn() },
   queryRaw: vi.fn(),
   $transaction: vi.fn(),
@@ -11,6 +13,8 @@ vi.mock("@loop/db", () => ({
   prisma: {
     contractor: db.contractor,
     referral: db.referral,
+    referralFlag: db.referralFlag,
+    featureFlag: db.featureFlag,
     reminderConfig: db.reminderConfig,
     $transaction: db.$transaction,
   },
@@ -21,6 +25,10 @@ import { FoundingService } from "../founding.service.js";
 const audit = { record: vi.fn() };
 const NOW = new Date("2026-10-17T12:00:00Z");
 
+function lockedReferrals(n: number) {
+  db.referral.findMany.mockResolvedValue(Array.from({ length: n }, (_, i) => ({ id: `x${i}` })));
+}
+
 function eligibleContractor(foundingPlace: number | null = null) {
   db.contractor.findUnique.mockResolvedValue({
     id: "c1",
@@ -29,14 +37,15 @@ function eligibleContractor(foundingPlace: number | null = null) {
     availableFrom: new Date("2026-10-01T00:00:00Z"),
     lastConfirmedAt: new Date("2026-10-16T00:00:00Z"),
   });
-  db.referral.findMany.mockResolvedValue([1, 2, 3, 4, 5].map((n) => ({ refereeId: `r${n}` })));
-  db.contractor.count.mockResolvedValue(5);
+  lockedReferrals(5);
 }
 
 describe("FoundingService", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     db.reminderConfig.findMany.mockResolvedValue([]);
+    db.referralFlag.findMany.mockResolvedValue([]);
+    db.featureFlag.findUnique.mockResolvedValue(null);
     db.$transaction.mockImplementation((fn: (tx: unknown) => unknown) =>
       fn({ $queryRaw: db.queryRaw, contractor: { updateMany: db.contractor.updateMany } }),
     );
@@ -48,12 +57,27 @@ describe("FoundingService", () => {
     expect(s).toMatchObject({ required: 5, registeredReferrals: 5, isCurrentProfile: true, eligible: true, place: null });
   });
 
-  it("is not eligible with fewer than 5 live referrals", async () => {
+  it("is not eligible with fewer than 5 counted introductions", async () => {
     eligibleContractor();
-    db.contractor.count.mockResolvedValue(3);
+    lockedReferrals(3);
     const svc = new FoundingService(audit as never);
     expect((await svc.status("c1", NOW)).eligible).toBe(false);
     expect(await svc.allocateIfEligible("c1", NOW)).toBeNull();
+    expect(db.$transaction).not.toHaveBeenCalled();
+  });
+
+  it("does not count introductions held by an open or confirmed review flag", async () => {
+    eligibleContractor();
+    db.referralFlag.findMany.mockResolvedValue([{ referralId: "x0" }]);
+    const svc = new FoundingService(audit as never);
+    expect((await svc.status("c1", NOW)).registeredReferrals).toBe(4);
+    expect(await svc.allocateIfEligible("c1", NOW)).toBeNull();
+  });
+
+  it("holds awards when the app sign-in flag is on and the contractor has not signed in to the app", async () => {
+    eligibleContractor();
+    db.featureFlag.findUnique.mockResolvedValue({ enabled: true });
+    expect(await new FoundingService(audit as never).allocateIfEligible("c1", NOW)).toBeNull();
     expect(db.$transaction).not.toHaveBeenCalled();
   });
 
@@ -106,8 +130,7 @@ describe("FoundingService", () => {
       availableFrom: new Date("2026-10-01T00:00:00Z"),
       lastConfirmedAt: new Date("2026-10-16T00:00:00Z"),
     }));
-    db.referral.findMany.mockResolvedValue([1, 2, 3, 4, 5].map((n) => ({ refereeId: `r${n}` })));
-    db.contractor.count.mockResolvedValue(5);
+    lockedReferrals(5);
 
     const svc = new FoundingService(audit as never);
     const results = await Promise.all(Array.from({ length: 20 }, (_, i) => svc.allocateIfEligible(`c${i}`, NOW)));

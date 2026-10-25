@@ -26,9 +26,13 @@ import type {
 import type {
   AttributeReferralRequestDto,
   AttributeReferralResultDto,
+  IntroducerDto,
+  IntroducerLookupRequestDto,
+  IntroducerLookupResultDto,
   ReferralCodeCheckDto,
   ReferralLinkDto,
-  ReferralListDto
+  ReferralListDto,
+  SetIntroducerRequestDto
 } from '../model';
 
 import { customFetch } from '../../fetcher';
@@ -463,4 +467,296 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getAttributeReferralMutationOptions(options), queryClient);
+    }
+    export type getIntroducerResponse200 = {
+  data: IntroducerDto
+  status: 200
+}
+
+export type getIntroducerResponseSuccess = (getIntroducerResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getIntroducerResponse = (getIntroducerResponseSuccess)
+
+export const getGetIntroducerUrl = () => {
+
+
+
+
+  return `/api/v1/referrals/introducer`
+}
+
+export const getIntroducer = async ( options?: Parameters<typeof customFetch>[1]): Promise<getIntroducerResponse> => {
+
+  return customFetch<getIntroducerResponse>(getGetIntroducerUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetIntroducerQueryKey = () => {
+    return [
+    `/api/v1/referrals/introducer`
+    ] as const;
+    }
+
+
+export const getGetIntroducerQueryOptions = <TData = Awaited<ReturnType<typeof getIntroducer>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntroducer>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIntroducerQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIntroducer>>> = ({ signal }) => getIntroducer({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIntroducer>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetIntroducerQueryResult = NonNullable<Awaited<ReturnType<typeof getIntroducer>>>
+export type GetIntroducerQueryError = unknown
+
+
+export function useGetIntroducer<TData = Awaited<ReturnType<typeof getIntroducer>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntroducer>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIntroducer>>,
+          TError,
+          Awaited<ReturnType<typeof getIntroducer>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIntroducer<TData = Awaited<ReturnType<typeof getIntroducer>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntroducer>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getIntroducer>>,
+          TError,
+          Awaited<ReturnType<typeof getIntroducer>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetIntroducer<TData = Awaited<ReturnType<typeof getIntroducer>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntroducer>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetIntroducer<TData = Awaited<ReturnType<typeof getIntroducer>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getIntroducer>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetIntroducerQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type setIntroducerResponse200 = {
+  data: AttributeReferralResultDto
+  status: 200
+}
+
+export type setIntroducerResponseSuccess = (setIntroducerResponse200) & {
+  headers: Headers;
+};
+;
+
+export type setIntroducerResponse = (setIntroducerResponseSuccess)
+
+export const getSetIntroducerUrl = () => {
+
+
+
+
+  return `/api/v1/referrals/introducer`
+}
+
+export const setIntroducer = async (setIntroducerRequestDto: SetIntroducerRequestDto, options?: Parameters<typeof customFetch>[1]): Promise<setIntroducerResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<setIntroducerResponse>(getSetIntroducerUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(setIntroducerRequestDto)
+  }
+);}
+
+
+
+
+
+export const getSetIntroducerMutationKey = () => ['setIntroducer'] as const;
+
+export const getSetIntroducerMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setIntroducer>>, TError,SetIntroducerMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setIntroducer>>, TError,SetIntroducerMutationVariables, TContext> => {
+
+const mutationKey = getSetIntroducerMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setIntroducer>>, SetIntroducerMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  setIntroducer(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetIntroducerMutationResult = NonNullable<Awaited<ReturnType<typeof setIntroducer>>>
+    export type SetIntroducerMutationBody = SetIntroducerRequestDto
+    export type SetIntroducerMutationError = unknown
+    export type SetIntroducerMutationVariables = {data: SetIntroducerRequestDto}
+
+    export const useSetIntroducer = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setIntroducer>>, TError,SetIntroducerMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof setIntroducer>>,
+        TError,
+        SetIntroducerMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetIntroducerMutationOptions(options), queryClient);
+    }
+    export type lookupIntroducerResponse200 = {
+  data: IntroducerLookupResultDto
+  status: 200
+}
+
+export type lookupIntroducerResponseSuccess = (lookupIntroducerResponse200) & {
+  headers: Headers;
+};
+;
+
+export type lookupIntroducerResponse = (lookupIntroducerResponseSuccess)
+
+export const getLookupIntroducerUrl = () => {
+
+
+
+
+  return `/api/v1/referrals/introducer/lookup`
+}
+
+export const lookupIntroducer = async (introducerLookupRequestDto: IntroducerLookupRequestDto, options?: Parameters<typeof customFetch>[1]): Promise<lookupIntroducerResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<lookupIntroducerResponse>(getLookupIntroducerUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(introducerLookupRequestDto)
+  }
+);}
+
+
+
+
+
+export const getLookupIntroducerMutationKey = () => ['lookupIntroducer'] as const;
+
+export const getLookupIntroducerMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof lookupIntroducer>>, TError,LookupIntroducerMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof lookupIntroducer>>, TError,LookupIntroducerMutationVariables, TContext> => {
+
+const mutationKey = getLookupIntroducerMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof lookupIntroducer>>, LookupIntroducerMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  lookupIntroducer(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LookupIntroducerMutationResult = NonNullable<Awaited<ReturnType<typeof lookupIntroducer>>>
+    export type LookupIntroducerMutationBody = IntroducerLookupRequestDto
+    export type LookupIntroducerMutationError = unknown
+    export type LookupIntroducerMutationVariables = {data: IntroducerLookupRequestDto}
+
+    export const useLookupIntroducer = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof lookupIntroducer>>, TError,LookupIntroducerMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof lookupIntroducer>>,
+        TError,
+        LookupIntroducerMutationVariables,
+        TContext
+      > => {
+      return useMutation(getLookupIntroducerMutationOptions(options), queryClient);
     }

@@ -2,6 +2,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 import { Inject, Injectable, UnauthorizedException } from "@nestjs/common";
 import { prisma } from "@loop/db";
 import type { AuthResult, ClientTypeValue, SessionItem } from "@loop/contracts";
+import { isReturnTargetId, type ReturnTargetId } from "@loop/domain";
 
 export const AUTH_SETTINGS = Symbol("AUTH_SETTINGS");
 
@@ -14,9 +15,13 @@ export interface AuthSettings {
 export const ACCESS_TOKEN_SECONDS = 15 * 60;
 export const WEB_SESSION_DAYS = 30;
 export const APP_SESSION_DAYS = 90;
+export const WEB_IDLE_HOURS = 8;
+export const RETURN_TOKEN_SECONDS = 30 * 60;
 export const SESSION_COOKIE = "loop_session";
 
 const DAY_MS = 86_400_000;
+const HOUR_MS = 3_600_000;
+const TOUCH_INTERVAL_MS = 5 * 60_000;
 
 const b64url = (b: Buffer | string): string => Buffer.from(b).toString("base64url");
 const sha256 = (v: string): string => createHash("sha256").update(v).digest("hex");
@@ -122,11 +127,40 @@ export class SessionService {
         };
   }
 
-  /** Confirms the session exists, is not revoked or expired, and touches lastUsedAt. */
+  /**
+   * Confirms the session exists and is not revoked, past its absolute expiry, or (WEB only) idle too long.
+   * Touches lastUsedAt at most once per TOUCH_INTERVAL_MS so the idle window slides without a write per request.
+   */
   async resolve(sessionId: string, now = new Date()): Promise<Authenticated | null> {
     const s = await prisma.session.findUnique({ where: { id: sessionId } });
     if (!s || s.revokedAt || s.expiresAt <= now) return null;
+    const last = s.lastUsedAt ?? s.createdAt;
+    if (s.clientType === "WEB" && now.getTime() - last.getTime() >= WEB_IDLE_HOURS * HOUR_MS) return null;
+    if (now.getTime() - last.getTime() >= TOUCH_INTERVAL_MS) {
+      await prisma.session.updateMany({ where: { id: s.id, revokedAt: null }, data: { lastUsedAt: now } });
+    }
     return { contractorId: s.contractorId, sessionId: s.id };
+  }
+
+  /** Signs a short-lived, single-purpose token naming an allow-listed return target. It never authenticates. */
+  signReturnToken(target: ReturnTargetId, now = new Date()): string {
+    const body = b64url(JSON.stringify({ t: target, exp: Math.floor(now.getTime() / 1000) + RETURN_TOKEN_SECONDS }));
+    return `${body}.${this.mac(this.settings.sessionSecret, `return:${body}`)}`;
+  }
+
+  /** Returns the target id, or null if the token is malformed, tampered, expired or names an unknown target. */
+  verifyReturnToken(token: string, now = new Date()): ReturnTargetId | null {
+    const dot = token.lastIndexOf(".");
+    if (dot <= 0) return null;
+    const body = token.slice(0, dot);
+    if (!safeEqual(token.slice(dot + 1), this.mac(this.settings.sessionSecret, `return:${body}`))) return null;
+    try {
+      const claims = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as { t?: unknown; exp?: unknown };
+      if (typeof claims.exp !== "number" || claims.exp * 1000 <= now.getTime()) return null;
+      return isReturnTargetId(claims.t) ? claims.t : null;
+    } catch {
+      return null;
+    }
   }
 
   /** Rotates the refresh token: the presented token is single use; a stale one fails with 401. */
@@ -148,6 +182,15 @@ export class SessionService {
       where: { id: sessionId, contractorId, revokedAt: null },
       data: { revokedAt: now, refreshTokenHash: null },
     });
+  }
+
+  /** Signs the contractor out of every device; returns how many sessions were revoked. */
+  async revokeAll(contractorId: string, now = new Date()): Promise<number> {
+    const r = await prisma.session.updateMany({
+      where: { contractorId, revokedAt: null },
+      data: { revokedAt: now, refreshTokenHash: null },
+    });
+    return r.count;
   }
 
   async list(contractorId: string, currentSessionId: string | undefined, now = new Date()): Promise<SessionItem[]> {
