@@ -98,7 +98,7 @@ export function RegisterStep() {
   }
 
   return (
-    <main className="mx-auto max-w-[720px] px-5 py-12">
+    <section className="mx-auto max-w-[720px] px-5 py-12">
       <StepBar step={3} />
       <Card className="!border-[#294357] !bg-[#0b2237] !bg-none !p-8">
         <h1 className={PAGE_H1}>Create your account</h1>
@@ -187,6 +187,6 @@ export function RegisterStep() {
           </form>
         )}
       </Card>
-    </main>
+    </section>
   );
 }

@@ -42,7 +42,7 @@ export function ProfileReview() {
   const body = review.data?.status === 200 ? review.data.data : null;
 
   return (
-    <main className="mx-auto max-w-[720px] px-5 py-12">
+    <section className="mx-auto max-w-[720px] px-5 py-12">
       <Eyebrow>Step 2 of 6</Eyebrow>
       <div className="mb-[30px] mt-[25px] flex gap-[7px]" role="img" aria-label="Step 2 of 6">
         {[0, 1, 2, 3, 4, 5].map((i) => (
@@ -91,7 +91,7 @@ export function ProfileReview() {
           </Link>
         </div>
       </Card>
-    </main>
+    </section>
   );
 }
 

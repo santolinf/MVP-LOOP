@@ -1,6 +1,4 @@
-import { Link, useNavigate } from "react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { useLogout } from "@loop/api-client";
+import { Link } from "react-router";
 import { COPY } from "../lib/copy";
 import { ButtonLink } from "../features/marketing/primitives";
 import { SIGN_IN_PATH } from "../features/auth/return-target";
@@ -15,19 +13,6 @@ const NAV = [
 
 export function SiteHeader() {
   const signedIn = useSignedIn();
-  const navigate = useNavigate();
-  const qc = useQueryClient();
-  const logout = useLogout();
-
-  async function signOut() {
-    try {
-      await logout.mutateAsync();
-    } catch {
-      // The session may already be gone; either way this browser is signed out.
-    }
-    qc.clear();
-    navigate("/");
-  }
 
   return (
     <header className="sticky top-0 z-10 border-b border-[#263040] bg-[#090c13e8] backdrop-blur-[16px]">
@@ -48,14 +33,9 @@ export function SiteHeader() {
             </Link>
           ))}
           {signedIn ? (
-            <>
-              <Link to="/my-loop" className="font-extrabold text-lime">
-                My LOOP
-              </Link>
-              <button type="button" onClick={signOut} disabled={logout.isPending} className="hover:text-lime disabled:opacity-40">
-                Sign out
-              </button>
-            </>
+            <Link to="/my-loop" className="font-extrabold text-lime">
+              My LOOP
+            </Link>
           ) : (
             <>
               <Link to={SIGN_IN_PATH} className="hover:text-lime">

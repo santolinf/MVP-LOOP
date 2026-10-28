@@ -48,7 +48,7 @@ export function MyLoopPage() {
       <div className="grid md:grid-cols-[198px_1fr]">
         <MyLoopNav selected="overview" />
 
-        <main className="p-[23px] pb-7">
+        <section className="p-[23px] pb-7">
           <div className="mb-[18px]">
             <h1 className="text-[27px] font-bold text-[#f4f9ff]">My LOOP</h1>
             <p className="text-xs text-[#9fb4c3]">Welcome{me.firstName ? `, ${me.firstName}` : ""}. Keep your profile current to stay visible.</p>
@@ -146,7 +146,7 @@ export function MyLoopPage() {
               </Link>
             </aside>
           </div>
-        </main>
+        </section>
       </div>
     </div>
   );

@@ -1,6 +1,8 @@
 import type { MeDto } from "@loop/api-client";
 import type { ReactNode } from "react";
-import { Link } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { useLogout } from "@loop/api-client";
+import { Link, useNavigate } from "react-router";
 import { Muted } from "../marketing/primitives";
 import { SignInRequired } from "../auth/sign-in-required";
 import { useMe } from "./use-me";
@@ -39,6 +41,20 @@ function SideLink({ to, children, selected }: { to: string; children: ReactNode;
 }
 
 export function MyLoopNav({ selected }: { selected: SectionId }) {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const logout = useLogout();
+
+  async function signOut() {
+    try {
+      await logout.mutateAsync();
+    } catch {
+      // The session may already be gone; either way this browser is signed out.
+    }
+    qc.clear();
+    navigate("/");
+  }
+
   return (
     <nav aria-label="My LOOP" className="flex flex-col gap-[5px] border-[#1b4052] bg-[#041726] px-2.5 py-[22px] md:border-r">
       {SECTIONS.map((s) => (
@@ -46,6 +62,14 @@ export function MyLoopNav({ selected }: { selected: SectionId }) {
           {s.label}
         </SideLink>
       ))}
+      <button
+        type="button"
+        onClick={signOut}
+        disabled={logout.isPending}
+        className="mt-2 flex items-center gap-2.5 rounded-[5px] border-t border-[#1b4052] px-[11px] py-[13px] text-left text-xs text-[#c5d4dc] hover:bg-[#103a50] hover:text-[#e7fffd] disabled:opacity-40"
+      >
+        Sign out
+      </button>
     </nav>
   );
 }
@@ -56,13 +80,13 @@ export function MyLoopFrame({ selected, title, intro, children }: { selected: Se
     <div className="mx-auto my-6 w-[min(1390px,calc(100%-20px))] overflow-hidden rounded-lg border border-[#1d4052] bg-[#041c2c]">
       <div className="grid md:grid-cols-[198px_1fr]">
         <MyLoopNav selected={selected} />
-        <main className="p-[23px] pb-7">
+        <section className="p-[23px] pb-7">
           <div className="mb-[18px]">
             <h1 className="text-[27px] font-bold text-[#f4f9ff]">{title}</h1>
             {intro && <p className="text-xs text-[#9fb4c3]">{intro}</p>}
           </div>
           {children}
-        </main>
+        </section>
       </div>
     </div>
   );

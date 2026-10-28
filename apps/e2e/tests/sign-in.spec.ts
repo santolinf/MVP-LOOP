@@ -67,11 +67,18 @@ test("@api signed-out visitor signs in, resumes at the page they wanted, and sig
   await page.getByLabel("Your code").press("Enter");
   await expect(page).toHaveURL(/\/my-loop\/availability$/);
 
-  // Signed in: the header offers My LOOP and Sign out instead of Log in.
+  // Signed in: the header offers My LOOP instead of Log in; Sign out lives in the My LOOP sidebar.
   const nav = page.getByRole("navigation", { name: "Main navigation" });
   await expect(nav.getByRole("link", { name: "My LOOP" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Log in" })).toHaveCount(0);
-  await nav.getByRole("button", { name: "Sign out" }).click();
+  // The members' pages sit inside the layout's <main>, so each must have exactly one main landmark.
+  for (const path of ["/my-loop", "/my-loop/profile", "/join/details", "/join/review", "/welcome"]) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { level: 1 }), path).toHaveCount(1);
+    await expect(page.getByRole("main"), path).toHaveCount(1);
+  }
+  await page.goto("/my-loop");
+  await page.getByRole("navigation", { name: "My LOOP" }).getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(nav.getByRole("link", { name: "Log in" })).toBeVisible();
   await page.goto("/my-loop");

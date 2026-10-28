@@ -51,7 +51,7 @@ export function DetailsStep() {
   }
 
   return (
-    <main className="mx-auto max-w-[720px] px-5 py-12">
+    <section className="mx-auto max-w-[720px] px-5 py-12">
       <StepBar step={4} />
       <Card className="!border-[#294357] !bg-[#0b2237] !bg-none !p-8">
         <IntroducerPicker />
@@ -89,6 +89,6 @@ export function DetailsStep() {
           </div>
         </form>
       </Card>
-    </main>
+    </section>
   );
 }

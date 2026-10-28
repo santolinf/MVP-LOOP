@@ -9,7 +9,7 @@ export function WelcomePage() {
   const { me, isPending, unauthenticated } = useMe();
 
   return (
-    <main className="mx-auto max-w-[720px] px-5 py-12">
+    <section className="mx-auto max-w-[720px] px-5 py-12">
       <Eyebrow>You're in the LOOP</Eyebrow>
       <Card className="mt-6 !border-[#294357] !bg-[#0b2237] !bg-none !p-8">
         {isPending && <Muted>Loading…</Muted>}
@@ -52,6 +52,6 @@ export function WelcomePage() {
           </>
         )}
       </Card>
-    </main>
+    </section>
   );
 }
