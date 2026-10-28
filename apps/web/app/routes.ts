@@ -4,6 +4,7 @@ export default [
   index("routes/_index.tsx"),
   route("introduce", "routes/introduce.tsx"),
   route("founding", "routes/founding.tsx"),
+  route("sign-in", "routes/sign-in.tsx"),
   route("join", "routes/join.tsx"),
   route("join/cv", "routes/join.cv.tsx"),
   route("join/profile", "routes/join.profile.tsx"),

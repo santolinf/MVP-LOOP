@@ -135,6 +135,12 @@ export function RegisterStep() {
               </p>
             )}
             <Muted className="text-sm">We'll email you a one-time code to confirm it's you. There is no password.</Muted>
+            <Muted className="text-sm">
+              Already a member?{" "}
+              <Link to="/sign-in" className="font-semibold text-lime">
+                Sign in
+              </Link>
+            </Muted>
             {error && (
               <p role="alert" className="text-red">
                 {error}

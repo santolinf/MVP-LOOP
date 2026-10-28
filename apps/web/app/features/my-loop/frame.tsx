@@ -1,7 +1,8 @@
 import type { MeDto } from "@loop/api-client";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
-import { Card, Muted, PAGE_H1 } from "../marketing/primitives";
+import { Muted } from "../marketing/primitives";
+import { SignInRequired } from "../auth/sign-in-required";
 import { useMe } from "./use-me";
 
 export const PANEL = "rounded-md border border-[#20485b] bg-[#09283b] p-[15px]";
@@ -78,12 +79,7 @@ export function MeGate({ selected, title, intro, children }: { selected: Section
     );
   if (unauthenticated)
     return (
-      <section className="mx-auto max-w-3xl px-[26px] py-[70px] md:py-[90px]">
-        <Card>
-          <h1 className={PAGE_H1}>Sign in required</h1>
-          <Muted>Please sign in to see My LOOP.</Muted>
-        </Card>
-      </section>
+      <SignInRequired message="Please sign in to see My LOOP." />
     );
   if (isError || !me)
     return (

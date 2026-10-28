@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { uuid } from "../../lib/uuid";
+import { SignInRequired } from "../auth/sign-in-required";
 import { Card, Eyebrow, Muted, PAGE_H1 } from "../marketing/primitives";
 import { useMe } from "../my-loop/use-me";
 
@@ -41,11 +42,7 @@ export function AvailabilityForm({ next = "/my-loop" }: { next?: string } = {}) 
     );
   if (unauthenticated || !me)
     return (
-      <section className="mx-auto max-w-3xl px-[26px] py-[70px] md:py-[90px]">
-        <p role="alert" className="text-red">
-          Sign in required to confirm your availability.
-        </p>
-      </section>
+      <SignInRequired message="Please sign in to confirm your availability." />
     );
 
   const currentEmployment = employment ?? me.employment ?? "CONTRACTING";
