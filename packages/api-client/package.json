@@ -15,15 +15,15 @@
     "test": "echo no tests"
   },
   "dependencies": {
-    "@tanstack/react-query": "^5.104.2",
+    "@tanstack/react-query": "^5.104.5",
     "react": "^19.3.1"
   },
   "devDependencies": {
     "@loop/config": "workspace:*",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
-    "eslint": "^10.12.0",
-    "orval": "^8.43.0",
+    "eslint": "^10.13.0",
+    "orval": "^8.44.0",
     "typescript": "^6.0.3"
   }
 }
