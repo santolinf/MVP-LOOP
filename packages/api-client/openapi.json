@@ -195,6 +195,228 @@
         ]
       }
     },
+    "/api/v1/referrals/link": {
+      "get": {
+        "operationId": "getReferralLink",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralLinkDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "referrals"
+        ]
+      }
+    },
+    "/api/v1/referrals": {
+      "get": {
+        "operationId": "listReferrals",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralListDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "referrals"
+        ]
+      }
+    },
+    "/api/v1/referrals/code/{code}": {
+      "get": {
+        "operationId": "checkReferralCode",
+        "parameters": [
+          {
+            "name": "code",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralCodeCheckDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "referrals"
+        ]
+      }
+    },
+    "/api/v1/referrals/attribute": {
+      "post": {
+        "operationId": "attributeReferral",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttributeReferralRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeReferralResultDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "referrals"
+        ]
+      }
+    },
+    "/api/v1/referrals/introducer": {
+      "get": {
+        "operationId": "getIntroducer",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntroducerDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "referrals"
+        ]
+      },
+      "put": {
+        "operationId": "setIntroducer",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetIntroducerRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributeReferralResultDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "referrals"
+        ]
+      }
+    },
+    "/api/v1/referrals/introducer/lookup": {
+      "post": {
+        "operationId": "lookupIntroducer",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntroducerLookupRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntroducerLookupResultDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "referrals"
+        ]
+      }
+    },
+    "/api/v1/founding/status": {
+      "get": {
+        "operationId": "getFoundingStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoundingStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "founding"
+        ]
+      }
+    },
     "/api/v1/health": {
       "get": {
         "operationId": "HealthController_get",
@@ -681,228 +903,6 @@
         "summary": "",
         "tags": [
           "me"
-        ]
-      }
-    },
-    "/api/v1/referrals/link": {
-      "get": {
-        "operationId": "getReferralLink",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReferralLinkDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "",
-        "tags": [
-          "referrals"
-        ]
-      }
-    },
-    "/api/v1/referrals": {
-      "get": {
-        "operationId": "listReferrals",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReferralListDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "",
-        "tags": [
-          "referrals"
-        ]
-      }
-    },
-    "/api/v1/referrals/code/{code}": {
-      "get": {
-        "operationId": "checkReferralCode",
-        "parameters": [
-          {
-            "name": "code",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ReferralCodeCheckDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "",
-        "tags": [
-          "referrals"
-        ]
-      }
-    },
-    "/api/v1/referrals/attribute": {
-      "post": {
-        "operationId": "attributeReferral",
-        "parameters": [
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AttributeReferralRequestDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AttributeReferralResultDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "",
-        "tags": [
-          "referrals"
-        ]
-      }
-    },
-    "/api/v1/referrals/introducer": {
-      "get": {
-        "operationId": "getIntroducer",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IntroducerDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "",
-        "tags": [
-          "referrals"
-        ]
-      },
-      "put": {
-        "operationId": "setIntroducer",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SetIntroducerRequestDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AttributeReferralResultDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "",
-        "tags": [
-          "referrals"
-        ]
-      }
-    },
-    "/api/v1/referrals/introducer/lookup": {
-      "post": {
-        "operationId": "lookupIntroducer",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/IntroducerLookupRequestDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/IntroducerLookupResultDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "",
-        "tags": [
-          "referrals"
-        ]
-      }
-    },
-    "/api/v1/founding/status": {
-      "get": {
-        "operationId": "getFoundingStatus",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FoundingStatusDto"
-                }
-              }
-            }
-          }
-        },
-        "summary": "",
-        "tags": [
-          "founding"
         ]
       }
     },
@@ -3280,6 +3280,10 @@
           "draftToken": {
             "type": "string",
             "maxLength": 128
+          },
+          "referralCode": {
+            "type": "string",
+            "maxLength": 32
           }
         },
         "required": [
@@ -3444,6 +3448,222 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "ReferralLinkDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "url"
+        ]
+      },
+      "ReferralListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "refereeFirstName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "registeredAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                },
+                "counted": {
+                  "type": "boolean"
+                },
+                "underReview": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "id",
+                "refereeFirstName",
+                "registeredAt",
+                "counted",
+                "underReview"
+              ]
+            }
+          },
+          "lifetimeCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "milestoneReached": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items",
+          "lifetimeCount",
+          "milestoneReached"
+        ]
+      },
+      "ReferralCodeCheckDto": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean"
+          },
+          "referrerFirstName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "valid",
+          "referrerFirstName"
+        ]
+      },
+      "AttributeReferralRequestDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false
+      },
+      "AttributeReferralResultDto": {
+        "type": "object",
+        "properties": {
+          "attributed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "attributed"
+        ]
+      },
+      "IntroducerDto": {
+        "type": "object",
+        "properties": {
+          "maskedName": {
+            "type": "string",
+            "nullable": true
+          },
+          "locked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "maskedName",
+          "locked"
+        ]
+      },
+      "IntroducerLookupRequestDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "additionalProperties": false
+      },
+      "IntroducerLookupResultDto": {
+        "type": "object",
+        "properties": {
+          "found": {
+            "type": "boolean"
+          },
+          "maskedName": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "found",
+          "maskedName",
+          "code"
+        ]
+      },
+      "SetIntroducerRequestDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "LINK",
+              "CODE",
+              "VERBAL"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "source"
+        ],
+        "additionalProperties": false
+      },
+      "FoundingStatusDto": {
+        "type": "object",
+        "properties": {
+          "required": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "registeredReferrals": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "isCurrentProfile": {
+            "type": "boolean"
+          },
+          "eligible": {
+            "type": "boolean"
+          },
+          "place": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "nullable": true
+          }
+        },
+        "required": [
+          "required",
+          "registeredReferrals",
+          "isCurrentProfile",
+          "eligible",
+          "place"
         ]
       },
       "MeDto": {
@@ -4585,222 +4805,6 @@
           "target",
           "createdAt",
           "read"
-        ]
-      },
-      "ReferralLinkDto": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "url": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "code",
-          "url"
-        ]
-      },
-      "ReferralListDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "refereeFirstName": {
-                  "type": "string",
-                  "nullable": true
-                },
-                "registeredAt": {
-                  "type": "string",
-                  "format": "date-time",
-                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-                },
-                "counted": {
-                  "type": "boolean"
-                },
-                "underReview": {
-                  "type": "boolean"
-                }
-              },
-              "required": [
-                "id",
-                "refereeFirstName",
-                "registeredAt",
-                "counted",
-                "underReview"
-              ]
-            }
-          },
-          "lifetimeCount": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "milestoneReached": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "items",
-          "lifetimeCount",
-          "milestoneReached"
-        ]
-      },
-      "ReferralCodeCheckDto": {
-        "type": "object",
-        "properties": {
-          "valid": {
-            "type": "boolean"
-          },
-          "referrerFirstName": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "valid",
-          "referrerFirstName"
-        ]
-      },
-      "AttributeReferralRequestDto": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 32
-          }
-        },
-        "required": [
-          "code"
-        ],
-        "additionalProperties": false
-      },
-      "AttributeReferralResultDto": {
-        "type": "object",
-        "properties": {
-          "attributed": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "attributed"
-        ]
-      },
-      "IntroducerDto": {
-        "type": "object",
-        "properties": {
-          "maskedName": {
-            "type": "string",
-            "nullable": true
-          },
-          "locked": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "maskedName",
-          "locked"
-        ]
-      },
-      "IntroducerLookupRequestDto": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "maxLength": 254,
-            "format": "email",
-            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
-          }
-        },
-        "required": [
-          "email"
-        ],
-        "additionalProperties": false
-      },
-      "IntroducerLookupResultDto": {
-        "type": "object",
-        "properties": {
-          "found": {
-            "type": "boolean"
-          },
-          "maskedName": {
-            "type": "string",
-            "nullable": true
-          },
-          "code": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "found",
-          "maskedName",
-          "code"
-        ]
-      },
-      "SetIntroducerRequestDto": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 32
-          },
-          "source": {
-            "type": "string",
-            "enum": [
-              "LINK",
-              "CODE",
-              "VERBAL"
-            ]
-          }
-        },
-        "required": [
-          "code",
-          "source"
-        ],
-        "additionalProperties": false
-      },
-      "FoundingStatusDto": {
-        "type": "object",
-        "properties": {
-          "required": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "registeredReferrals": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "isCurrentProfile": {
-            "type": "boolean"
-          },
-          "eligible": {
-            "type": "boolean"
-          },
-          "place": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991,
-            "nullable": true
-          }
-        },
-        "required": [
-          "required",
-          "registeredReferrals",
-          "isCurrentProfile",
-          "eligible",
-          "place"
         ]
       },
       "RewardListDto": {

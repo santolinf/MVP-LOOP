@@ -53,6 +53,8 @@ export const OtpVerifySchema = z.object({
   returnToken: z.string().max(512).optional(),
   /** Anonymous CV-upload draft token (Phase 3); adopted by the new account at registration. */
   draftToken: z.string().max(128).optional(),
+  /** B5: referral code captured from the invite link. Used only when this verify creates the account; ignored for sign-in. */
+  referralCode: z.string().max(32).optional(),
 }).strict();
 export type OtpVerify = z.infer<typeof OtpVerifySchema>;
 

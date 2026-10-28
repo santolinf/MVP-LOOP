@@ -1,4 +1,5 @@
 import { Global, Module } from "@nestjs/common";
+import { ReferralsModule } from "../referrals/referrals.module.js";
 import { AuditService } from "../../common/audit.service.js";
 import { loadEnv } from "../../config/index.js";
 import { AuthController } from "./auth.controller.js";
@@ -9,6 +10,7 @@ import { AUTH_SETTINGS, SessionService, type AuthSettings } from "./session.serv
 /** Global so the app-wide AuthGuard can resolve SessionService. */
 @Global()
 @Module({
+  imports: [ReferralsModule],
   controllers: [AuthController],
   providers: [
     {

@@ -96,6 +96,7 @@ describe("OtpService", () => {
   const sender = { send: vi.fn() };
   const audit = { record: vi.fn() };
   const drafts = { adopt: vi.fn().mockResolvedValue(false) };
+  const referrals = { attribute: vi.fn().mockResolvedValue({ attributed: true }) };
   let svc: OtpService;
 
   const advance = (s: number) => (h.clock.now = new Date(h.clock.now.getTime() + s * 1000));
@@ -112,7 +113,7 @@ describe("OtpService", () => {
     h.contractors.length = 0;
     h.clock.now = new Date("2026-10-17T12:00:00Z");
     h.sessionCreate.mockImplementation(async ({ data }: { data: { contractorId: string } }) => ({ id: "sess1", ...data }));
-    svc = new OtpService(settings, sender as never, new SessionService(settings), audit as never, drafts as never);
+    svc = new OtpService(settings, sender as never, new SessionService(settings), audit as never, drafts as never, referrals as never);
   });
 
   const request = (email: string, purpose: "SIGN_IN" | "REGISTER" = "SIGN_IN", ip = "1.1.1.1") =>
@@ -330,6 +331,48 @@ describe("OtpService", () => {
       h.contractors.push({ id: "c0", email: "other@example.com", phone: "+447700900001", firstAppSignInAt: null });
       await request("new@example.com", "REGISTER");
       await expect(verifyReg("new@example.com", sentCode())).rejects.toThrow("Could not complete registration");
+    });
+  });
+
+  describe("referral attribution at registration (B5)", () => {
+    const register = async (extra: Record<string, unknown>, evidence = {}) => {
+      await request("new@example.com", "REGISTER");
+      return svc.verify(
+        { email: "new@example.com", code: sentCode(), purpose: "REGISTER", clientType: "WEB", registration: reg, ...extra } as never,
+        h.clock.now,
+        evidence,
+      );
+    };
+
+    it("attributes the new account to the introducer, passing the request evidence", async () => {
+      const res = await register({ referralCode: "ABCD2345" }, { ip: "1.2.3.4", userAgent: "UA", deviceId: "d1" });
+      expect(referrals.attribute).toHaveBeenCalledWith(res.contractorId, "ABCD2345", {
+        source: "LINK",
+        ip: "1.2.3.4",
+        userAgent: "UA",
+        deviceId: "d1",
+      });
+    });
+
+    it("does nothing without a code", async () => {
+      await register({});
+      expect(referrals.attribute).not.toHaveBeenCalled();
+    });
+
+    it("ignores the code when an existing contractor signs in", async () => {
+      h.contractors.push({ id: "c0", email: "known@example.com", phone: "+447700900009", firstAppSignInAt: null });
+      await request("known@example.com");
+      await svc.verify(
+        { email: "known@example.com", code: sentCode(), purpose: "SIGN_IN", clientType: "WEB", referralCode: "ABCD2345" } as never,
+        h.clock.now,
+      );
+      expect(referrals.attribute).not.toHaveBeenCalled();
+    });
+
+    it("never blocks registration when attribution fails", async () => {
+      referrals.attribute.mockRejectedValueOnce(new Error("db down"));
+      const res = await register({ referralCode: "ABCD2345" });
+      expect(res.contractorId).toBe(h.contractors[0]?.id);
     });
   });
 

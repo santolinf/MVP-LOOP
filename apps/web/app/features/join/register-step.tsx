@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getGetMeQueryKey, useRequestOtp, useVerifyOtp } from "@loop/api-client";
 import { COPY } from "../../lib/copy";
 import { BTN_OUTLINE, BTN_SOLID, Card, Muted, PAGE_H1 } from "../marketing/primitives";
+import { readReferralCode } from "../referrals/referral-capture";
 import { clearDraft, readDraft } from "./draft-store";
 import { StepBar } from "./step-bar";
 
@@ -76,6 +77,7 @@ export function RegisterStep() {
             termsAccepted: true,
           },
           draftToken: readDraft()?.draftToken,
+          referralCode: readReferralCode() ?? undefined,
         },
       });
       clearDraft();

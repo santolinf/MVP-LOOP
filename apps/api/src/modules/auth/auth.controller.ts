@@ -33,6 +33,7 @@ class ReturnTargetResultDto extends createZodDto(ReturnTargetResultSchema) {}
 
 interface HttpReq {
   ip?: string;
+  headers?: Record<string, string | string[] | undefined>;
   contractorId?: string;
   sessionId?: string;
 }
@@ -81,8 +82,18 @@ export class AuthController {
   @ApiOperation({ operationId: "verifyOtp" })
   @ApiBody({ type: OtpVerifyDto })
   @ApiOkResponse({ type: AuthResultDto })
-  async verify(@Body() body: OtpVerifyDto, @Res({ passthrough: true }) res: HttpRes): Promise<AuthResultDto> {
-    const result = await this.otp.verify(body);
+  async verify(
+    @Body() body: OtpVerifyDto,
+    @Res({ passthrough: true }) res: HttpRes,
+    @Req() req: HttpReq = {},
+  ): Promise<AuthResultDto> {
+    const ua = req.headers?.["user-agent"];
+    const device = req.headers?.["x-device-id"];
+    const result = await this.otp.verify(body, new Date(), {
+      ip: req.ip,
+      userAgent: typeof ua === "string" ? ua.slice(0, 512) : undefined,
+      deviceId: typeof device === "string" && device.length <= 128 ? device : undefined,
+    });
     if (body.clientType === "WEB") {
       res.cookie(SESSION_COOKIE, this.sessions.cookieValue(result.sessionId), {
         ...this.cookieOptions(),

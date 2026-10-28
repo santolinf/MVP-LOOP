@@ -25,4 +25,6 @@ export interface OtpVerifyDto {
   returnToken?: string;
   /** @maxLength 128 */
   draftToken?: string;
+  /** @maxLength 32 */
+  referralCode?: string;
 }
