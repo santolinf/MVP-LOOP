@@ -7,11 +7,15 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "openapi": "tsx src/openapi.ts",
+    "totp": "tsx src/scripts/totp-code.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1153.0",
+    "@aws-sdk/s3-request-presigner": "^3.1153.0",
     "@loop/contracts": "workspace:*",
     "@loop/db": "workspace:*",
     "@loop/domain": "workspace:*",

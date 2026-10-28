@@ -9,7 +9,7 @@ export function RewardsFoundingCard() {
 
   return (
     <>
-      <h2 className="mb-2 text-xl font-semibold">Rewards and Founding status</h2>
+      <h2 className="mb-2 mt-3 text-lg font-bold tracking-[-0.02em] text-fg">Rewards and Founding status</h2>
       {f ? (
         <p className="mb-3">
           {f.place !== null

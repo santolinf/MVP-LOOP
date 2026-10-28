@@ -33,13 +33,19 @@ export const MeSchema = z.object({
   employment: EmploymentSituationSchema.nullable(),
   /** Confirmed start date (YYYY-MM-DD, Europe/London) or null. */
   availableFrom: z.string().date().nullable(),
+  /** Current contract end date (YYYY-MM-DD, Europe/London) or null. */
+  contractEndDate: z.string().date().nullable(),
   availability: AvailabilityStatusSchema,
 });
 export type Me = z.infer<typeof MeSchema>;
 
-/** confirmationSource is set to WEB by the server; clients never choose it. */
+/**
+ * confirmationSource is set by the server; clients never choose it. `contractEndDate` is optional so
+ * existing clients keep working (rule 14); omitted is treated as null.
+ */
 export const ConfirmAvailabilityRequestSchema = z.object({
   employment: EmploymentSituationSchema,
   availableFrom: z.string().date().nullable(),
-});
+  contractEndDate: z.string().date().nullable().optional(),
+}).strict();
 export type ConfirmAvailabilityRequest = z.infer<typeof ConfirmAvailabilityRequestSchema>;

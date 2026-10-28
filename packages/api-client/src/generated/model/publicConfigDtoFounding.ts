@@ -16,4 +16,9 @@ export type PublicConfigDtoFounding = {
      * @maximum 9007199254740991
      */
   claimed: number;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     */
+  placesLeft: number;
 };

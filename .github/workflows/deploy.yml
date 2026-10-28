@@ -8,6 +8,10 @@ concurrency: { group: deploy-production, cancel-in-progress: false }
 jobs:
   verify:
     uses: ./.github/workflows/ci.yml
+    # A called workflow cannot hold more than its caller grants; ci.yml's security job needs pull-requests: read.
+    permissions:
+      contents: read
+      pull-requests: read
 
   deploy:
     needs: verify

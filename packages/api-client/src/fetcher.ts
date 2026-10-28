@@ -1,6 +1,8 @@
 function csrfToken(): string | undefined {
   if (typeof document === "undefined") return undefined;
-  return document.cookie.match(/(?:^|; )csrf=([^;]+)/)?.[1];
+  // The admin portal (served under /admin) is a separate realm with its own readable CSRF cookie.
+  const name = typeof location !== "undefined" && location.pathname.startsWith("/admin") ? "staff_csrf" : "csrf";
+  return document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]+)`))?.[1];
 }
 
 /** Orval mutator: same-origin cookie auth plus CSRF header on mutating requests. */

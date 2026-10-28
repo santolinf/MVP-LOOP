@@ -1,0 +1,91 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f6f7f9;
+  --fg: #14181f;
+  --muted: #5a6472;
+  --line: #d5dae1;
+  --panel: #ffffff;
+  --accent: #1f5fd1;
+  --err: #b3261e;
+  --ok: #1b6e3a;
+  --lime: #4d7c0f;
+  --orange: #b45309;
+  --red: #b3261e;
+  --blue: #1d4ed8;
+  --grey: #5a6472;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151a;
+    --fg: #e7eaee;
+    --muted: #9aa4b2;
+    --line: #2d3440;
+    --panel: #1a1f27;
+    --accent: #6ea0ff;
+    --err: #ff8a80;
+    --ok: #7fd49a;
+    --lime: #a3e635;
+    --orange: #fbbf24;
+    --red: #ff8a80;
+    --blue: #7aa7ff;
+    --grey: #9aa4b2;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 system-ui, sans-serif; }
+h1, h2, h3, h4 { margin: 1rem 0 0.5rem; }
+a { color: var(--accent); }
+.muted { color: var(--muted); }
+.error { color: var(--err); }
+.ok { color: var(--ok); }
+.shell { display: grid; grid-template-columns: 14rem 1fr; grid-template-rows: auto 1fr; min-height: 100vh; }
+.top { grid-column: 1 / -1; display: flex; gap: 1rem; align-items: center; padding: 0.6rem 1rem; background: var(--panel); border-bottom: 1px solid var(--line); }
+.top .muted { margin-left: auto; }
+nav { display: flex; flex-direction: column; padding: 0.5rem; background: var(--panel); border-right: 1px solid var(--line); }
+nav a { padding: 0.5rem 0.75rem; border-radius: 6px; color: var(--fg); text-decoration: none; }
+nav a[aria-current="page"] { background: var(--bg); font-weight: 700; outline: 1px solid var(--line); }
+main { padding: 1rem 1.5rem; min-width: 0; }
+.login { max-width: 24rem; margin: 10vh auto; padding: 1.5rem; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.stack { display: flex; flex-direction: column; gap: 0.6rem; }
+.row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; }
+label { display: flex; flex-direction: column; gap: 0.2rem; font-weight: 600; }
+label.check { flex-direction: row; align-items: center; font-weight: 400; }
+input, select, textarea, button { font: inherit; padding: 0.4rem 0.6rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); }
+button { cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.link { border: 0; background: none; color: var(--accent); padding: 0; text-decoration: underline; }
+fieldset { border: 0; padding: 0; margin: 0; }
+table.data { width: 100%; border-collapse: collapse; background: var(--panel); margin: 0.5rem 0; }
+table.data th, table.data td { text-align: left; vertical-align: top; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--line); }
+.pager { display: flex; gap: 1rem; align-items: center; margin: 0.5rem 0 1rem; }
+.panel { margin: 1rem 0; padding: 1rem; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.panel > header { display: flex; justify-content: space-between; align-items: center; }
+.panel h3 { margin: 0; }
+.tiles { list-style: none; display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 0; }
+.tiles li { min-width: 9rem; padding: 0.75rem 1rem; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; display: flex; flex-direction: column; }
+.tiles strong { font-size: 1.6rem; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; }
+.secret { word-break: break-all; padding: 0.5rem; background: var(--bg); border-radius: 6px; }
+pre { white-space: pre-wrap; background: var(--bg); padding: 0.5rem; border-radius: 6px; }
+@media (max-width: 720px) {
+  .shell { grid-template-columns: 1fr; }
+  nav { flex-direction: row; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--line); }
+}
+
+/* The shared AvailabilityBadge is styled with web utility classes; the admin has no Tailwind, so map the few it uses. */
+.inline-flex { display: inline-flex; }
+.items-center { align-items: center; }
+.gap-1\.5 { gap: 0.375rem; }
+.rounded-full { border-radius: 999px; }
+.px-3 { padding-inline: 0.75rem; }
+.py-1 { padding-block: 0.25rem; }
+.text-sm { font-size: 0.875rem; }
+.font-bold { font-weight: 700; }
+.bg-panel-2 { background: var(--bg); border: 1px solid var(--line); }
+.text-lime { color: var(--lime); }
+.text-orange { color: var(--orange); }
+.text-red { color: var(--red); }
+.text-blue { color: var(--blue); }
+.text-grey { color: var(--grey); }

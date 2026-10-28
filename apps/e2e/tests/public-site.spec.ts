@@ -11,7 +11,7 @@ test.describe("public marketing site", () => {
 
   for (const [path, heading] of [
     ["/introduce", /./],
-    ["/founding", "Become a Founding Member for life"],
+    ["/founding", /Help build LOOP/],
   ] as const) {
     test(`${path} renders`, async ({ page }) => {
       await page.goto(path);

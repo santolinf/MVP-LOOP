@@ -1,24 +1,32 @@
 import type { Socket} from "node:net";
 import { connect } from "node:net";
+import { logger } from "../../common/logger.js";
 import type { RenderedEmail } from "./email-templates.js";
 
 export const EMAIL_SENDER = Symbol("EMAIL_SENDER");
 
+/** `providerMessageId` lets webhook events be matched back to the message (Phase 8). */
+export interface SendResult {
+  providerMessageId?: string;
+}
+
 export interface EmailSender {
-  send(to: string, message: RenderedEmail): Promise<void>;
+  send(to: string, message: RenderedEmail): Promise<SendResult | void>;
 }
 
 export interface EmailSenderOptions {
   from: string;
   smtpHost?: string;
   smtpPort: number;
+  postmarkToken?: string;
   production: boolean;
 }
 
 /** Development stand-in: prints the message so the flow works without a mail server. Never used in production. */
 export class ConsoleEmailSender implements EmailSender {
   async send(to: string, message: RenderedEmail): Promise<void> {
-    console.info(`[dev-email] to=${to}\n${message.subject}\n${message.text}`);
+    // Recipient and body are never logged (they carry the email address and OTP). Read the message in Mailpit.
+    logger.info({ subject: message.subject, recipientDomain: to.split("@")[1] ?? "unknown" }, "dev email suppressed; set SMTP_HOST to deliver");
   }
 }
 
@@ -68,6 +76,38 @@ export class SmtpEmailSender implements EmailSender {
   }
 }
 
+/**
+ * Postmark transactional email (OQ4). Plain fetch, no SDK dependency. `MessageStream: outbound` is the transactional
+ * stream; marketing would use a separate broadcast stream.
+ */
+export class PostmarkEmailSender implements EmailSender {
+  constructor(
+    private readonly token: string,
+    private readonly from: string,
+    private readonly fetchImpl: typeof fetch = fetch,
+  ) {}
+
+  async send(to: string, message: RenderedEmail): Promise<SendResult> {
+    const res = await this.fetchImpl("https://api.postmarkapp.com/email", {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json", "X-Postmark-Server-Token": this.token },
+      body: JSON.stringify({
+        From: this.from,
+        To: address(to),
+        Subject: message.subject,
+        TextBody: message.text,
+        HtmlBody: message.html,
+        MessageStream: "outbound",
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    // The body can echo the recipient, so only the status code is surfaced.
+    if (!res.ok) throw new Error(`Postmark send failed with status ${res.status}`);
+    const body = (await res.json()) as { MessageID?: unknown };
+    return typeof body.MessageID === "string" ? { providerMessageId: body.MessageID } : {};
+  }
+}
+
 /** Strips header/command injection characters from an address. */
 function address(value: string): string {
   const m = /<([^>]+)>/.exec(value);
@@ -109,6 +149,7 @@ function reader(socket: Socket): (code: number) => Promise<void> {
 }
 
 export function createEmailSender(opts: EmailSenderOptions): EmailSender {
+  if (opts.postmarkToken) return new PostmarkEmailSender(opts.postmarkToken, opts.from);
   if (opts.smtpHost) return new SmtpEmailSender(opts.smtpHost, opts.smtpPort, opts.from);
   if (opts.production) {
     // TODO(spec): production email provider (Postmark/SES) is configured with infra; fail loudly until then.

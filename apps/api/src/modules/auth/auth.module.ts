@@ -1,4 +1,5 @@
 import { Global, Module } from "@nestjs/common";
+import { ReferralsModule } from "../referrals/referrals.module.js";
 import { AuditService } from "../../common/audit.service.js";
 import { loadEnv } from "../../config/index.js";
 import { AuthController } from "./auth.controller.js";
@@ -9,6 +10,7 @@ import { AUTH_SETTINGS, SessionService, type AuthSettings } from "./session.serv
 /** Global so the app-wide AuthGuard can resolve SessionService. */
 @Global()
 @Module({
+  imports: [ReferralsModule],
   controllers: [AuthController],
   providers: [
     {
@@ -26,6 +28,7 @@ import { AUTH_SETTINGS, SessionService, type AuthSettings } from "./session.serv
           from: env.EMAIL_FROM,
           smtpHost: env.SMTP_HOST,
           smtpPort: env.SMTP_PORT,
+          postmarkToken: env.POSTMARK_SERVER_TOKEN,
           production: env.NODE_ENV === "production",
         });
       },
@@ -34,6 +37,6 @@ import { AUTH_SETTINGS, SessionService, type AuthSettings } from "./session.serv
     OtpService,
     AuditService,
   ],
-  exports: [SessionService, AUTH_SETTINGS],
+  exports: [SessionService, AUTH_SETTINGS, EMAIL_SENDER],
 })
 export class AuthModule {}

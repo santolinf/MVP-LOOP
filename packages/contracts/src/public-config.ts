@@ -6,6 +6,6 @@ export const PublicConfigSchema = z.object({
     agencyAccess: z.boolean(),
     profitShare: z.boolean(),
   }),
-  founding: z.object({ cap: z.number().int(), claimed: z.number().int() }),
+  founding: z.object({ cap: z.number().int(), claimed: z.number().int(), placesLeft: z.number().int() }),
 });
 export type PublicConfig = z.infer<typeof PublicConfigSchema>;

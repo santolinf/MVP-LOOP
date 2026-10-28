@@ -1,10 +1,13 @@
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import { ConflictException, BadRequestException, HttpException, HttpStatus, Inject, Injectable, UnauthorizedException } from "@nestjs/common";
 import { Prisma, prisma } from "@loop/db";
-import { checkOtpUsable, decideOtpSend, generateOtpCode, normaliseEmail, normaliseUkMobile } from "@loop/domain";
+import { CONSENT_WORDING, checkOtpUsable, decideOtpSend, generateOtpCode, normaliseEmail, normaliseUkMobile, routeForReturnTarget } from "@loop/domain";
 import type { AuthResult, OtpRequest, OtpRequestResult, OtpVerify } from "@loop/contracts";
 import { AuditService } from "../../common/audit.service.js";
 import { loadOtpConfig } from "../../common/auth-config.js";
+import { logger } from "../../common/logger.js";
+import { DraftService } from "../cv/draft.service.js";
+import { ReferralsService, type AttributionContext } from "../referrals/referrals.service.js";
 import { EMAIL_SENDER, type EmailSender } from "./email-sender.js";
 import { renderOtpEmail } from "./email-templates.js";
 import { AUTH_SETTINGS, SessionService, type AuthSettings } from "./session.service.js";
@@ -32,6 +35,8 @@ export class OtpService {
     @Inject(EMAIL_SENDER) private readonly sender: EmailSender,
     @Inject(SessionService) private readonly sessions: SessionService,
     @Inject(AuditService) private readonly audit: AuditService,
+    @Inject(DraftService) private readonly drafts: DraftService,
+    @Inject(ReferralsService) private readonly referrals: ReferralsService,
   ) {}
 
   private hmac(data: string): string {
@@ -94,11 +99,12 @@ export class OtpService {
       await this.sender.send(to, message);
     } catch (e) {
       // Never log the address or code; a delivery failure must not change the response either.
-      console.error("OTP email delivery failed:", e instanceof Error ? e.message : "unknown error");
+      logger.error({ errorName: e instanceof Error ? e.name : "unknown" }, "OTP email delivery failed");
     }
   }
 
-  async verify(input: OtpVerify, now = new Date()): Promise<AuthResult> {
+  /** `evidence` is request metadata for referral attribution; it is hashed before storage. */
+  async verify(input: OtpVerify, now = new Date(), evidence: Omit<AttributionContext, "source"> = {}): Promise<AuthResult> {
     const cfg = await loadOtpConfig();
     const email = normaliseEmail(input.email);
     const emailHash = this.emailHash(email);
@@ -124,6 +130,7 @@ export class OtpService {
     if (consumed.count !== 1) throw fail();
 
     let contractor = await prisma.contractor.findUnique({ where: { email }, select: { id: true, firstAppSignInAt: true } });
+    const registered = !contractor;
     if (!contractor) {
       if (input.purpose !== "REGISTER" || !input.registration || !mobile) throw fail();
       contractor = await this.createContractor(email, mobile, input.registration);
@@ -145,7 +152,42 @@ export class OtpService {
         data: { firstAppSignInAt: now, firstAppSignInSessionId: result.sessionId },
       });
     }
-    return result;
+    await this.audit.record({
+      actorId: contractor.id,
+      entityType: "Contractor",
+      entityId: contractor.id,
+      action: "SIGNED_IN",
+      after: { clientType: input.clientType, purpose: input.purpose, sessionId: result.sessionId },
+    });
+
+    if (input.draftToken) {
+      // Best-effort: a stale or foreign draft token must never block sign-in.
+      try {
+        const adopted = await this.drafts.adopt(input.draftToken, contractor.id, now);
+        if (adopted) {
+          await this.audit.record({
+            actorId: contractor.id,
+            entityType: "Contractor",
+            entityId: contractor.id,
+            action: "UPLOAD_DRAFT_ADOPTED",
+          });
+        }
+      } catch (e) {
+        logger.error({ errorName: e instanceof Error ? e.name : "unknown" }, "Upload draft adoption failed");
+      }
+    }
+
+    if (registered && input.referralCode) {
+      // Best-effort: a bad or stale code must never block registration. The registrant can still set an introducer later.
+      try {
+        await this.referrals.attribute(contractor.id, input.referralCode, { source: "LINK", ...evidence });
+      } catch (e) {
+        logger.error({ errorName: e instanceof Error ? e.name : "unknown" }, "Referral attribution failed");
+      }
+    }
+
+    const target = input.returnToken ? this.sessions.verifyReturnToken(input.returnToken, now) : null;
+    return target ? { ...result, returnTo: routeForReturnTarget(target) } : result;
   }
 
   private async createContractor(
@@ -160,18 +202,28 @@ export class OtpService {
           phone,
           firstName: reg.firstName,
           lastName: reg.lastName,
-          marketingConsent: reg.marketingOptIn,
-          // TODO(spec): confirm accepting the terms is the operational-SMS consent; marketing is separate.
-          operationalSmsConsent: true,
+          marketingConsent: reg.marketingOptIn === true,
         },
         select: { id: true, firstAppSignInAt: true },
       });
+      if (reg.marketingOptIn === true) {
+        // Deprecated field: only an explicit true from an older client is honoured, as a versioned grant.
+        await prisma.consentRecord.create({
+          data: {
+            contractorId: created.id,
+            purpose: "LOOP_MARKETING",
+            wordingVersion: CONSENT_WORDING.LOOP_MARKETING.version,
+            source: "WEB",
+            grantedAt: new Date(),
+          },
+        });
+      }
       await this.audit.record({
         actorId: created.id,
         entityType: "Contractor",
         entityId: created.id,
         action: "REGISTERED",
-        after: { marketingConsent: reg.marketingOptIn, termsAccepted: true },
+        after: { marketingConsent: reg.marketingOptIn === true, termsAccepted: true },
       });
       return created;
     } catch (e) {

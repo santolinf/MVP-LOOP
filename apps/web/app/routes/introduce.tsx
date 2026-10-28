@@ -1,4 +1,4 @@
-import { ButtonLink, Card, Lead, Section } from "../features/marketing/primitives";
+import { ButtonLink, Card, Eyebrow, Lead, PAGE_H1, PAGE_H2, Section } from "../features/marketing/primitives";
 import { ReferralLinkCard, useHasReferralLink } from "../features/referrals/referral-link-card";
 import { JOIN_PATH } from "../features/marketing/home-sections";
 
@@ -10,15 +10,15 @@ export default function Introduce() {
   const { has } = useHasReferralLink();
   return (
     <Section narrow>
-      <span className="mb-3 block text-sm font-semibold uppercase tracking-wide text-cyan">Grow the network</span>
-      <h1 className="mb-4 text-4xl font-bold leading-tight">
+      <Eyebrow>Grow the network</Eyebrow>
+      <h1 className={PAGE_H1}>
         Introduce more.
         <br />
         <em className="not-italic text-lime">Earn more.</em>
       </h1>
       <Lead>Help build the LOOP network and get rewarded for bringing fellow UK IT contractors on board.</Lead>
-      <Card>
-        <h3 className="mb-4 text-xl font-semibold">How it works</h3>
+      <Card className="mt-8">
+        <h2 className={PAGE_H2}>How it works</h2>
         <p className="mb-4 text-muted">
           <strong className="text-fg">5 introductions</strong>
           <br />

@@ -10,10 +10,10 @@ import {
 import { deriveFreshness, isFreshnessGrey, type FreshnessState, type FreshnessThresholds } from "../freshness/index.js";
 
 export const AVAILABILITY_LABELS: Record<AvailabilityColour, string> = {
-  LIME: "Available now",
+  LIME: "Available Now",
   ORANGE: "Available soon",
   RED: "Unavailable",
-  BLUE: "Permanent, open to contract",
+  BLUE: "Permanently Employed",
   GREY: "Unconfirmed",
 };
 

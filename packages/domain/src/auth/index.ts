@@ -72,5 +72,8 @@ export function normaliseUkMobile(input: string): string | null {
   let n = input.replace(/[\s\-().]/g, "");
   if (n.startsWith("00")) n = `+${n.slice(2)}`;
   if (n.startsWith("07")) n = `+44${n.slice(1)}`;
+  // "+44 (0)7700 ..." writes the trunk zero in brackets; it is not part of the international number.
+  if (n.startsWith("+440")) n = `+44${n.slice(4)}`;
   return /^\+447[1-57-9]\d{8}$/.test(n) ? n : null;
 }
+export * from "./return-target.js";

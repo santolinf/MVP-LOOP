@@ -3,7 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { uuid } from "../../lib/uuid";
 import { captureReferralFromUrl, clearReferralCode, readReferralCode } from "./referral-capture";
 
-// Captures ?ref= on any page; once a session exists, attributes it exactly once and clears it.
+// Captures ?ref= on any page; once a session exists, attributes it and clears it. This is the fallback: registration
+// already sends the code with the account (B5). The code is cleared only once the server has answered, so a failed
+// call (network, rate limit, 5xx) is retried on the next page load instead of losing the introduction.
 export function ReferralAttribution() {
   const [code, setCode] = useState<string | null>(null);
   const sent = useRef(false);
@@ -23,7 +25,7 @@ export function ReferralAttribution() {
     sent.current = true;
     mutate(
       { data: { code } },
-      { onSettled: () => { clearReferralCode(); setCode(null); } },
+      { onSuccess: () => { clearReferralCode(); setCode(null); } },
     );
   }, [code, signedIn, mutate]);
 

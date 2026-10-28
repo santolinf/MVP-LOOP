@@ -16,4 +16,5 @@ export interface AuthResultDto {
      * @maximum 9007199254740991
      */
   expiresInSeconds?: number;
+  returnTo?: string;
 }

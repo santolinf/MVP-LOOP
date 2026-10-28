@@ -12,7 +12,7 @@ export const OtpRequestSchema = z.object({
   email: z.string().trim().email().max(254),
   purpose: OtpPurposeSchema,
   clientType: ClientTypeSchema,
-});
+}).strict();
 export type OtpRequest = z.infer<typeof OtpRequestSchema>;
 
 /** Identical for every request, whether or not the email exists or a send was suppressed. */
@@ -30,14 +30,15 @@ export const RegistrationDetailsSchema = z.object({
   /** UK mobile; any common format, stored as E.164. Ownership verification is Q1. */
   mobile: z.string().trim().min(10).max(20),
   termsAccepted: z.literal(true),
-  marketingOptIn: z.boolean(),
-});
+  /** Deprecated (Phase 6): marketing consent is now taken at the review step. Kept optional so older clients keep working; an explicit true is still recorded as a LOOP_MARKETING grant. */
+  marketingOptIn: z.boolean().optional(),
+}).strict();
 export type RegistrationDetails = z.infer<typeof RegistrationDetailsSchema>;
 
 export const OtpAttestationSchema = z.object({
   platform: z.enum(["IOS", "ANDROID"]),
   token: z.string().min(1).max(8192),
-});
+}).strict();
 export type OtpAttestation = z.infer<typeof OtpAttestationSchema>;
 
 export const OtpVerifySchema = z.object({
@@ -48,7 +49,13 @@ export const OtpVerifySchema = z.object({
   registration: RegistrationDetailsSchema.optional(),
   /** Supported but ignored while the `auth.attestation` flag is off (Q8). */
   attestation: OtpAttestationSchema.optional(),
-});
+  /** Signed token from `POST /auth/return-target`; resolved server-side to a fixed in-site route. */
+  returnToken: z.string().max(512).optional(),
+  /** Anonymous CV-upload draft token (Phase 3); adopted by the new account at registration. */
+  draftToken: z.string().max(128).optional(),
+  /** B5: referral code captured from the invite link. Used only when this verify creates the account; ignored for sign-in. */
+  referralCode: z.string().max(32).optional(),
+}).strict();
 export type OtpVerify = z.infer<typeof OtpVerifySchema>;
 
 export const AuthResultSchema = z.object({
@@ -60,10 +67,12 @@ export const AuthResultSchema = z.object({
   accessToken: z.string().optional(),
   refreshToken: z.string().optional(),
   expiresInSeconds: z.number().int().optional(),
+  /** In-site route to resume after sign-in (from a valid `returnToken`); absent otherwise. */
+  returnTo: z.string().optional(),
 });
 export type AuthResult = z.infer<typeof AuthResultSchema>;
 
-export const RefreshRequestSchema = z.object({ refreshToken: z.string().min(1).max(256) });
+export const RefreshRequestSchema = z.object({ refreshToken: z.string().min(1).max(256) }).strict();
 export type RefreshRequest = z.infer<typeof RefreshRequestSchema>;
 
 export const SessionItemSchema = z.object({
@@ -80,3 +89,16 @@ export type SessionList = z.infer<typeof SessionListSchema>;
 
 export const LogoutResultSchema = z.object({ ok: z.literal(true) });
 export type LogoutResult = z.infer<typeof LogoutResultSchema>;
+
+export const LogoutAllResultSchema = z.object({ ok: z.literal(true), revoked: z.number().int() });
+export type LogoutAllResult = z.infer<typeof LogoutAllResultSchema>;
+
+/** Allow-listed deep-link targets; mirrors RETURN_TARGETS in @loop/domain. */
+export const ReturnTargetIdSchema = z.enum(["MY_LOOP", "AVAILABILITY", "INTRODUCE", "FOUNDING", "JOIN_CV"]);
+export type ReturnTargetIdValue = z.infer<typeof ReturnTargetIdSchema>;
+
+export const ReturnTargetRequestSchema = z.object({ target: ReturnTargetIdSchema }).strict();
+export type ReturnTargetRequest = z.infer<typeof ReturnTargetRequestSchema>;
+
+export const ReturnTargetResultSchema = z.object({ token: z.string() });
+export type ReturnTargetResult = z.infer<typeof ReturnTargetResultSchema>;

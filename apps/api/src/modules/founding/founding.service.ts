@@ -8,23 +8,40 @@ import { factsFor } from "../me/me.service.js";
 
 class AlreadyAllocated extends Error {}
 
+const candidate = (s: { registeredReferrals: number; isCurrent: boolean; requireAppSignIn: boolean; hasAppSignIn: boolean }) => ({
+  uniqueRegisteredDirectReferrals: s.registeredReferrals,
+  isCurrent: s.isCurrent,
+  requireAppSignIn: s.requireAppSignIn,
+  hasVerifiedAppSignIn: s.hasAppSignIn,
+});
+
 @Injectable()
 export class FoundingService {
   // Explicit @Inject: the dev runner (tsx/esbuild) does not emit design:paramtypes metadata.
   constructor(@Inject(AuditService) private readonly audit: AuditService) {}
 
-  /** TODO(spec): confirm "registered" means the referee is live. */
+  /**
+   * "Registered" = attribution locked at GO LIVE and not held by an open or confirmed review flag (Phase 9).
+   * TODO(spec): Open Question 11 - the verified first app sign-in condition is behind the
+   * `founding.require_app_signin` flag, off by default because the app is deferred.
+   */
   private async snapshot(id: string, now: Date) {
     const c = await prisma.contractor.findUnique({ where: { id } });
     if (!c) throw new NotFoundException("Contractor not found");
-    const refs = await prisma.referral.findMany({ where: { referrerId: id }, select: { refereeId: true } });
-    const registeredReferrals = refs.length
-      ? await prisma.contractor.count({ where: { id: { in: refs.map((r) => r.refereeId) }, live: true } })
-      : 0;
+    const refs = await prisma.referral.findMany({ where: { referrerId: id, lockedAt: { not: null } }, select: { id: true } });
+    const held = refs.length
+      ? await prisma.referralFlag.findMany({
+          where: { referralId: { in: refs.map((r) => r.id) }, status: { in: ["OPEN", "CONFIRMED"] } },
+          select: { referralId: true },
+        })
+      : [];
+    const heldIds = new Set(held.map((h) => h.referralId));
+    const registeredReferrals = refs.filter((r) => !heldIds.has(r.id)).length;
+    const requireAppSignIn = (await prisma.featureFlag.findUnique({ where: { key: "founding.require_app_signin" } }))?.enabled ?? false;
     // "Current" = availability confirmed and not stale (anything but grey).
     const isCurrent =
       describeAvailability(factsFor(c, now), await loadFreshnessThresholds(), now).colour !== "GREY";
-    return { place: c.foundingPlace, registeredReferrals, isCurrent };
+    return { place: c.foundingPlace, registeredReferrals, isCurrent, requireAppSignIn, hasAppSignIn: Boolean(c.firstAppSignInAt) };
   }
 
   async status(id: string, now = new Date()): Promise<FoundingStatus> {
@@ -33,7 +50,7 @@ export class FoundingService {
       required: FOUNDING_REQUIRED_REFERRALS,
       registeredReferrals: s.registeredReferrals,
       isCurrentProfile: s.isCurrent,
-      eligible: isFoundingEligible({ uniqueRegisteredDirectReferrals: s.registeredReferrals, isCurrent: s.isCurrent }),
+      eligible: isFoundingEligible(candidate(s)),
       place: s.place,
     };
   }
@@ -41,12 +58,12 @@ export class FoundingService {
   /**
    * B6: allocate the next place if eligible. One conditional counter update plus the contractor
    * update in a single transaction; never count-then-insert. Returns the place, or null.
-   * TODO(spec): also invoke when a referee goes live or a contractor reconfirms availability.
+   * Invoked when a referee completes registration. TODO(spec): also invoke when a contractor reconfirms availability.
    */
   async allocateIfEligible(id: string, now = new Date()): Promise<number | null> {
     const s = await this.snapshot(id, now);
     if (s.place !== null) return s.place;
-    if (!isFoundingEligible({ uniqueRegisteredDirectReferrals: s.registeredReferrals, isCurrent: s.isCurrent })) return null;
+    if (!isFoundingEligible(candidate(s))) return null;
     let place: number | null;
     try {
       place = await prisma.$transaction(async (tx) => {

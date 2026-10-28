@@ -2,8 +2,8 @@ import { COPY } from "../lib/copy";
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-line py-5 text-xs text-muted">
-      <div className="mx-auto w-[min(var(--container-page),calc(100%-30px))]">{COPY.footer}</div>
+    <footer className="border-t border-[#293441] py-[35px] text-[13px] text-[#98a7b9]">
+      <div className="mx-auto max-w-page px-[26px]">{COPY.footer}</div>
     </footer>
   );
 }

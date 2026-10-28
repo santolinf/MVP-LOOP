@@ -26,3 +26,43 @@ export function normaliseReferralCode(input: string): string | null {
   if (code.length !== REFERRAL_CODE_LENGTH) return null;
   return [...code].every((ch) => CODE_ALPHABET.includes(ch)) ? code : null;
 }
+
+export type ReferralSource = "LINK" | "CODE" | "VERBAL";
+export type ReferralFlagReason = "SAME_DEVICE" | "SELF_IDENTITY";
+export type ReferralFlagStatus = "OPEN" | "CLEARED" | "CONFIRMED";
+
+/**
+ * Phase 9: an introduction counts (towards the lifetime count and Founding) only once attribution is
+ * locked at completed registration (GO LIVE) and no review flag is open or confirmed.
+ */
+export function introductionCounts(i: { locked: boolean; flagStatuses: readonly ReferralFlagStatus[] }): boolean {
+  return i.locked && !i.flagStatuses.some((s) => s === "OPEN" || s === "CONFIRMED");
+}
+
+/** "Sam Jones" -> "S*** J." so a verbal lookup can be confirmed without exposing the member. */
+export function maskName(firstName: string | null, lastName: string | null): string {
+  const first = firstName?.trim() ?? "";
+  const last = lastName?.trim() ?? "";
+  const f = first ? `${first[0]?.toUpperCase()}***` : "";
+  const l = last ? `${last[0]?.toUpperCase()}.` : "";
+  return [f, l].filter(Boolean).join(" ") || "A LOOP member";
+}
+
+/** Folds plus-tags and (for Gmail) dots so alias addresses compare equal. */
+export function normaliseEmailIdentity(email: string): string {
+  const [rawLocal = "", rawDomain = ""] = email.trim().toLowerCase().split("@");
+  const domain = rawDomain === "googlemail.com" ? "gmail.com" : rawDomain;
+  let local = rawLocal.split("+")[0] ?? "";
+  if (domain === "gmail.com") local = local.replaceAll(".", "");
+  return `${local}@${domain}`;
+}
+
+/** Referees of one introducer who registered from the same device form a cluster needing review. */
+export function sameDeviceClusters(items: ReadonlyArray<{ referralId: string; deviceHash: string | null }>): string[][] {
+  const byDevice = new Map<string, string[]>();
+  for (const i of items) {
+    if (!i.deviceHash) continue;
+    byDevice.set(i.deviceHash, [...(byDevice.get(i.deviceHash) ?? []), i.referralId]);
+  }
+  return [...byDevice.values()].filter((ids) => ids.length > 1);
+}

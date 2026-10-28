@@ -1,22 +1,23 @@
 @import "tailwindcss";
 @source "../../../packages/ui/src";
 
-/* Design tokens from the V11 homepage prototype (requirements/LOOP_Frank_Homepage_V11/styles.css). */
+/* Design tokens from the V33 homepage concept (requirements/LOOP_App_Homepage_Handover_V33/01_NEW_HOMEPAGE). */
 @theme {
-  --color-bg: #061526;
-  --color-panel: #0b2237;
-  --color-panel-2: #102b42;
-  --color-line: #294357;
-  --color-fg: #f4f8fb;
-  --color-muted: #aec1cf;
-  --color-lime: #b9fb23;
-  --color-cyan: #16baf0;
+  --color-bg: #090c13;
+  --color-panel: #0e141e;
+  --color-panel-2: #121824;
+  --color-line: #283241;
+  --color-fg: #f6f8fb;
+  --color-muted: #a8b3c3;
+  --color-lime: #c7fb49;
+  --color-cyan: #55d9f5;
+  --color-indigo: #a9b3ff;
   --color-orange: #ff9b36;
   --color-red: #ff666f;
   --color-blue: #61c8ff;
   --color-grey: #c4cbd1;
   --radius-card: 17px;
-  --container-page: 1140px;
+  --container-page: 1180px;
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -39,4 +40,23 @@
       scroll-behavior: auto;
     }
   }
+}
+
+/* Gradients and shadows from the V33 homepage that Tailwind tokens do not express. */
+@utility bg-hero {
+  background:
+    radial-gradient(ellipse at 79% 29%, #16354b 0, transparent 35%),
+    radial-gradient(ellipse at 70% 55%, #282044 0, transparent 33%);
+}
+@utility bg-card-grad {
+  background: linear-gradient(150deg, #182130, #101722);
+}
+@utility bg-reward-grad {
+  background: linear-gradient(145deg, #1a2532, #111822);
+}
+@utility bg-cta-grad {
+  background: radial-gradient(ellipse at 50% 10%, #253a33, transparent 65%), #121b20;
+}
+@utility shadow-phone {
+  box-shadow: 0 30px 90px #000b, 0 0 65px #5cd7ed20;
 }

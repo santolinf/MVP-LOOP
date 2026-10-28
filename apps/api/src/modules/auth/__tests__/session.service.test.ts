@@ -40,7 +40,7 @@ vi.mock("@loop/db", () => ({
   },
 }));
 
-import { ACCESS_TOKEN_SECONDS, SessionService } from "../session.service.js";
+import { ACCESS_TOKEN_SECONDS, RETURN_TOKEN_SECONDS, WEB_IDLE_HOURS, WEB_SESSION_DAYS, SessionService } from "../session.service.js";
 
 const settings = { sessionSecret: "s".repeat(32), jwtSecret: "j".repeat(32), production: false };
 const svc = new SessionService(settings);
@@ -108,6 +108,54 @@ describe("cookie and CSRF", () => {
   });
 });
 
+describe("revokeAll", () => {
+  it("revokes every live session for the contractor only and returns the count", async () => {
+    const a = await svc.create({ contractorId: "c1", clientType: "WEB", now });
+    const b = await svc.create({ contractorId: "c1", clientType: "MOBILE_APP", now });
+    const old = await svc.create({ contractorId: "c1", clientType: "WEB", now });
+    const other = await svc.create({ contractorId: "c2", clientType: "WEB", now });
+    await svc.revoke(old.sessionId, "c1", now);
+    expect(await svc.revokeAll("c1", later(10))).toBe(2);
+    expect(await svc.resolve(a.sessionId, later(10))).toBeNull();
+    expect(await svc.resolve(b.sessionId, later(10))).toBeNull();
+    expect(await svc.resolve(other.sessionId, later(10))).not.toBeNull();
+    expect(h.rows.find((r) => r.id === b.sessionId)?.refreshTokenHash).toBeNull();
+    expect(h.rows.find((r) => r.id === old.sessionId)?.revokedAt).toEqual(now);
+    expect(await svc.revokeAll("c1", later(20))).toBe(0);
+  });
+});
+
+describe("return tokens", () => {
+  it("round-trips an allow-listed target", () => {
+    expect(svc.verifyReturnToken(svc.signReturnToken("AVAILABILITY", now), later(60))).toBe("AVAILABILITY");
+  });
+  it("expires after 30 minutes", () => {
+    const t = svc.signReturnToken("MY_LOOP", now);
+    expect(svc.verifyReturnToken(t, later(RETURN_TOKEN_SECONDS - 1))).toBe("MY_LOOP");
+    expect(svc.verifyReturnToken(t, later(RETURN_TOKEN_SECONDS))).toBeNull();
+  });
+  it("rejects a tampered body or another secret", () => {
+    const t = svc.signReturnToken("MY_LOOP", now);
+    const sig = t.split(".")[1];
+    const forged = Buffer.from(JSON.stringify({ t: "FOUNDING", exp: 9_999_999_999 })).toString("base64url");
+    expect(svc.verifyReturnToken(`${forged}.${sig}`, now)).toBeNull();
+    const other = new SessionService({ ...settings, sessionSecret: "x".repeat(32) });
+    expect(svc.verifyReturnToken(other.signReturnToken("MY_LOOP", now), now)).toBeNull();
+  });
+  it("rejects a validly signed token naming an unknown target", () => {
+    const body = Buffer.from(JSON.stringify({ t: "https://evil.example", exp: 9_999_999_999 })).toString("base64url");
+    const signed = (svc as unknown as { mac: (s: string, d: string) => string }).mac(settings.sessionSecret, `return:${body}`);
+    expect(svc.verifyReturnToken(`${body}.${signed}`, now)).toBeNull();
+  });
+  it("cannot be built from a cookie or CSRF value", () => {
+    expect(svc.verifyReturnToken(svc.cookieValue("s1"), now)).toBeNull();
+    expect(svc.verifyReturnToken(svc.csrfToken("s1"), now)).toBeNull();
+  });
+  it.each(["", "nodot", ".", "a.b", "a.b.c"])("rejects malformed %j", (t) => {
+    expect(svc.verifyReturnToken(t, now)).toBeNull();
+  });
+});
+
 describe("refresh", () => {
   it("rotates the token and the old one stops working", async () => {
     const first = await svc.create({ contractorId: "c1", clientType: "MOBILE_APP", now });
@@ -141,6 +189,32 @@ describe("resolve, revoke and list", () => {
     const a = await svc.create({ contractorId: "c1", clientType: "WEB", now });
     await svc.revoke(a.sessionId, "c2", now);
     expect(await svc.resolve(a.sessionId, now)).not.toBeNull();
+  });
+  it("expires an idle web session after 8 hours but not an app session", async () => {
+    const web = await svc.create({ contractorId: "c1", clientType: "WEB", now });
+    const app = await svc.create({ contractorId: "c1", clientType: "MOBILE_APP", now });
+    expect(await svc.resolve(web.sessionId, later(WEB_IDLE_HOURS * 3600 - 1))).not.toBeNull();
+    const web2 = await svc.create({ contractorId: "c1", clientType: "WEB", now });
+    expect(await svc.resolve(web2.sessionId, later(WEB_IDLE_HOURS * 3600))).toBeNull();
+    expect(await svc.resolve(app.sessionId, later(WEB_IDLE_HOURS * 3600))).not.toBeNull();
+  });
+  it("slides the idle window while the session is used, up to the absolute limit", async () => {
+    const a = await svc.create({ contractorId: "c1", clientType: "WEB", now });
+    for (let h = 7; h <= 7 * 4; h += 7) expect(await svc.resolve(a.sessionId, later(h * 3600))).not.toBeNull();
+    expect(await svc.resolve(a.sessionId, later((WEB_SESSION_DAYS * 24 + 1) * 3600))).toBeNull();
+  });
+  it("touches lastUsedAt at most every 5 minutes", async () => {
+    const a = await svc.create({ contractorId: "c1", clientType: "WEB", now });
+    await svc.resolve(a.sessionId, later(299));
+    expect(h.rows[0]?.lastUsedAt).toEqual(now);
+    await svc.resolve(a.sessionId, later(300));
+    expect(h.rows[0]?.lastUsedAt).toEqual(later(300));
+  });
+  it("does not resurrect a revoked session when touching", async () => {
+    const a = await svc.create({ contractorId: "c1", clientType: "WEB", now });
+    await svc.revoke(a.sessionId, "c1", now);
+    expect(await svc.resolve(a.sessionId, later(600))).toBeNull();
+    expect(h.rows[0]?.lastUsedAt).toEqual(now);
   });
   it("lists live sessions and flags the current one", async () => {
     const a = await svc.create({ contractorId: "c1", clientType: "WEB", now });

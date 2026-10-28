@@ -22,5 +22,5 @@ export type OtpVerifyDtoRegistration = {
      */
   mobile: string;
   termsAccepted: true;
-  marketingOptIn: boolean;
+  marketingOptIn?: boolean;
 };

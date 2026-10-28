@@ -13,12 +13,12 @@ export function FoundingProgress() {
         aria-valuemin={0}
         aria-valuemax={f.cap}
         aria-valuenow={f.claimed}
-        className="mb-2 h-2 w-full overflow-hidden rounded bg-line"
+        className="mb-2 h-2 w-full overflow-hidden rounded-full bg-line"
       >
         <div className="h-full bg-lime" style={{ width: `${pct}%` }} />
       </div>
       <Muted className="text-sm">
-        {f.claimed.toLocaleString("en-GB")} of {f.cap.toLocaleString("en-GB")} places claimed
+        {f.claimed.toLocaleString("en-GB")} of {f.cap.toLocaleString("en-GB")} places claimed, {f.placesLeft.toLocaleString("en-GB")} left
       </Muted>
     </div>
   );
