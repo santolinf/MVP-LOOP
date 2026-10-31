@@ -26,6 +26,7 @@ Developing and testing in the cloud, and deploying.
 | Document | What it is |
 | --- | --- |
 | [gcp-dev-environment.md](cloud-environment/gcp-dev-environment.md) | Plan and provisioning guide for a shared DEV environment on one Google Cloud VM. |
+| [infra/terraform/](../infra/terraform/README.md) | Terraform for that DEV VM on Google Cloud (`gcp/`) and an Oracle Cloud equivalent (`oci/`). |
 | [deploy-docker.md](cloud-environment/deploy-docker.md) | Deploying the production-style stack on any Docker host. |
 | [ci-cd-pipeline.md](cloud-environment/ci-cd-pipeline.md) | CI/CD design: build, deploy, smoke tests, rollback. |
 | [deploy-storage-and-scanning.md](cloud-environment/deploy-storage-and-scanning.md) | Object storage and malware-scanner recipes (Google Cloud, AWS, self-hosted). |

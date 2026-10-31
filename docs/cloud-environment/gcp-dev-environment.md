@@ -161,6 +161,10 @@ Estimated effort: about half a day for someone comfortable with `gcloud`, mostly
 
 Set once: `PROJECT=<your-project-id>` and `ZONE=europe-west2-a`.
 
+Alternative to steps 2–5 by hand: [infra/terraform/gcp](../../infra/terraform/README.md) creates the APIs, firewall, VM,
+dedicated service account, tester IAM and an optional budget alert in one `terraform apply`. An Oracle Cloud
+equivalent is in `infra/terraform/oci`. Step 6 onwards is unchanged.
+
 ### 6.1 Project and APIs (steps 1–2)
 
 ```bash

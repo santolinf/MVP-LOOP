@@ -1,0 +1,19 @@
+# Copy to terraform.tfvars (gitignored) and fill in.
+
+project_id = "loop-dev-123456"
+
+# Everyone who may tunnel in, including you.
+testers = [
+  "user:you@example.com",
+  # "user:tester@example.com",
+]
+
+# Optional: monthly budget alert (needs roles/billing.costsManager on the billing account).
+# billing_account_id = "XXXXXX-XXXXXX-XXXXXX"
+# budget_amount_gbp  = 100
+
+# Optional: daily boot-disk snapshots.
+# enable_daily_snapshots = true
+
+# Option B only, discouraged: open ports 3000/9000/8025 to these exact IPs.
+# direct_access_cidrs = ["203.0.113.7/32"]

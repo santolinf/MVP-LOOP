@@ -1,0 +1,17 @@
+# Copy to terraform.tfvars (gitignored) and fill in.
+
+tenancy_ocid = "ocid1.tenancy.oc1..aaaa..."
+home_region  = "uk-london-1" # your tenancy's home region
+region       = "uk-london-1"
+
+# Optional: create loop-dev under this compartment instead of the root.
+# parent_compartment_ocid = "ocid1.compartment.oc1..aaaa..."
+
+# Group of testers (create it in the console first and add people, including you).
+tester_group = "'Default'/'loop-dev-testers'"
+
+budget_amount       = 100
+budget_alert_emails = ["you@example.com"]
+
+# Optional break-glass key for the opc user (Bastion sessions do not need it).
+# admin_ssh_public_key = "ssh-ed25519 AAAA... you@laptop"
