@@ -1,5 +1,7 @@
 # Production-style stack: Postgres + one-shot migration + the app (API, web, admin, worker in one container).
-# No seeding and no backing services (MinIO / ClamAV / Mailpit) by design.
+# No seeding and no local backing services (MinIO / scanner / Mailpit) by design. Object storage is any private
+# S3-compatible bucket and malware scanning is any host of the infra/clamav-scanner image; the app reaches both over
+# the network via S3_* and CLAMAV_* in .env.prod (ADR 0012, docs/deploy-storage-and-scanning.md).
 #
 #   cp .env.prod.example .env.prod      # then fill in real values
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
@@ -48,6 +50,12 @@ services:
       APP_ROLE: all
       PORT: 3000
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      # Fail fast at compose time if the external services are not configured (the app also enforces this at boot).
+      S3_REGION: ${S3_REGION:?set S3_REGION in .env.prod}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?set S3_ACCESS_KEY_ID in .env.prod}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?set S3_SECRET_ACCESS_KEY in .env.prod}
+      CLAMAV_URL: ${CLAMAV_URL:?set CLAMAV_URL in .env.prod}
+      CLAMAV_AUTH_TOKEN: ${CLAMAV_AUTH_TOKEN:?set CLAMAV_AUTH_TOKEN in .env.prod}
     ports:
       - "${APP_PORT:-3000}:3000"
     depends_on:

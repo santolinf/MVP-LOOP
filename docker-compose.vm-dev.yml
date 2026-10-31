@@ -1,0 +1,117 @@
+# Shared DEV environment on one VM: the app plus every dependency, all in containers (docs/gcp-dev-environment.md).
+# Not production: the app runs with NODE_ENV=development, mail goes to Mailpit (nothing leaves the VM), files go to
+# MinIO, and scanning uses the same scanner image as production. Use test data only.
+#
+#   cp .env.vm-dev.example .env.vm-dev      # then fill in the CHANGE_ME values
+#   docker compose -f docker-compose.vm-dev.yml --env-file .env.vm-dev up -d --build
+name: loop-dev
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env.vm-dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.vm-dev}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env.vm-dev}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    # Not published: only the other containers reach it.
+
+  # One-shot: applies pending Prisma migrations, then exits.
+  migrate:
+    build:
+      context: .
+      target: migrate
+    image: loop-migrate:${LOOP_TAG:-dev}
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  minio:
+    build: ./infra/minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:?set S3_ACCESS_KEY_ID in .env.vm-dev}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:?set S3_SECRET_ACCESS_KEY in .env.vm-dev}
+    volumes:
+      - miniodata:/data
+    # The app reaches it on the compose network (http://minio:9000). Browsers upload and download CVs with presigned URLs
+    # that point at S3_PUBLIC_ENDPOINT, so the S3 port is published (on BIND_ADDRESS, loopback by default).
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:9000:9000"
+
+  # Same image and HTTP contract as production (ADR 0012). First start downloads signatures: /healthz is 503 until ready.
+  clamav-scanner:
+    build: ./infra/clamav-scanner
+    restart: unless-stopped
+    environment:
+      AUTH_TOKEN: ${CLAMAV_AUTH_TOKEN:?set CLAMAV_AUTH_TOKEN in .env.vm-dev}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 120s
+
+  mailpit:
+    image: axllent/mailpit
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:8025:8025"
+
+  app:
+    build:
+      context: .
+      target: runtime
+    image: loop:${LOOP_TAG:-dev}
+    restart: unless-stopped
+    environment:
+      # development, not production: production refuses plain-HTTP scanner/SMTP and sets Secure-only cookies.
+      NODE_ENV: development
+      APP_ROLE: all
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env.vm-dev}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env.vm-dev}
+      APP_BASE_URL: ${APP_BASE_URL:?set APP_BASE_URL in .env.vm-dev}
+      PUBLIC_BASE_URL: ${APP_BASE_URL}
+      S3_ENDPOINT: http://minio:9000
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:?set S3_PUBLIC_ENDPOINT in .env.vm-dev}
+      S3_FORCE_PATH_STYLE: "true"
+      S3_BUCKET: loop-cv
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
+      CLAMAV_URL: http://clamav-scanner:8080
+      CLAMAV_AUTH_TOKEN: ${CLAMAV_AUTH_TOKEN}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      EMAIL_FROM: LOOP Dev <no-reply@loop.local>
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      minio:
+        condition: service_started
+      clamav-scanner:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  pgdata:
+  miniodata:

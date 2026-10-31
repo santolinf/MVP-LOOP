@@ -90,7 +90,7 @@ export class CvService {
       await this.storage.promote(upload.quarantineKey, objectKey);
       const done = await prisma.cvUpload.update({
         where: { id: upload.id },
-        data: { status: "READY", objectKey, sizeBytes: size, detectedType: detected, completedAt: new Date() },
+        data: { status: "READY", objectKey, sizeBytes: size, detectedType: detected, completedAt: new Date(), lastScannedAt: new Date() },
       });
       await this.auditUpload(owner, upload.id, "CV_UPLOAD_READY", { detectedType: detected, sizeBytes: size });
       // Phase 7: a signed-in upload is a new CV version; the extraction job compares it with the confirmed profile.

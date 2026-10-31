@@ -109,10 +109,54 @@ describe("loadEnv (fails closed)", () => {
       SESSION_SECRET: "s".repeat(40),
       JWT_SECRET: "j".repeat(40),
       SMTP_HOST: "smtp.example.com",
+      SMTP_USER: "smtp-user",
+      SMTP_PASSWORD: "smtp-password",
+      S3_REGION: "eu-west-2",
       S3_ACCESS_KEY_ID: "test-access-key",
       S3_SECRET_ACCESS_KEY: "test-secret-key",
+      CLAMAV_URL: "https://clamav-scanner-abc.a.run.app",
+      CLAMAV_AUTH_TOKEN: "c".repeat(40),
       CORS_ORIGINS: "https://app.loop.test",
     });
     expect(env.CORS_ORIGINS).toEqual(["https://app.loop.test"]);
+  });
+  describe("production SMTP", () => {
+    const prod = {
+      ...base,
+      NODE_ENV: "production",
+      SESSION_SECRET: "s".repeat(40),
+      JWT_SECRET: "j".repeat(40),
+      S3_REGION: "eu-west-2",
+      S3_ACCESS_KEY_ID: "test-access-key",
+      S3_SECRET_ACCESS_KEY: "test-secret-key",
+      CLAMAV_URL: "https://clamav-scanner-abc.a.run.app",
+      CLAMAV_AUTH_TOKEN: "c".repeat(40),
+      SMTP_HOST: "smtp.example.com",
+    };
+    it("defaults to starttls and requires credentials", () => {
+      expect(() => loadEnv(prod)).toThrow(/SMTP_USER[\s\S]*SMTP_PASSWORD/);
+      const env = loadEnv({ ...prod, SMTP_USER: "u", SMTP_PASSWORD: "p" });
+      expect(env.SMTP_TLS).toBe("starttls");
+    });
+    it("refuses plain-text SMTP", () => {
+      expect(() => loadEnv({ ...prod, SMTP_USER: "u", SMTP_PASSWORD: "p", SMTP_TLS: "none" })).toThrow(/SMTP_TLS/);
+    });
+    it("does not demand SMTP settings when Postmark is the provider", () => {
+      const env = loadEnv({ ...prod, POSTMARK_SERVER_TOKEN: "tok", POSTMARK_WEBHOOK_SECRET: "w".repeat(20) });
+      expect(env.SMTP_TLS).toBe("starttls");
+    });
+  });
+  it("rejects production without the ClamAV scanner settings", () => {
+    expect(() =>
+      loadEnv({
+        ...base,
+        NODE_ENV: "production",
+        SESSION_SECRET: "s".repeat(40),
+        JWT_SECRET: "j".repeat(40),
+        SMTP_HOST: "smtp.example.com",
+        S3_ACCESS_KEY_ID: "test-access-key",
+        S3_SECRET_ACCESS_KEY: "test-secret-key",
+      }),
+    ).toThrow(/CLAMAV_URL[\s\S]*CLAMAV_AUTH_TOKEN/);
   });
 });

@@ -26,9 +26,13 @@ services:
     image: axllent/mailpit
     ports: ["1025:1025", "8025:8025"]
 
-  clamav:
-    image: clamav/clamav:stable
-    ports: ["3310:3310"]
+  # Same scanner image and HTTP contract as production (ADR 0012). First start downloads signatures, so /healthz
+  # stays 503 for a minute or two. The token matches the dev default in apps/api/src/config.
+  clamav-scanner:
+    build: ./infra/clamav-scanner
+    ports: ["8080:8080"]
+    environment:
+      AUTH_TOKEN: dev-only-clamav-token-0123456789abcdef
 
 volumes:
   pgdata:

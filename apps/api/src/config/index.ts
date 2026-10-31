@@ -27,6 +27,9 @@ loadEnvironmentFiles();
 
 // Dev/test only; production must supply real secrets (from Secrets Manager).
 const DEV_SECRET = "dev-only-secret-do-not-use-in-production-0000";
+// Local scanner from docker-compose.yml (same token there).
+const DEV_CLAMAV_URL = "http://localhost:8080";
+const DEV_CLAMAV_TOKEN = "dev-only-clamav-token-0123456789abcdef";
 
 const csvList = z
   .string()
@@ -49,8 +52,17 @@ const EnvSchema = z
     EMAIL_FROM: z.string().min(1).default("LOOP <no-reply@loop.local>"),
     SMTP_HOST: z.string().min(1).optional(),
     SMTP_PORT: z.coerce.number().default(1025),
+    /**
+     * SMTP security (ADR 0013). `starttls` = port 587, `tls` = implicit TLS on 465, `none` = local Mailpit only.
+     * Defaults to `none` outside production and `starttls` in production, where `none` is refused.
+     */
+    SMTP_TLS: z.enum(["none", "starttls", "tls"]).optional(),
+    SMTP_USER: z.string().min(1).optional(),
+    SMTP_PASSWORD: z.string().min(1).optional(),
     /** Postmark server token. When set, email goes through Postmark (OQ4); SMTP stays the local Mailpit path. */
     POSTMARK_SERVER_TOKEN: z.string().min(1).optional(),
+    /** Shared secret for the provider-neutral bounce/complaint webhook, POST /webhooks/email (HTTP Basic password). */
+    EMAIL_WEBHOOK_SECRET: z.string().min(16).optional(),
     /** Shared secret for the Postmark bounce/complaint webhook (HTTP Basic auth password). */
     POSTMARK_WEBHOOK_SECRET: z.string().min(16).optional(),
     /** Public origin of the site, used to build links in emails. */
@@ -69,9 +81,19 @@ const EnvSchema = z
     RATE_LIMIT_ACCOUNT_PER_MIN: z.coerce.number().int().min(1).default(600),
     /** Global per-device (x-device-id header) request budget per minute. */
     RATE_LIMIT_DEVICE_PER_MIN: z.coerce.number().int().min(1).default(300),
-    /** S3-compatible private bucket for CV files (MinIO locally). Personal data: UK region only. */
+    /**
+     * Object storage contract (ADR 0012): any private S3-compatible bucket with SigV4 presigned URLs (AWS S3, MinIO,
+     * GCS interop, R2, ...). S3_ENDPOINT is omitted for AWS S3. Personal data: UK region only, which is a deployment
+     * requirement, so S3_REGION must be set explicitly in production.
+     */
     S3_ENDPOINT: z.string().min(1).optional(),
-    S3_REGION: z.string().min(1).default("eu-west-2"),
+    S3_REGION: z.string().min(1).optional(),
+    /**
+     * Endpoint the BROWSER uses for presigned upload/download URLs, when it differs from the one the API uses (e.g. the
+     * API reaches MinIO as http://minio:9000 on a private network, the browser as http://localhost:9000). Defaults to
+     * S3_ENDPOINT. Only affects the host baked into presigned URLs.
+     */
+    S3_PUBLIC_ENDPOINT: z.string().url().optional(),
     S3_BUCKET: z.string().min(1).default("loop-cv"),
     S3_ACCESS_KEY_ID: z.string().min(1).optional(),
     S3_SECRET_ACCESS_KEY: z.string().min(1).optional(),
@@ -79,11 +101,19 @@ const EnvSchema = z
       .enum(["true", "false"])
       .default("false")
       .transform((v) => v === "true"),
-    CLAMAV_HOST: z.string().min(1).default("localhost"),
-    CLAMAV_PORT: z.coerce.number().int().min(1).max(65535).default(3310),
+    /**
+     * Malware scanner contract (ADR 0012): `POST {CLAMAV_URL}/scan` with the file bytes returns
+     * `{"verdict":"CLEAN"|"INFECTED"}`. Hosted anywhere that runs a container (reference image: infra/clamav-scanner).
+     * Local dev defaults to the compose service; production must set both explicitly and use https.
+     */
+    CLAMAV_URL: z.string().url().optional(),
+    /** Shared bearer secret the scanner checks on every request. */
+    CLAMAV_AUTH_TOKEN: z.string().min(32).optional(),
     // TODO(spec): final CV limits are set by the business (OQ2); these are placeholders.
     CV_MAX_BYTES_ANON: z.coerce.number().int().min(1).default(5 * 1024 * 1024),
     CV_MAX_BYTES_AUTH: z.coerce.number().int().min(1).default(10 * 1024 * 1024),
+    /** A stored CV is re-scanned this often, since signatures improve after upload (ADR 0012). */
+    CV_RESCAN_INTERVAL_DAYS: z.coerce.number().int().min(1).default(7),
     CV_ORPHAN_TTL_HOURS: z.coerce.number().int().min(1).default(24),
     /** Presigned URL lifetime in seconds (upload and download). */
     CV_PRESIGN_TTL_SECONDS: z.coerce.number().int().min(30).max(900).default(300),
@@ -107,12 +137,26 @@ const EnvSchema = z
     }
     if (!env.SMTP_HOST && !env.POSTMARK_SERVER_TOKEN)
       ctx.addIssue({ code: "custom", path: ["POSTMARK_SERVER_TOKEN"], message: "POSTMARK_SERVER_TOKEN (or SMTP_HOST) is required in production" });
+    // SMTP is the effective provider only when there is no Postmark token. Plain-text or unauthenticated SMTP would
+    // expose sign-in codes and can only ever reach an open relay.
+    if (env.SMTP_HOST && !env.POSTMARK_SERVER_TOKEN) {
+      if (env.SMTP_TLS === "none")
+        ctx.addIssue({ code: "custom", path: ["SMTP_TLS"], message: "SMTP_TLS must be starttls or tls in production" });
+      for (const key of ["SMTP_USER", "SMTP_PASSWORD"] as const) {
+        if (!env[key]) ctx.addIssue({ code: "custom", path: [key], message: `${key} is required for SMTP in production` });
+      }
+    }
     if (env.POSTMARK_SERVER_TOKEN && !env.POSTMARK_WEBHOOK_SECRET)
       ctx.addIssue({ code: "custom", path: ["POSTMARK_WEBHOOK_SECRET"], message: "POSTMARK_WEBHOOK_SECRET is required with POSTMARK_SERVER_TOKEN" });
-    for (const key of ["S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"] as const) {
+    for (const key of ["S3_REGION", "S3_ACCESS_KEY_ID", "S3_SECRET_ACCESS_KEY"] as const) {
       if (!env[key])
         ctx.addIssue({ code: "custom", path: [key], message: `${key} is required in production` });
     }
+    // Fail closed: without these, production would silently scan against localhost and reject every CV.
+    if (!env.CLAMAV_URL || !env.CLAMAV_URL.startsWith("https://"))
+      ctx.addIssue({ code: "custom", path: ["CLAMAV_URL"], message: "CLAMAV_URL (https) is required in production" });
+    if (!env.CLAMAV_AUTH_TOKEN)
+      ctx.addIssue({ code: "custom", path: ["CLAMAV_AUTH_TOKEN"], message: "CLAMAV_AUTH_TOKEN is required in production" });
     for (const origin of env.CORS_ORIGINS) {
       if (origin === "*" || !/^https:\/\/[^/\s]+$/.test(origin))
         ctx.addIssue({
@@ -126,6 +170,11 @@ const EnvSchema = z
     ...env,
     SESSION_SECRET: env.SESSION_SECRET ?? DEV_SECRET,
     JWT_SECRET: env.JWT_SECRET ?? DEV_SECRET,
+    SMTP_TLS: env.SMTP_TLS ?? (env.NODE_ENV === "production" ? ("starttls" as const) : ("none" as const)),
+    // MinIO ignores the region; production has already been forced to set all three explicitly.
+    S3_REGION: env.S3_REGION ?? "us-east-1",
+    CLAMAV_URL: env.CLAMAV_URL ?? DEV_CLAMAV_URL,
+    CLAMAV_AUTH_TOKEN: env.CLAMAV_AUTH_TOKEN ?? DEV_CLAMAV_TOKEN,
     production: env.NODE_ENV === "production",
   }));
 export type Env = z.infer<typeof EnvSchema>;

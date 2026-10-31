@@ -2,7 +2,7 @@ import type { PgBoss } from "pg-boss";
 import { AuditService } from "../common/audit.service.js";
 import { logger } from "../common/logger.js";
 import { loadEnv } from "../config/index.js";
-import { createEmailSender } from "../modules/auth/email-sender.js";
+import { createEmailSenderFromEnv } from "../modules/auth/email-sender.js";
 import { ConsentService } from "../modules/consent/consent.service.js";
 import { CampaignSendService, type DrainResult } from "../modules/messaging/campaign-send.service.js";
 import { EmailChannelAdapter } from "../modules/messaging/channel.js";
@@ -14,13 +14,7 @@ export const CAMPAIGN_SEND = "campaign-send";
 function buildSender(): CampaignSendService {
   const env = loadEnv();
   const audit = new AuditService();
-  const sender = createEmailSender({
-    from: env.EMAIL_FROM,
-    smtpHost: env.SMTP_HOST,
-    smtpPort: env.SMTP_PORT,
-    postmarkToken: env.POSTMARK_SERVER_TOKEN,
-    production: env.production,
-  });
+  const sender = createEmailSenderFromEnv(env);
   return new CampaignSendService(new ConsentService(audit), new DeliveryService([new EmailChannelAdapter(sender)]), audit);
 }
 

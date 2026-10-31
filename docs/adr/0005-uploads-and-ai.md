@@ -8,5 +8,7 @@ CVs go quarantine, type/magic-byte check, ClamAV, then promote, in a private buc
 ## Why
 A CV is attacker-controlled input to parsers and an LLM; the worst a malicious CV can do is wrong suggestions for its own author.
 
+Storage (S3 API) and scanning (HTTP contract) are cloud-agnostic interfaces: see [ADR 0012](0012-cloud-agnostic-storage-and-scanning.md).
+
 ## Trade-offs / open items
 LLM provider region and retention: Open Question 4.

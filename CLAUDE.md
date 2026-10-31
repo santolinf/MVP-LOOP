@@ -23,7 +23,7 @@ Source of truth for requirements: *LOOP Contractor MVP V2.0 Master Developer Han
 
 ```bash
 pnpm install                 # install all workspaces
-docker compose up -d         # local Postgres, MinIO (S3), Mailpit, ClamAV
+docker compose up -d         # local Postgres, MinIO (S3), Mailpit, ClamAV scanner
 pnpm db:migrate              # prisma migrate dev
 pnpm db:seed                 # seed dev data (test contractors, flags)
 pnpm dev                     # api + web + admin in watch mode
@@ -67,7 +67,8 @@ infra            AWS CDK stacks
 11. **Profit-sharing percentages are not hardcoded** (B10). Store eligibility only.
 12. **Every change to contractor, referral, reward or payment data writes an `AuditEvent`** (who, what, when, before/after).
 13. **Business rules return computed status to clients.** Web, admin and the future app never calculate colour themselves.
-14. **API is versioned** under `/api/v1`. Only backward-compatible changes within a version (future mobile clients cannot be force-updated instantly).
+14. **Stay cloud-agnostic** (ADR 0012, 0013). The app depends on the S3 API for storage, the `POST /scan` HTTP contract for malware scanning, and SMTP plus the neutral `POST /webhooks/email` contract for email, never on a cloud SDK or product. Provider specifics live in `infra/` and deploy docs only.
+15. **API is versioned** under `/api/v1`. Only backward-compatible changes within a version (future mobile clients cannot be force-updated instantly).
 
 ## Coding conventions
 
