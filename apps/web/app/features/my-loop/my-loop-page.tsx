@@ -1,6 +1,7 @@
 import { AvailabilityBadge } from "@loop/ui";
 import { Link } from "react-router";
-import { BTN_OUTLINE, BTN_SOLID, Card, Muted, PAGE_H1 } from "../marketing/primitives";
+import { BTN_OUTLINE, BTN_SOLID, Muted } from "../marketing/primitives";
+import { SignInRequired } from "../auth/sign-in-required";
 import { MyLoopNav } from "./frame";
 import { RewardsFoundingCard } from "../rewards/rewards-founding-card";
 import { useMe } from "./use-me";
@@ -27,13 +28,7 @@ export function MyLoopPage() {
     );
   if (unauthenticated)
     return (
-      <section className="mx-auto max-w-3xl px-[26px] py-[70px] md:py-[90px]">
-        <Card>
-          <h1 className={PAGE_H1}>Sign in required</h1>
-          {/* TODO(spec): link to Log in once the email OTP sign-in screen exists (API: /auth/otp/*). */}
-          <Muted>Please sign in to see My LOOP.</Muted>
-        </Card>
-      </section>
+      <SignInRequired message="Please sign in to see My LOOP." />
     );
   if (isError || !me)
     return (
@@ -53,7 +48,7 @@ export function MyLoopPage() {
       <div className="grid md:grid-cols-[198px_1fr]">
         <MyLoopNav selected="overview" />
 
-        <main className="p-[23px] pb-7">
+        <section className="p-[23px] pb-7">
           <div className="mb-[18px]">
             <h1 className="text-[27px] font-bold text-[#f4f9ff]">My LOOP</h1>
             <p className="text-xs text-[#9fb4c3]">Welcome{me.firstName ? `, ${me.firstName}` : ""}. Keep your profile current to stay visible.</p>
@@ -151,7 +146,7 @@ export function MyLoopPage() {
               </Link>
             </aside>
           </div>
-        </main>
+        </section>
       </div>
     </div>
   );

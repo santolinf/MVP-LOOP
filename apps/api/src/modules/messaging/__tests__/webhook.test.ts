@@ -33,7 +33,7 @@ vi.mock("@loop/db", () => ({
   },
 }));
 
-const { WebhookService } = await import("../webhook.service.js");
+const { WebhookService, EmailEventSchema, fromPostmark } = await import("../webhook.service.js");
 const { basicPasswordMatches } = await import("../webhook.controller.js");
 const { hashKey } = await import("../../../common/rate-limit.js");
 
@@ -101,5 +101,53 @@ describe("WebhookService.handlePostmark", () => {
 
   it("ignores record types it does not handle", async () => {
     expect(await svc.handlePostmark({ RecordType: "Open", MessageID: "pm-1" }, NOW)).toBe("IGNORED");
+  });
+});
+
+describe("WebhookService.handle (provider-neutral events)", () => {
+  const base = { kind: "BOUNCED" as const, hard: true, eventId: "generic:e1", providerMessageId: "pm-1", email: "Pat@Example.com" };
+
+  it("suppresses and marks the message on a hard bounce, whatever the provider", async () => {
+    expect(await svc.handle(base, NOW)).toBe("SUPPRESSED");
+    expect(h.statuses).toEqual(["BOUNCED"]);
+    expect(h.suppressions).toEqual([{ emailHash: hashKey("pat@example.com"), reason: "HARD_BOUNCE" }]);
+  });
+
+  it("only logs a soft bounce", async () => {
+    expect(await svc.handle({ ...base, hard: false, eventId: "generic:e2" }, NOW)).toBe("LOGGED");
+    expect(h.suppressions).toHaveLength(0);
+    expect(h.statuses).toHaveLength(0);
+  });
+
+  it("treats a complaint as hard even if the provider did not say so", async () => {
+    await svc.handle({ ...base, kind: "COMPLAINED", hard: false, eventId: "generic:e3" }, NOW);
+    expect(h.suppressions[0]?.reason).toBe("COMPLAINT");
+  });
+
+  it("is idempotent on the event id", async () => {
+    await svc.handle(base, NOW);
+    expect(await svc.handle(base, NOW)).toBe("DUPLICATE");
+    expect(h.suppressions).toHaveLength(1);
+  });
+});
+
+describe("EmailEventSchema and fromPostmark", () => {
+  it("accepts the neutral wire format and defaults hard to false", () => {
+    const e = EmailEventSchema.parse({ kind: "DELIVERED", eventId: "x1", occurredAt: "2026-10-24T10:00:00Z" });
+    expect(e.hard).toBe(false);
+    expect(e.occurredAt).toEqual(new Date("2026-10-24T10:00:00Z"));
+  });
+  it("rejects unknown kinds and a missing event id", () => {
+    expect(EmailEventSchema.safeParse({ kind: "OPENED", eventId: "x" }).success).toBe(false);
+    expect(EmailEventSchema.safeParse({ kind: "BOUNCED" }).success).toBe(false);
+  });
+  it("maps Postmark to the neutral shape, and ignores record types it does not act on", () => {
+    expect(fromPostmark({ RecordType: "Bounce", Type: "HardBounce", MessageID: "pm-1", ID: 9, Email: "a@b.c" })).toMatchObject({
+      kind: "BOUNCED",
+      hard: true,
+      eventId: "postmark:Bounce:9",
+      providerMessageId: "pm-1",
+    });
+    expect(fromPostmark({ RecordType: "Open" })).toBeNull();
   });
 });

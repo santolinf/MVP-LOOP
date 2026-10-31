@@ -90,17 +90,17 @@ export function ReviewStep() {
 
   if (unauthenticated)
     return (
-      <main className="mx-auto max-w-[720px] px-5 py-12">
+      <section className="mx-auto max-w-[720px] px-5 py-12">
         <p role="alert" className="text-red">
           Your session has ended. Please <Link to="/join/register" className="underline">create your account</Link> again.
         </p>
-      </main>
+      </section>
     );
   if (!body)
     return (
-      <main className="mx-auto max-w-[720px] px-5 py-12">
+      <section className="mx-auto max-w-[720px] px-5 py-12">
         <Muted>{review.isError ? "We couldn't load your review. Please refresh." : "Loading…"}</Muted>
-      </main>
+      </section>
     );
 
   const checked = (c: Consent) => choices[c.purpose] ?? c.granted;
@@ -127,7 +127,7 @@ export function ReviewStep() {
   }
 
   return (
-    <main className="mx-auto max-w-[720px] px-5 py-12">
+    <section className="mx-auto max-w-[720px] px-5 py-12">
       <StepBar step={5} />
       <Card className="!border-[#294357] !bg-[#0b2237] !bg-none !p-8">
         <h1 className={PAGE_H1}>Review and go live</h1>
@@ -171,6 +171,6 @@ export function ReviewStep() {
           </button>
         </div>
       </Card>
-    </main>
+    </section>
   );
 }

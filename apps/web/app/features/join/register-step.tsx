@@ -98,7 +98,7 @@ export function RegisterStep() {
   }
 
   return (
-    <main className="mx-auto max-w-[720px] px-5 py-12">
+    <section className="mx-auto max-w-[720px] px-5 py-12">
       <StepBar step={3} />
       <Card className="!border-[#294357] !bg-[#0b2237] !bg-none !p-8">
         <h1 className={PAGE_H1}>Create your account</h1>
@@ -135,6 +135,12 @@ export function RegisterStep() {
               </p>
             )}
             <Muted className="text-sm">We'll email you a one-time code to confirm it's you. There is no password.</Muted>
+            <Muted className="text-sm">
+              Already a member?{" "}
+              <Link to="/sign-in" className="font-semibold text-lime">
+                Sign in
+              </Link>
+            </Muted>
             {error && (
               <p role="alert" className="text-red">
                 {error}
@@ -181,6 +187,6 @@ export function RegisterStep() {
           </form>
         )}
       </Card>
-    </main>
+    </section>
   );
 }

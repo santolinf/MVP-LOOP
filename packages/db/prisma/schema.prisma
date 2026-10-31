@@ -341,10 +341,13 @@ model CvUpload {
   ipHash       String?
   createdAt    DateTime  @default(now()) @db.Timestamptz
   completedAt  DateTime? @db.Timestamptz
+  /// Last clean malware verdict (ADR 0012). The re-scan job picks READY files whose verdict is oldest.
+  lastScannedAt DateTime? @db.Timestamptz
 
   @@index([contractorId])
   @@index([draftId])
   @@index([status, createdAt])
+  @@index([status, lastScannedAt])
   @@index([ipHash, createdAt])
 }
 

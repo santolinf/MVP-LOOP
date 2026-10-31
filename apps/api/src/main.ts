@@ -8,6 +8,7 @@ import { AppModule } from "./app.module.js";
 import { ProblemFilter } from "./common/problem.filter.js";
 import { buildCsp, cors, inlineScriptHashes, securityHeaders } from "./common/security.js";
 import { registerCvOrphanCleanup } from "./jobs/cv-orphan-cleanup.job.js";
+import { registerCvRescan } from "./jobs/cv-rescan.job.js";
 import { registerPrivacyErase } from "./jobs/privacy-erase.job.js";
 import { registerCvExtract } from "./jobs/cv-extract.job.js";
 import { registerJobs } from "./jobs/freshness-sweep.job.js";
@@ -49,6 +50,7 @@ async function bootstrap() {
     await registerCampaignSend(boss);
     await registerRateLimitCleanup(boss);
     await registerCvOrphanCleanup(boss);
+    await registerCvRescan(boss);
     await registerCvExtract(boss);
     await registerPrivacyErase(boss);
   }

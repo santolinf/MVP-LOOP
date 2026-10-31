@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { AvailabilityBadge } from "@loop/ui";
 import { BTN_OUTLINE, BTN_SOLID, Card, Eyebrow, Muted, PAGE_H1 } from "../marketing/primitives";
+import { SIGN_IN_PATH } from "../auth/return-target";
 import { useMe } from "../my-loop/use-me";
 
 /** Web only: no app download or QR prompts while the mobile app is deferred. */
@@ -8,11 +9,20 @@ export function WelcomePage() {
   const { me, isPending, unauthenticated } = useMe();
 
   return (
-    <main className="mx-auto max-w-[720px] px-5 py-12">
+    <section className="mx-auto max-w-[720px] px-5 py-12">
       <Eyebrow>You're in the LOOP</Eyebrow>
       <Card className="mt-6 !border-[#294357] !bg-[#0b2237] !bg-none !p-8">
         {isPending && <Muted>Loading…</Muted>}
-        {unauthenticated && <p role="alert" className="text-red">Please sign in to see your welcome page.</p>}
+        {unauthenticated && (
+          <>
+            <p role="alert" className="mb-6 text-red">
+              Please sign in to see your welcome page.
+            </p>
+            <Link to={SIGN_IN_PATH} className={BTN_SOLID}>
+              Sign in
+            </Link>
+          </>
+        )}
         {me && !me.live && (
           <>
             <h1 className={PAGE_H1}>Almost there</h1>
@@ -42,6 +52,6 @@ export function WelcomePage() {
           </>
         )}
       </Card>
-    </main>
+    </section>
   );
 }

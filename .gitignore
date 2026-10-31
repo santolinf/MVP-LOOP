@@ -33,3 +33,4 @@ tmp/
 temp/
 
 requirements
+!.env.vm-dev.example

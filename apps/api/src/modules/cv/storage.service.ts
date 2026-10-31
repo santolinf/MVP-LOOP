@@ -13,32 +13,40 @@ export const READY_PREFIX = "cv/";
 @Injectable()
 export class StorageService {
   private readonly client: S3Client;
+  /** Same credentials, but the endpoint browsers can reach: presigned URLs bake in the host. */
+  private readonly presigner: S3Client;
   private readonly bucket: string;
 
   constructor(@Inject(CV_ENV) env: Env) {
     this.bucket = env.S3_BUCKET;
-    this.client = new S3Client({
+    const config = {
       region: env.S3_REGION,
-      endpoint: env.S3_ENDPOINT,
       forcePathStyle: env.S3_FORCE_PATH_STYLE,
+      // The SDK's default CRC32 checksums add headers that Google Cloud Storage's S3 interop API rejects.
+      requestChecksumCalculation: "WHEN_REQUIRED",
+      responseChecksumValidation: "WHEN_REQUIRED",
       credentials:
         env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY
           ? { accessKeyId: env.S3_ACCESS_KEY_ID, secretAccessKey: env.S3_SECRET_ACCESS_KEY }
           : undefined,
-    });
+    } as const;
+    this.client = new S3Client({ ...config, endpoint: env.S3_ENDPOINT });
+    this.presigner = new S3Client({ ...config, endpoint: env.S3_PUBLIC_ENDPOINT ?? env.S3_ENDPOINT });
   }
 
   /** Presigned PUT. The content type is signed, so the client must send exactly the declared one. */
   presignPut(key: string, contentType: string, expiresInSeconds: number): Promise<string> {
-    return getSignedUrl(this.client, new PutObjectCommand({ Bucket: this.bucket, Key: key, ContentType: contentType }), {
+    return getSignedUrl(this.presigner, new PutObjectCommand({ Bucket: this.bucket, Key: key, ContentType: contentType }), {
       expiresIn: expiresInSeconds,
+      // Without this the presigner leaves content-type out of the signature and any type is accepted.
+      signableHeaders: new Set(["content-type"]),
     });
   }
 
   /** Presigned GET that forces a download and blocks MIME sniffing. */
   presignGet(key: string, filename: string, expiresInSeconds: number): Promise<string> {
     return getSignedUrl(
-      this.client,
+      this.presigner,
       new GetObjectCommand({
         Bucket: this.bucket,
         Key: key,

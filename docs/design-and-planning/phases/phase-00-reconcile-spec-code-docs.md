@@ -14,7 +14,6 @@ Why first: the existing code and `CLAUDE.md` still encode decisions V33 reverses
 - **Status names:** Green "Available Now" (explicit confirmation only), Amber (end date ≤ 28 days), Red (end date > 28 days), Blue "Permanently Employed", Unconfirmed (grey). Colour stays derived in `packages/domain` and never auto-promotes to green.
 - **Clearance** becomes a Yes/No declaration (no vetting levels).
 - **Registration identifiers:** capture email and mobile; decide uniqueness (see Open Question 3) before the Prisma schema moves.
-- **ADRs** in `docs/adr/` for each decision in §4 so the "why" survives.
-- Mark `docs/LOOP_Change_Phased_Approach.md` superseded (pointer at the top).
+- **ADRs** in `docs/design-and-planning/adr/` for each decision in §4 so the "why" survives.
 
 *Done when:* CLAUDE.md, domain constants and docs agree with the PDF and the app spec's shared rules; no code path sends routine SMS.

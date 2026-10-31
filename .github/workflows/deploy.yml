@@ -69,4 +69,4 @@ jobs:
         run: rm -f .env.prod ~/.ssh/id_ed25519
 
 # TODO(spec): AWS path — assume OIDC role (eu-west-2), push to ECR, cdk deploy (needs `id-token: write`).
-# See docs/ci-cd-pipeline.md.
+# See docs/cloud-environment/ci-cd-pipeline.md.

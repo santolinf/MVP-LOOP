@@ -34,7 +34,21 @@ Targeting a remote daemon: `export DOCKER_HOST=tcp://<host>:2375` first (the bui
 | `PUBLIC_BASE_URL`   | yes      | Public origin, no trailing slash. Used in referral links.               |
 | `APP_PORT`          | no       | Host port, default 3000.                                                |
 | `LOOP_TAG`          | no       | Image tag, default `latest`.                                            |
-| `EMAIL_FROM`, `SMTP_HOST`, `SMTP_PORT` | no | Without `SMTP_HOST`, sign-in emails are not sent.        |
+| `EMAIL_FROM`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_TLS`, `SMTP_USER`, `SMTP_PASSWORD` | yes | Any SMTP provider; production requires TLS and credentials ([deploy-email.md](deploy-email.md)). |
+| `EMAIL_WEBHOOK_SECRET` | no | Bounce/complaint webhook password; without it bounces are not processed. |
+| `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | yes | Private S3-compatible bucket. Add `S3_ENDPOINT` for anything other than AWS S3. |
+| `CLAMAV_URL`, `CLAMAV_AUTH_TOKEN` | yes | Malware scanner (https) and its shared token (≥ 32 chars). Enforced at boot. |
+
+## Object storage and malware scanning
+
+Neither runs in this compose file, and neither is tied to a cloud. The app needs a private **S3-compatible bucket**
+and a **scanner that honours `POST /scan`** ([ADR 0012](../design-and-planning/adr/0012-cloud-agnostic-storage-and-scanning.md)). The
+reference scanner is built from `infra/clamav-scanner`. Provider recipes (Google Cloud, AWS, self-hosted), the
+`gcloud run deploy` command and how to check a new backend are in
+[deploy-storage-and-scanning.md](deploy-storage-and-scanning.md). Scanning fails closed: if the scanner is down,
+uploads are rejected, never promoted unscanned.
+
+Local dev runs MinIO and the same scanner image from `docker-compose.yml`; no `CLAMAV_*` or `S3_*` setup is needed.
 
 `NODE_ENV`, `APP_ROLE`, `PORT` and `DATABASE_URL` are set by the compose file. Never commit `.env.prod`
 (it is gitignored). Payouts, profit-sharing and agency flags stay off in production.
@@ -72,5 +86,5 @@ See [ci-cd-pipeline.md](ci-cd-pipeline.md) for the CI/CD design, secrets, deploy
 
 ## Not covered yet
 
-AWS (ECS Fargate, RDS, S3, Secrets Manager via CDK in `infra/`), object storage, malware scanning, and a
-DB-aware readiness check (`/api/v1/health` currently only reports process liveness).
+The whole-platform hosting decision (the `infra/` CDK stacks still describe AWS: ECS Fargate, RDS, S3, Secrets
+Manager, whereas storage and scanning above are Google Cloud), and a DB-aware readiness check (`/api/v1/health` currently only reports process liveness).

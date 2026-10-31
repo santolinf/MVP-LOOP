@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { COPY } from "../lib/copy";
 import { ButtonLink } from "../features/marketing/primitives";
+import { SIGN_IN_PATH } from "../features/auth/return-target";
 import { JOIN_PATH, useSignedIn } from "../features/marketing/use-member-cta";
 
 const NAV = [
@@ -12,6 +13,7 @@ const NAV = [
 
 export function SiteHeader() {
   const signedIn = useSignedIn();
+
   return (
     <header className="sticky top-0 z-10 border-b border-[#263040] bg-[#090c13e8] backdrop-blur-[16px]">
       <div className="mx-auto flex h-[68px] max-w-page items-center justify-between gap-[22px] px-[26px] md:h-20">
@@ -36,7 +38,7 @@ export function SiteHeader() {
             </Link>
           ) : (
             <>
-              <Link to="/my-loop" className="hover:text-lime">
+              <Link to={SIGN_IN_PATH} className="hover:text-lime">
                 Log in
               </Link>
               <ButtonLink to={JOIN_PATH}>{COPY.primary} ↗</ButtonLink>
