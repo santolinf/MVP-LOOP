@@ -49,7 +49,8 @@ packages/contracts  Zod schemas shared by API and clients
 packages/api-client Generated OpenAPI client + TanStack Query hooks (do not edit by hand)
 packages/ui      Shared React components (status badge, forms)
 packages/config  eslint / tsconfig / vitest presets
-infra            AWS CDK stacks
+infra            AWS CDK stacks, plus the ClamAV scanner image (clamav-scanner)
+docs             All documentation: design-and-planning/, local-development/, cloud-environment/ (index: docs/README.md)
 ```
 
 ## Architecture rules (do not break these)

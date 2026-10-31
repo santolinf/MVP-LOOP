@@ -1,7 +1,7 @@
 # Production-style stack: Postgres + one-shot migration + the app (API, web, admin, worker in one container).
 # No seeding and no local backing services (MinIO / scanner / Mailpit) by design. Object storage is any private
 # S3-compatible bucket and malware scanning is any host of the infra/clamav-scanner image; the app reaches both over
-# the network via S3_* and CLAMAV_* in .env.prod (ADR 0012, docs/deploy-storage-and-scanning.md).
+# the network via S3_* and CLAMAV_* in .env.prod (ADR 0012, docs/cloud-environment/deploy-storage-and-scanning.md).
 #
 #   cp .env.prod.example .env.prod      # then fill in real values
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build

@@ -42,7 +42,7 @@ Targeting a remote daemon: `export DOCKER_HOST=tcp://<host>:2375` first (the bui
 ## Object storage and malware scanning
 
 Neither runs in this compose file, and neither is tied to a cloud. The app needs a private **S3-compatible bucket**
-and a **scanner that honours `POST /scan`** ([ADR 0012](adr/0012-cloud-agnostic-storage-and-scanning.md)). The
+and a **scanner that honours `POST /scan`** ([ADR 0012](../design-and-planning/adr/0012-cloud-agnostic-storage-and-scanning.md)). The
 reference scanner is built from `infra/clamav-scanner`. Provider recipes (Google Cloud, AWS, self-hosted), the
 `gcloud run deploy` command and how to check a new backend are in
 [deploy-storage-and-scanning.md](deploy-storage-and-scanning.md). Scanning fails closed: if the scanner is down,

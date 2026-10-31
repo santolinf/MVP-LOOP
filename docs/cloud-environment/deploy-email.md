@@ -1,6 +1,6 @@
 # Email: provider recipes
 
-The app needs two things only ([ADR 0013](adr/0013-cloud-agnostic-email.md)): **SMTP submission** to send, and
+The app needs two things only ([ADR 0013](../design-and-planning/adr/0013-cloud-agnostic-email.md)): **SMTP submission** to send, and
 (optionally) **delivery events** posted to `POST /webhooks/email` so bounces and complaints suppress addresses.
 Production refuses to boot unless SMTP uses TLS and credentials.
 

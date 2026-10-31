@@ -1,6 +1,6 @@
 # Storage and malware scanning: provider recipes
 
-The app needs two things only (see [ADR 0012](adr/0012-cloud-agnostic-storage-and-scanning.md)): a private
+The app needs two things only (see [ADR 0012](../design-and-planning/adr/0012-cloud-agnostic-storage-and-scanning.md)): a private
 S3-compatible bucket, and a scanner that honours `POST /scan`. Everything below is how to satisfy them on a given
 provider. Set the matching variables in `.env.prod`. Personal data must stay in the UK, so choose a UK region.
 

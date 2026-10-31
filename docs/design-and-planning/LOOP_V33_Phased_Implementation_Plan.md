@@ -3,7 +3,7 @@
 **Source of truth:** `requirements/LOOP_Web_V33_Consolidated_Frank_Handover_18_Oct_2026.pdf`
 **Look, feel and screens:** `requirements/LOOP_Frank_Frontend_V33` (prototype only; its data is demo state, its copy and flows are the reference)
 **Homepage and app-spec handover:** `requirements/LOOP_App_Homepage_Handover_V33` — `01_NEW_HOMEPAGE` (new marketing homepage, in scope) and `03_APP_DEVELOPER_SPECIFICATION.pdf` (in scope only for the shared backend, rules, Admin and web; its app UI parts are out of scope). `02_CONTRACTOR_APP` and every mobile-app deliverable are **deliberately ignored: the app is built later** (see §3 "Deferred: Contractor App").
-**Supersedes:** `docs/LOOP_Change_Phased_Approach.md` (old 13-phase plan, archived in `requirements/`). Phases 1–2 of that plan are partly reusable; nothing after them is continued.
+**Supersedes:** the old 13-phase plan (archived in `requirements/`). Phases 1–2 of that plan are partly reusable; nothing after them is continued.
 **Status:** Draft v2 for review by Frank (18 Oct 2026) — updated for the homepage and app-spec handover. No implementation has started.
 
 **Precedence (from the handover README):** V33 website for registration UI; app spec for shared behaviour and cadences; legal programme rules for financial terms.
@@ -68,8 +68,7 @@ Why first: the existing code and `CLAUDE.md` still encode decisions V33 reverses
 - **Status names:** Green "Available Now" (explicit confirmation only), Amber (end date ≤ 28 days), Red (end date > 28 days), Blue "Permanently Employed", Unconfirmed (grey). Colour stays derived in `packages/domain` and never auto-promotes to green.
 - **Clearance** becomes a Yes/No declaration (no vetting levels).
 - **Registration identifiers:** capture email and mobile; decide uniqueness (see Open Question 3) before the Prisma schema moves.
-- **ADRs** in `docs/adr/` for each decision in §4 so the "why" survives.
-- Mark `docs/LOOP_Change_Phased_Approach.md` superseded (pointer at the top).
+- **ADRs** in `docs/design-and-planning/adr/` for each decision in §4 so the "why" survives.
 
 *Done when:* CLAUDE.md, domain constants and docs agree with the PDF and the app spec's shared rules; no code path sends routine SMS.
 
@@ -303,7 +302,7 @@ Each phase's PR must answer: what personal data is new, who can read it, how is 
 | `Contractor.phone` required + unique | Revisit (Open Question 3) |
 | Web routes: `join`, `join/cv`, `my-loop` | Keep; add the missing V33 screens |
 
-## 7. Open questions (need Frank / Richard)
+## 7. Open questions (need business input)
 1. **Cadence config:** confirm the 7/30/60 and 28/14/7 values are defaults editable in Admin, not fixed.
 2. **CV file limits and retention:** max size, allowed types, how long unregistered uploads and superseded versions are kept.
 3. **Mobile number:** required at registration? verified? unique? (Changes the `phone` constraint and the fraud model.)

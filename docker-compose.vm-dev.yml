@@ -1,4 +1,4 @@
-# Shared DEV environment on one VM: the app plus every dependency, all in containers (docs/gcp-dev-environment.md).
+# Shared DEV environment on one VM: the app plus every dependency, all in containers (docs/cloud-environment/gcp-dev-environment.md).
 # Not production: the app runs with NODE_ENV=development, mail goes to Mailpit (nothing leaves the VM), files go to
 # MinIO, and scanning uses the same scanner image as production. Use test data only.
 #

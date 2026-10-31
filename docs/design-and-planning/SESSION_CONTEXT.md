@@ -5,19 +5,19 @@ Written 2026-10-19. Read this first, then `CLAUDE.md`. Detail lives in the docum
 ## Who / what
 - Frank Santolin (frank.santolin@gmail.com) is building LOOP, a UK IT contractor network. Repo: `C:\Work\Projects\LOOP` (Windows; Bash and PowerShell available; use absolute paths). Branch: `feature/loop-v33` (main branch: `main`).
 - Stack, commands, architecture rules and conventions: `CLAUDE.md` (authoritative; follow it).
-- The whole platform (Website, Contractor App, Admin) shares one DB, profile model, auth and rules. See `docs/adr/0001-one-platform.md`.
+- The whole platform (Website, Contractor App, Admin) shares one DB, profile model, auth and rules. See `docs/design-and-planning/adr/0001-one-platform.md`.
 
 ## Where to look (do not restate here)
 | Need | Location |
 | --- | --- |
-| The phased plan, phase detail, security decisions (§4), reuse (§6), open questions (§7) | `docs/LOOP_V33_Phased_Implementation_Plan.md` |
-| Architecture decisions | `docs/adr/0001`–`0010` (one platform, email OTP, sessions/tokens, email-only reminders, uploads/AI, privacy/consent, abuse resistance, admin RBAC/audit, supply chain, colour labels) |
+| The phased plan, phase detail, security decisions (§4), reuse (§6), open questions (§7) | `docs/design-and-planning/LOOP_V33_Phased_Implementation_Plan.md` |
+| Architecture decisions | `docs/design-and-planning/adr/0001`–`0010` (one platform, email OTP, sessions/tokens, email-only reminders, uploads/AI, privacy/consent, abuse resistance, admin RBAC/audit, supply chain, colour labels) |
 | V33 handover (homepage + app spec) | `requirements/LOOP_App_Homepage_Handover_V33/` — start with `00_READ_ME_FIRST.txt`; homepage reference is `01_NEW_HOMEPAGE/index.html`; spec is `03_APP_DEVELOPER_SPECIFICATION.pdf` |
 | Original MVP spec | *LOOP Contractor MVP V2.0 Master Developer Handover* (section refs A1–A16, B1–B12, C1–C3 used in code comments) |
-| Deploy / CI | `docs/deploy-docker.md`, `docs/ci-cd-pipeline.md` |
+| Deploy / CI | `docs/cloud-environment/deploy-docker.md`, `docs/cloud-environment/ci-cd-pipeline.md` |
 
 ## Superseded / ignore
-- `docs/LOOP_Change_Phased_Approach.md` and the old 13-phase plan (archived in `requirements/`) are superseded by the V33 plan.
+- The old 13-phase plan (archived in `requirements/`) is superseded by the V33 plan.
 - Ignore the mobile app and the `02_CONTRACTOR_APP` folder. The app is deferred (Plan "Phase 11"). Keep seams only; no app work, no store links.
 
 ## Standing instructions from Frank

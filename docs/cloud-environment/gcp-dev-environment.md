@@ -1,6 +1,6 @@
 # LOOP DEV environment on Google Cloud: summary, plan and provisioning
 
-Purpose: one shared DEV environment on a single Compute Engine VM so Richard can start manual testing of the LOOP
+Purpose: one shared DEV environment on a single Compute Engine VM so the team can start manual testing of the LOOP
 contractor journey. The VM runs Docker, and Docker runs the app and every service it depends on.
 
 Status: **plan, not yet provisioned.** The compose file and env template referenced here are new and have been
@@ -15,7 +15,7 @@ lists what to verify first.
 
 | # | Topic | Decision | Where recorded |
 |---|-------|----------|----------------|
-| 1 | Malware scanning, why | A CV is a file from a stranger. The scan protects whoever opens it later (admins, and agencies once agency access is live), not the app itself. | [ADR 0005](adr/0005-uploads-and-ai.md), [0012](adr/0012-cloud-agnostic-storage-and-scanning.md) |
+| 1 | Malware scanning, why | A CV is a file from a stranger. The scan protects whoever opens it later (admins, and agencies once agency access is live), not the app itself. | [ADR 0005](../design-and-planning/adr/0005-uploads-and-ai.md), [0012](../design-and-planning/adr/0012-cloud-agnostic-storage-and-scanning.md) |
 | 2 | Scan timing | Scan at **ingestion, before** text extraction and the AI. The AI only sees extracted text, so it cannot be "infected"; the extractor can be attacked, so it never sees an unscanned file. Stored files are also re-scanned periodically. | ADR 0012 |
 | 3 | Managed vs self-hosted scanning | Google Cloud has **no managed equivalent** of AWS GuardDuty for S3; its own pattern is ClamAV on Cloud Run. So scanning is **self-hosted ClamAV** either way. | ADR 0012 |
 | 4 | Cloud-agnostic principle | The app depends on **interfaces, not cloud products**: the S3 API for storage, a `POST /scan` HTTP contract for scanning, SMTP plus a neutral webhook for email. Provider specifics live only in `infra/` and deploy docs. | CLAUDE.md rule 14, ADRs 0012, 0013 |
@@ -55,7 +55,7 @@ lists what to verify first.
 
 **Is not:** production. It deliberately runs with `NODE_ENV=development` because production mode refuses what a
 self-contained dev box uses: a plain-HTTP scanner, plain-text SMTP (Mailpit), and it sets Secure-only cookies that need
-HTTPS. Consequences Richard should know:
+HTTPS. Consequences testers should know:
 
 - All email goes to **Mailpit** on the VM; nothing is delivered to real inboxes. Sign-in codes are read there.
 - CVs are stored in **MinIO** on the VM disk. The scanner is the real ClamAV image.
@@ -67,7 +67,7 @@ HTTPS. Consequences Richard should know:
 ## 3. Architecture on the VM
 
 ```
-Richard's browser
+Tester's browser
    │  (SSH tunnel over IAP, see section 5)
    ▼  localhost:3000 / :9000 / :8025
 ┌─────────────────────── GCE VM  loop-dev  (europe-west2-a) ───────────────────────┐
@@ -86,8 +86,8 @@ uploads and downloads CVs directly with presigned URLs, and those URLs contain a
 `http://minio:9000` (inside Docker), which a browser cannot resolve, so `S3_PUBLIC_ENDPOINT` makes the API put the
 browser-reachable address (`http://localhost:9000` through the tunnel) into the URLs instead.
 
-The compose file is [docker-compose.vm-dev.yml](../docker-compose.vm-dev.yml); its env template is
-[.env.vm-dev.example](../.env.vm-dev.example).
+The compose file is [docker-compose.vm-dev.yml](../../docker-compose.vm-dev.yml); its env template is
+[.env.vm-dev.example](../../.env.vm-dev.example).
 
 ---
 
@@ -108,11 +108,11 @@ bills.
 
 ---
 
-## 5. How Richard reaches it
+## 5. How testers reach it
 
 ### Option A (recommended): SSH tunnel through IAP, no public exposure
 
-Nothing is open to the internet. Richard authenticates with his Google account and forwards three ports to his own
+Nothing is open to the internet. Each tester authenticates with their Google account and forwards three ports to their own
 machine:
 
 ```bash
@@ -124,17 +124,17 @@ Then he uses `http://localhost:3000` (site), `http://localhost:3000/admin/` (adm
 (Mailpit). Keep the command running while testing. With this option:
 
 - `.env.vm-dev`: `BIND_ADDRESS=127.0.0.1`, `APP_BASE_URL=http://localhost:3000`, `S3_PUBLIC_ENDPOINT=http://localhost:9000`.
-- Richard needs the Google Cloud CLI installed and these IAM roles on the project (or just this VM):
+- Each tester needs the Google Cloud CLI installed and these IAM roles on the project (or just this VM):
   `roles/iap.tunnelResourceAccessor`, `roles/compute.osLogin`, `roles/compute.viewer`, and
   `roles/iam.serviceAccountUser` on the VM's service account (OS Login requires it when a service account is attached).
 - Because `http://localhost` is treated as a secure context, no TLS is needed for the cookies to work.
 
-### Option B: direct access from a fixed IP (simpler for Richard, less safe)
+### Option B: direct access from a fixed IP (simpler for testers, less safe)
 
-Open ports 3000, 9000 and 8025 to **Richard's IP address only** and bind to all interfaces
+Open ports 3000, 9000 and 8025 to **each tester's IP address only** and bind to all interfaces
 (`BIND_ADDRESS=0.0.0.0`, `APP_BASE_URL=http://<VM external IP>:3000`, `S3_PUBLIC_ENDPOINT=http://<VM external IP>:9000`).
 This is plain HTTP, and Mailpit shows every sign-in code to anyone who can reach it, so the allow-list is the only
-protection. Only use it if Richard cannot install `gcloud`, and never open these ports to `0.0.0.0/0`.
+protection. Only use it if a tester cannot install `gcloud`, and never open these ports to `0.0.0.0/0`.
 
 ### Later, not now
 
@@ -154,10 +154,10 @@ Estimated effort: about half a day for someone comfortable with `gcloud`, mostly
 | 2 | you | Enable APIs: Compute Engine, IAP | `gcloud services list` shows them |
 | 3 | you | Create the firewall rule for IAP SSH (below) | Rule exists |
 | 4 | you | Create the VM from the startup script (below) | VM is `RUNNING`, Docker installed |
-| 5 | you | Grant Richard (and yourself) the IAM roles in section 5 | `gcloud compute ssh` works for him |
+| 5 | you | Grant testers (and yourself) the IAM roles in section 5 | `gcloud compute ssh` works for them |
 | 6 | you | On the VM: clone the repo, create `.env.vm-dev`, bring the stack up, seed | Section 7 |
-| 7 | you + Richard | Run the checks in section 8 | All pass |
-| 8 | Richard | Manual testing | |
+| 7 | you + testers | Run the checks in section 8 | All pass |
+| 8 | Testers | Manual testing | |
 
 Set once: `PROJECT=<your-project-id>` and `ZONE=europe-west2-a`.
 
@@ -179,7 +179,7 @@ gcloud compute firewall-rules create loop-dev-allow-iap-ssh \
 ```
 
 (If the project's `default` network has been deleted, create a VPC and subnet in `europe-west2` first and change
-`--network`.) For Option B, also add a rule allowing `tcp:3000,9000,8025` from Richard's IP only.
+`--network`.) For Option B, also add a rule allowing `tcp:3000,9000,8025` from the testers' IPs only.
 
 ### 6.3 VM with Docker installed (step 4)
 
@@ -220,12 +220,12 @@ gcloud compute ssh loop-dev --zone $ZONE --tunnel-through-iap -- "docker --versi
 Optional: a daily disk snapshot schedule (Compute Engine, Snapshots) if losing the dev database would hurt. It holds
 test data only, so this is a convenience.
 
-### 6.4 IAM for Richard (step 5)
+### 6.4 IAM for testers (step 5)
 
 ```bash
-gcloud projects add-iam-policy-binding $PROJECT --member=user:richard@example.com --role=roles/iap.tunnelResourceAccessor
-gcloud projects add-iam-policy-binding $PROJECT --member=user:richard@example.com --role=roles/compute.osLogin
-gcloud projects add-iam-policy-binding $PROJECT --member=user:richard@example.com --role=roles/compute.viewer
+gcloud projects add-iam-policy-binding $PROJECT --member=user:tester@example.com --role=roles/iap.tunnelResourceAccessor
+gcloud projects add-iam-policy-binding $PROJECT --member=user:tester@example.com --role=roles/compute.osLogin
+gcloud projects add-iam-policy-binding $PROJECT --member=user:tester@example.com --role=roles/compute.viewer
 ```
 
 Also `roles/iam.serviceAccountUser` on the VM's service account (the default Compute service account unless you
@@ -275,7 +275,7 @@ The runtime image does not contain the seed tooling, but the `migrate` image doe
 
 ```bash
 docker compose -f docker-compose.vm-dev.yml --env-file .env.vm-dev run --rm --no-deps \
-  -e NODE_ENV=development -e ADMIN_BOOTSTRAP_EMAIL=richard@example.com \
+  -e NODE_ENV=development -e ADMIN_BOOTSTRAP_EMAIL=tester@example.com \
   --entrypoint "" migrate pnpm --filter @loop/db seed
 ```
 
@@ -330,7 +330,7 @@ Run through the tunnel (Option A). Tick each:
 | Back up the database | `docker compose ... exec postgres pg_dump -U loop loop > loop.sql` |
 | Reset to clean (deletes data) | `docker compose ... down -v` then `up -d --build` and re-seed |
 | Reclaim disk | `docker image prune -f` (and check `df -h`) |
-| Save money | Stop the VM when idle: `gcloud compute instances stop loop-dev --zone $ZONE`; start it again with `start`. The tunnel address stays `localhost`, so nothing changes for Richard. |
+| Save money | Stop the VM when idle: `gcloud compute instances stop loop-dev --zone $ZONE`; start it again with `start`. The tunnel address stays `localhost`, so nothing changes for testers. |
 
 Caveat: `POSTGRES_PASSWORD` is only read when the database volume is first created. Changing it later requires
 `down -v` (which deletes the data) or changing the password inside Postgres.
