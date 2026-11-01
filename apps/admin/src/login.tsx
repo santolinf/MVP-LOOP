@@ -8,6 +8,7 @@ import {
   useAdminVerifyOtp,
 } from "@loop/api-client";
 import { Notice } from "./lib.js";
+import { QrCode } from "./qr-code.js";
 
 type Step = "EMAIL" | "CODE" | "MFA_ENROL" | "MFA_REQUIRED";
 
@@ -75,13 +76,15 @@ export function Login() {
         <form onSubmit={(e) => void sendTotp(e).catch(() => undefined)} className="stack">
           {step === "MFA_ENROL" && secret ? (
             <>
-              <p>Add this key to an authenticator app (choose "enter a setup key", time-based), then enter the 6-digit code.</p>
+              <p>Scan this code with an authenticator app on your phone (for example Google Authenticator or Microsoft Authenticator), then enter the 6-digit code it shows.</p>
+              <QrCode value={secret.otpauthUrl} label="Authenticator setup code" />
+              <p className="muted">Can't scan it? In the app choose "enter a setup key" (time-based) and type this key:</p>
               <code className="secret">{secret.secret}</code>
               <button type="button" onClick={() => void navigator.clipboard.writeText(secret.secret)}>
                 Copy key
               </button>
               <p className="muted">
-                On a phone with an authenticator app installed, <a href={secret.otpauthUrl}>open it there</a>. On a computer, copy the key instead.
+                On a phone with an authenticator app installed, <a href={secret.otpauthUrl}>open it there</a> instead.
               </p>
             </>
           ) : (
