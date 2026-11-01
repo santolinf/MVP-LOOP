@@ -73,7 +73,7 @@ Tester's browser
 ┌─────────────────────── GCE VM  loop-dev  (europe-west2-a) ───────────────────────┐
 │ Docker                                                                            │
 │   app            :3000  web + admin + API + background worker (APP_ROLE=all)      │
-│   postgres       :5432  (internal only)                                           │
+│   postgres       :5432  admin tunnel only (loopback), never for testers           │
 │   migrate               one-shot, applies Prisma migrations, then exits           │
 │   minio          :9000  S3-compatible storage for CVs                             │
 │   clamav-scanner :8080  POST /scan (internal only)                                │
@@ -121,7 +121,19 @@ gcloud compute ssh loop-dev --zone europe-west2-a --tunnel-through-iap -- -N \
 ```
 
 Then he uses `http://localhost:3000` (site), `http://localhost:3000/admin/` (admin) and `http://localhost:8025`
-(Mailpit). Keep the command running while testing. With this option:
+(Mailpit). Keep the command running while testing. Port 9000 is MinIO's S3 API, used by the browser for CV uploads
+through presigned URLs; opening it directly shows nothing useful (MinIO redirects browsers to its console). To check it
+is up: `curl -i http://localhost:9000/minio/health/live` returns `200 OK`.
+
+**Administrators only:** to browse stored CVs in the MinIO console, add `-L 9001:localhost:9001` to the command and open
+`http://localhost:9001`, signing in with `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` from `.env.vm-dev`. Those are
+MinIO's root keys, so never give this port or the keys to testers.
+
+**Administrators only:** to reach Postgres from a database client on your machine, add `-L 15432:localhost:5432` to the
+command (15432 locally, so it does not clash with a local Postgres) and connect to `localhost:15432`, database and user
+`loop`, password `POSTGRES_PASSWORD` from `.env.vm-dev`:
+`psql "postgresql://loop:<POSTGRES_PASSWORD>@localhost:15432/loop"`. This is full read-write access to the DEV
+database; do not give it to testers. With this option:
 
 - `.env.vm-dev`: `BIND_ADDRESS=127.0.0.1`, `APP_BASE_URL=http://localhost:3000`, `S3_PUBLIC_ENDPOINT=http://localhost:9000`.
 - Each tester needs the Google Cloud CLI installed and these IAM roles on the project (or just this VM):
@@ -345,8 +357,8 @@ Caveat: `POSTGRES_PASSWORD` is only read when the database volume is first creat
 
 - **Test data only.** Real contractor data must never enter it (UK-data and consent rules; the email provider is not yet
   chosen or contracted).
-- No inbound access except IAP SSH (Option A) or an explicit single-IP allow-list (Option B). Postgres and the
-  scanner are never published.
+- No inbound access except IAP SSH (Option A) or an explicit single-IP allow-list (Option B). The scanner is never
+  published; Postgres and the MinIO console are published on loopback only, for administrators' own tunnels.
 - Mailpit holds every sign-in code: treat access to port 8025 as access to every account.
 - Secrets live only in `.env.vm-dev` on the VM (gitignored). Rotate by editing the file and running `up -d`.
 - OS Login (IAM) controls SSH; do not add shared SSH keys.

@@ -31,10 +31,5 @@ resource "google_billing_budget" "dev" {
     threshold_percent = 1.0
   }
 
-  all_updates_rule {
-    # Emails go to the billing account's admins and users.
-    disable_default_iam_recipients = false
-  }
-
   depends_on = [google_project_service.this]
 }

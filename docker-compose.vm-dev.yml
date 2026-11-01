@@ -22,7 +22,10 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
-    # Not published: only the other containers reach it.
+    # Published on BIND_ADDRESS (loopback by default) so an administrator can reach it through their own IAP tunnel
+    # (gcp-dev-environment.md section 5). Not for testers. The GCP firewall never opens 5432, even with option B.
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:5432:5432"
 
   # One-shot: applies pending Prisma migrations, then exits.
   migrate:
@@ -47,8 +50,11 @@ services:
       - miniodata:/data
     # The app reaches it on the compose network (http://minio:9000). Browsers upload and download CVs with presigned URLs
     # that point at S3_PUBLIC_ENDPOINT, so the S3 port is published (on BIND_ADDRESS, loopback by default).
+    # 9000 is the S3 API (not a web page). 9001 is the MinIO console, for administrators only: it signs in with the
+    # S3 root keys, so forward it in your own tunnel only, never give it to testers (gcp-dev-environment.md section 5).
     ports:
       - "${BIND_ADDRESS:-127.0.0.1}:9000:9000"
+      - "${BIND_ADDRESS:-127.0.0.1}:9001:9001"
 
   # Same image and HTTP contract as production (ADR 0012). First start downloads signatures: /healthz is 503 until ready.
   clamav-scanner:
