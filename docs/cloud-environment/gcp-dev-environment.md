@@ -351,6 +351,23 @@ Run through the tunnel (Option A). Tick each:
 Caveat: `POSTGRES_PASSWORD` is only read when the database volume is first created. Changing it later requires
 `down -v` (which deletes the data) or changing the password inside Postgres.
 
+### Troubleshooting
+
+**`POST /api/v1/cv/uploads` returns 429 "Too many uploads. Please try again later."** Anonymous CV uploads (the join
+journey before sign-in) are limited per client IP per hour, and every attempt counts, including ones that later fail.
+Behind the SSH/IAP tunnel and Docker's port mapping every request reaches the app from the same address, so all testers
+share one bucket, and the app default of 5 per hour runs out within minutes. `docker-compose.vm-dev.yml` raises the
+dev limits (`CV_ANON_UPLOADS_PER_IP_PER_HOUR` 200, `CV_ANON_UPLOADS_GLOBAL_PER_HOUR` 2000; override them in
+`.env.vm-dev`). To apply the change to a running VM, pull the update and re-run `up -d` (no data is lost); the limit is
+counted from the database, so it takes effect immediately.
+
+If uploads keep failing before reaching the 429, an earlier step is failing and each retry is eating quota. Check that
+port 9000 is forwarded (the browser uploads straight to MinIO), `S3_PUBLIC_ENDPOINT` matches the address you use, and
+`docker compose ... logs app clamav-scanner`.
+
+For a real deployment behind a load balancer or proxy, set `TRUST_PROXY_HOPS` to the number of proxy hops. Otherwise
+the app sees the proxy's address for every user and applies the per-IP limits to everyone combined.
+
 ---
 
 ## 11. Security and data rules for this environment
