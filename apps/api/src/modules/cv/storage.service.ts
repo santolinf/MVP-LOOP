@@ -34,6 +34,14 @@ export class StorageService {
     this.presigner = new S3Client({ ...config, endpoint: env.S3_PUBLIC_ENDPOINT ?? env.S3_ENDPOINT });
   }
 
+  /**
+   * The origin browsers use for presigned URLs (S3_PUBLIC_ENDPOINT, S3_ENDPOINT, or the provider's own host). The
+   * Content-Security-Policy must allow it in connect-src, or the browser blocks the direct upload.
+   */
+  async browserOrigin(): Promise<string> {
+    return new URL(await this.presignGet("csp-probe", "probe", 60)).origin;
+  }
+
   /** Presigned PUT. The content type is signed, so the client must send exactly the declared one. */
   presignPut(key: string, contentType: string, expiresInSeconds: number): Promise<string> {
     return getSignedUrl(this.presigner, new PutObjectCommand({ Bucket: this.bucket, Key: key, ContentType: contentType }), {

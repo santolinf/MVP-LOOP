@@ -15,6 +15,7 @@ import { registerJobs } from "./jobs/freshness-sweep.job.js";
 import { registerCampaignSend } from "./jobs/campaign-send.job.js";
 import { registerReminderSweep } from "./jobs/reminder-sweep.job.js";
 import { registerRateLimitCleanup } from "./jobs/rate-limit-cleanup.job.js";
+import { StorageService } from "./modules/cv/storage.service.js";
 import { serveStatic } from "./static.js";
 
 async function bootstrap() {
@@ -35,7 +36,9 @@ async function bootstrap() {
     if (env.TRUST_PROXY_HOPS > 0) app.set("trust proxy", env.TRUST_PROXY_HOPS);
     app.useBodyParser("json", { limit: "100kb" });
     app.useBodyParser("urlencoded", { extended: false, limit: "100kb" });
-    app.use(securityHeaders({ csp: buildCsp(inlineScriptHashes(process.cwd()), env.production), production: env.production }));
+    // Browsers upload CVs straight to the object store, so its origin must be allowed in connect-src.
+    const storageOrigin = await new StorageService(env).browserOrigin();
+    app.use(securityHeaders({ csp: buildCsp(inlineScriptHashes(process.cwd()), env.production, [storageOrigin]), production: env.production }));
     app.use(cors(env.CORS_ORIGINS));
     app.setGlobalPrefix("api/v1");
     app.useGlobalFilters(new ProblemFilter());

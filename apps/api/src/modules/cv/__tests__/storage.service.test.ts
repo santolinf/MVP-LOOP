@@ -11,6 +11,15 @@ describe("StorageService presigned URLs", () => {
     expect(await storage.presignGet("cv/a", "cv.pdf", 60)).toMatch(/^http:\/\/localhost:9000\/loop-cv\/cv\/a\?/);
   });
 
+  it("reports the browser origin for the Content-Security-Policy", async () => {
+    const internal = new StorageService(loadEnv({ ...creds, S3_ENDPOINT: "http://minio:9000" }));
+    expect(await internal.browserOrigin()).toBe("http://minio:9000");
+    const split = new StorageService(loadEnv({ ...creds, S3_ENDPOINT: "http://minio:9000", S3_PUBLIC_ENDPOINT: "https://files.example.com" }));
+    expect(await split.browserOrigin()).toBe("https://files.example.com");
+    const aws = new StorageService(loadEnv({ DATABASE_URL: "postgresql://x", S3_ACCESS_KEY_ID: "k", S3_SECRET_ACCESS_KEY: "s", S3_REGION: "eu-west-2" }));
+    expect(await aws.browserOrigin()).toBe("https://loop-cv.s3.eu-west-2.amazonaws.com");
+  });
+
   it("falls back to S3_ENDPOINT", async () => {
     const storage = new StorageService(loadEnv({ ...creds, S3_ENDPOINT: "http://minio:9000" }));
     expect(await storage.presignPut("quarantine/a", "application/pdf", 60)).toMatch(/^http:\/\/minio:9000\//);

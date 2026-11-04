@@ -41,6 +41,13 @@ describe("inlineScriptHashes / buildCsp", () => {
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("object-src 'none'");
     expect(csp).toContain("upgrade-insecure-requests");
+    expect(csp).toContain("connect-src 'self';");
+  });
+
+  it("allows the object store origin in connect-src so browsers can upload CVs directly", () => {
+    const csp = buildCsp([], false, ["http://localhost:9000"]);
+    expect(csp).toContain("connect-src 'self' http://localhost:9000;");
+    expect(csp).toContain("default-src 'self'");
   });
 });
 

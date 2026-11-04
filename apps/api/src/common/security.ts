@@ -32,7 +32,11 @@ export function inlineScriptHashes(root: string): string[] {
   return [...hashes];
 }
 
-export function buildCsp(scriptHashes: string[], production: boolean): string {
+/**
+ * `connectOrigins` are extra origins the browser may call with fetch: the object store, because CVs are uploaded and
+ * downloaded straight to presigned URLs rather than through the API (ADR 0012).
+ */
+export function buildCsp(scriptHashes: string[], production: boolean, connectOrigins: string[] = []): string {
   const directives = [
     "default-src 'self'",
     `script-src ${["'self'", ...scriptHashes].join(" ")}`,
@@ -40,7 +44,7 @@ export function buildCsp(scriptHashes: string[], production: boolean): string {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "font-src 'self'",
-    "connect-src 'self'",
+    `connect-src ${["'self'", ...connectOrigins].join(" ")}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
