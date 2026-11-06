@@ -13,9 +13,10 @@ budget alert. Deploying the app on the VM (clone, `.env.vm-dev`, `docker compose
 section 7 of the plan, because it needs repository credentials and generated secrets that must not live in Terraform
 state. The app is unchanged on either cloud (CLAUDE.md rule 14).
 
-**Status: written against the provider documentation, not yet run through `terraform validate` or applied.** Run
-`terraform init`, `terraform validate` and `terraform plan` before the first `apply`, and expect small fixes on first
-contact (see "Unverified" below).
+**Status:** `gcp/` passes `terraform fmt` and `terraform validate` and has been applied to the DEV project (the VM,
+network, firewall and tester access exist in state). `oci/` is still unapplied: run `terraform init`, `terraform
+validate` and `terraform plan` before its first `apply` and expect small fixes (see "Unverified" below). Application
+changes do not need a Terraform run; they are deployed with docker compose on the VM.
 
 ## What maps to what
 
