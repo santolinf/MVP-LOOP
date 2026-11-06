@@ -34,6 +34,7 @@ import type {
   DataExportDto,
   DeleteAccountDto,
   GoLiveResultDto,
+  JoinProfileDto,
   LoopMessageDto,
   LoopMessageListDto,
   ManualProfileDto,
@@ -1091,6 +1092,211 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getUpdateProfileDetailsMutationOptions(options), queryClient);
+    }
+    export type getJoinProfileResponse200 = {
+  data: JoinProfileDto
+  status: 200
+}
+
+export type getJoinProfileResponseSuccess = (getJoinProfileResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getJoinProfileResponse = (getJoinProfileResponseSuccess)
+
+export const getGetJoinProfileUrl = () => {
+
+
+
+
+  return `/api/v1/me/profile/join`
+}
+
+/**
+ * @summary Profile review and contract preference answers from registration
+ */
+export const getJoinProfile = async ( options?: Parameters<typeof customFetch>[1]): Promise<getJoinProfileResponse> => {
+
+  return customFetch<getJoinProfileResponse>(getGetJoinProfileUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJoinProfileQueryKey = () => {
+    return [
+    `/api/v1/me/profile/join`
+    ] as const;
+    }
+
+
+export const getGetJoinProfileQueryOptions = <TData = Awaited<ReturnType<typeof getJoinProfile>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJoinProfile>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJoinProfileQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJoinProfile>>> = ({ signal }) => getJoinProfile({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJoinProfile>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetJoinProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getJoinProfile>>>
+export type GetJoinProfileQueryError = unknown
+
+
+export function useGetJoinProfile<TData = Awaited<ReturnType<typeof getJoinProfile>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJoinProfile>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getJoinProfile>>,
+          TError,
+          Awaited<ReturnType<typeof getJoinProfile>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetJoinProfile<TData = Awaited<ReturnType<typeof getJoinProfile>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJoinProfile>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getJoinProfile>>,
+          TError,
+          Awaited<ReturnType<typeof getJoinProfile>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetJoinProfile<TData = Awaited<ReturnType<typeof getJoinProfile>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJoinProfile>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Profile review and contract preference answers from registration
+ */
+
+export function useGetJoinProfile<TData = Awaited<ReturnType<typeof getJoinProfile>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJoinProfile>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetJoinProfileQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type updateJoinProfileResponse200 = {
+  data: JoinProfileDto
+  status: 200
+}
+
+export type updateJoinProfileResponseSuccess = (updateJoinProfileResponse200) & {
+  headers: Headers;
+};
+;
+
+export type updateJoinProfileResponse = (updateJoinProfileResponseSuccess)
+
+export const getUpdateJoinProfileUrl = () => {
+
+
+
+
+  return `/api/v1/me/profile/join`
+}
+
+export const updateJoinProfile = async (joinProfileDto: JoinProfileDto, options?: Parameters<typeof customFetch>[1]): Promise<updateJoinProfileResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<updateJoinProfileResponse>(getUpdateJoinProfileUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(joinProfileDto)
+  }
+);}
+
+
+
+
+
+export const getUpdateJoinProfileMutationKey = () => ['updateJoinProfile'] as const;
+
+export const getUpdateJoinProfileMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJoinProfile>>, TError,UpdateJoinProfileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateJoinProfile>>, TError,UpdateJoinProfileMutationVariables, TContext> => {
+
+const mutationKey = getUpdateJoinProfileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateJoinProfile>>, UpdateJoinProfileMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateJoinProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateJoinProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateJoinProfile>>>
+    export type UpdateJoinProfileMutationBody = JoinProfileDto
+    export type UpdateJoinProfileMutationError = unknown
+    export type UpdateJoinProfileMutationVariables = {data: JoinProfileDto}
+
+    export const useUpdateJoinProfile = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJoinProfile>>, TError,UpdateJoinProfileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateJoinProfile>>,
+        TError,
+        UpdateJoinProfileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateJoinProfileMutationOptions(options), queryClient);
     }
     export type updateNameResponse200 = {
   data: NameDto

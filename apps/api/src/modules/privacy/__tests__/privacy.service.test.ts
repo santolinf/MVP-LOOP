@@ -7,6 +7,7 @@ const db = vi.hoisted(() => {
     session: { updateMany: vi.fn() },
     contractorPreferences: { findUnique: vi.fn(async () => null) },
     contractorProfileDetails: { findUnique: vi.fn(async () => null) },
+    contractorJoinProfile: { findUnique: vi.fn(async () => null) },
     confirmedProfileField: { findMany: empty() },
     assignment: { findMany: empty() },
     consentRecord: { findMany: empty() },

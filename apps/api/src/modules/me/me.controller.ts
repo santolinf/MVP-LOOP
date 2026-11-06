@@ -5,6 +5,7 @@ import {
   ConfirmAvailabilityRequestSchema,
   ConsentListSchema,
   GoLiveResultSchema,
+  JoinProfileSchema,
   ManualProfileSchema,
   MeSchema,
   NameSchema,
@@ -19,6 +20,7 @@ import { ConsentService } from "../consent/consent.service.js";
 import { CurrentContractor } from "./current-contractor.js";
 import { DetailsService } from "./details.service.js";
 import { GoLiveService } from "./go-live.service.js";
+import { JoinProfileService } from "./join-profile.service.js";
 import { ProfileService } from "./profile.service.js";
 import { MeService } from "./me.service.js";
 import { PreferencesService } from "./preferences.service.js";
@@ -33,6 +35,7 @@ class ManualProfileDto extends createZodDto(ManualProfileSchema) {}
 class ReviewDto extends createZodDto(ReviewSchema) {}
 class ProfileDetailsDto extends createZodDto(ProfileDetailsSchema) {}
 class UpdateNameDto extends createZodDto(UpdateNameRequestSchema) {}
+class JoinProfileDto extends createZodDto(JoinProfileSchema) {}
 class NameDto extends createZodDto(NameSchema) {}
 class GoLiveResultDto extends createZodDto(GoLiveResultSchema) {}
 
@@ -47,6 +50,7 @@ export class MeController {
     @Inject(GoLiveService) private readonly goLive: GoLiveService,
     @Inject(ProfileService) private readonly profile: ProfileService,
     @Inject(DetailsService) private readonly details: DetailsService,
+    @Inject(JoinProfileService) private readonly joinProfile: JoinProfileService,
   ) {}
 
   @Get()
@@ -138,6 +142,22 @@ export class MeController {
   @ApiOkResponse({ type: ProfileDetailsDto })
   updateProfileDetails(@CurrentContractor() id: string, @Body() body: ProfileDetailsDto): Promise<ProfileDetailsDto> {
     return this.details.replace(id, body);
+  }
+
+  @Get("profile/join")
+  @ApiOperation({ operationId: "getJoinProfile", summary: "Profile review and contract preference answers from registration" })
+  @ApiOkResponse({ type: JoinProfileDto })
+  getJoinProfile(@CurrentContractor() id: string): Promise<JoinProfileDto> {
+    return this.joinProfile.get(id);
+  }
+
+  /** Replaces the whole set; naturally idempotent, so no Idempotency-Key is required. */
+  @Put("profile/join")
+  @ApiOperation({ operationId: "updateJoinProfile" })
+  @ApiBody({ type: JoinProfileDto })
+  @ApiOkResponse({ type: JoinProfileDto })
+  updateJoinProfile(@CurrentContractor() id: string, @Body() body: JoinProfileDto): Promise<JoinProfileDto> {
+    return this.joinProfile.replace(id, body);
   }
 
   @Put("name")

@@ -12,5 +12,6 @@ export * from "./extraction.js";
 export * from "./preferences.js";
 export * from "./consent.js";
 export * from "./my-loop.js";
+export * from "./join-profile.js";
 export * from "./messaging.js";
 export * from "./admin.js";

@@ -32,7 +32,7 @@ const KEY_LABELS: Record<string, string> = {
   clearance: "Security clearance",
 };
 
-function Upload({ onUploaded }: { onUploaded: () => void }) {
+export function Upload({ onUploaded }: { onUploaded: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

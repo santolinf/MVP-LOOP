@@ -7,6 +7,7 @@ const tx = vi.hoisted(() => {
     confirmedProfileField: del(),
     contractorPreferences: del(),
     contractorProfileDetails: del(),
+    contractorJoinProfile: del(),
     assignment: del(),
     consentRecord: del(),
     eligibilityDeclaration: del(),
@@ -43,7 +44,7 @@ describe("eraseContractor", () => {
   it("deletes files and owned records, anonymises the row, redacts audit payloads, then writes a PII-free tombstone", async () => {
     expect(await eraseContractor("c1", store, NOW)).toBe("ERASED");
     expect(purge).toHaveBeenCalledWith("c1", store);
-    for (const t of ["session", "confirmedProfileField", "contractorPreferences", "contractorProfileDetails", "assignment", "consentRecord", "eligibilityDeclaration", "confirmationEvent", "message", "scheduledReminder", "confirmLink", "campaignRecipient", "loopMessage", "notification", "manualCallTask"] as const) {
+    for (const t of ["session", "confirmedProfileField", "contractorPreferences", "contractorProfileDetails", "contractorJoinProfile", "assignment", "consentRecord", "eligibilityDeclaration", "confirmationEvent", "message", "scheduledReminder", "confirmLink", "campaignRecipient", "loopMessage", "notification", "manualCallTask"] as const) {
       expect(tx[t].deleteMany).toHaveBeenCalledWith({ where: { contractorId: "c1" } });
     }
     expect(tx.deliveryLog.deleteMany).toHaveBeenCalledWith({ where: { messageId: { in: ["m1"] } } });

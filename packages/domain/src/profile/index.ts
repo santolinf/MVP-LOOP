@@ -1,3 +1,5 @@
+export * from "./join-profile.js";
+
 // Phase 7 app-spec profile fields. Pure: no I/O.
 export const SECURITY_CLEARANCE = ["YES", "NO"] as const;
 export const IR35_STATUS = ["INSIDE", "OUTSIDE", "EITHER", "UNSURE"] as const;

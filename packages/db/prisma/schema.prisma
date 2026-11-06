@@ -435,6 +435,34 @@ model ContractorProfileDetails {
   updatedAt         DateTime @updatedAt @db.Timestamptz
 }
 
+/// V33 registration journey (issue #18): the profile review and contract preference answers that have no home in
+/// the typed headline/skills, ContractorPreferences or ContractorProfileDetails. Values are validated against
+/// `JoinProfileSchema` in `@loop/contracts` on write. Money is integer pence.
+model ContractorJoinProfile {
+  contractorId           String    @id
+  preferredRoles         String[]
+  additionalRoles        String?
+  linkedinUrl            String?
+  location               String?
+  locationConfirmed      Boolean   @default(false)
+  noticePeriodText       String?
+  earliestStartDate      DateTime? @db.Date
+  targetDayRatePence     Int?
+  minDayRatePence        Int?
+  usesUmbrella           Boolean?
+  umbrellaProvider       String?
+  workLocations          String[]
+  otherLocations         String?
+  londonAreas            String[]
+  londonOther            String?
+  workLocationsConfirmed Boolean   @default(false)
+  remoteUk               Boolean?
+  workPatterns           String[]
+  hybridDays             Int?
+  createdAt              DateTime  @default(now()) @db.Timestamptz
+  updatedAt              DateTime  @updatedAt @db.Timestamptz
+}
+
 // ---- Phase 8: messaging engine and reminders ------------------------------------------------------------------
 
 /// Append-only history of the admin-editable cadence config. The engine reads the highest version and records it

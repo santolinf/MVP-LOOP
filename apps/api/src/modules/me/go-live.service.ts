@@ -1,10 +1,13 @@
 import { Inject, Injectable, NotFoundException, UnprocessableEntityException } from "@nestjs/common";
 import { prisma } from "@loop/db";
-import { decideGoLive, GO_LIVE_PROFILE_FIELD_KEYS, londonDate, type GoLiveBlocker } from "@loop/domain";
+import { decideGoLive, GO_LIVE_PROFILE_FIELD_KEYS, londonDate, preferenceGaps, profileGaps, type GoLiveBlocker } from "@loop/domain";
 import type { GoLiveResult, Review } from "@loop/contracts";
 import { AuditService } from "../../common/audit.service.js";
 import { ConsentService } from "../consent/consent.service.js";
 import { ReferralsService } from "../referrals/referrals.service.js";
+import { DetailsService } from "./details.service.js";
+import { JoinProfileService } from "./join-profile.service.js";
+import { ProfileService } from "./profile.service.js";
 import { MeService } from "./me.service.js";
 import { PreferencesService } from "./preferences.service.js";
 
@@ -36,14 +39,20 @@ export class GoLiveService {
     @Inject(MeService) private readonly me: MeService,
     @Inject(PreferencesService) private readonly preferences: PreferencesService,
     @Inject(ReferralsService) private readonly referrals: ReferralsService,
+    @Inject(ProfileService) private readonly profile: ProfileService,
+    @Inject(DetailsService) private readonly details: DetailsService,
+    @Inject(JoinProfileService) private readonly joinProfile: JoinProfileService,
   ) {}
 
   private async facts(contractorId: string) {
-    const [contractor, fields, eligibility, active] = await Promise.all([
+    const [contractor, fields, eligibility, active, typed, details, join] = await Promise.all([
       prisma.contractor.findUnique({ where: { id: contractorId } }),
       prisma.confirmedProfileField.findMany({ where: { contractorId }, orderBy: { createdAt: "asc" } }),
       prisma.eligibilityDeclaration.count({ where: { contractorId, ukBased: true, rightToWork: true } }),
       this.consents.active(contractorId),
+      this.profile.get(contractorId),
+      this.details.get(contractorId),
+      this.joinProfile.get(contractorId),
     ]);
     if (!contractor) throw new NotFoundException("Contractor not found");
     const decision = decideGoLive({
@@ -52,6 +61,21 @@ export class GoLiveService {
       eligibilityDeclared: eligibility > 0,
       availabilityConfirmed: contractor.employmentSituation !== null && contractor.lastConfirmedAt !== null,
       confirmedProfileFields: fields.filter((f) => GO_LIVE_PROFILE_FIELD_KEYS.includes(f.key)).length,
+      profileComplete:
+        profileGaps({ title: join.title, skillCount: typed.skills.length, location: join.location, locationConfirmed: join.locationConfirmed }).length === 0,
+      preferencesComplete:
+        preferenceGaps({
+          targetDayRatePence: join.targetDayRatePence,
+          minDayRatePence: join.minDayRatePence,
+          ir35Status: details.ir35Status,
+          usesUmbrella: join.usesUmbrella,
+          umbrellaProvider: join.umbrellaProvider,
+          workLocations: join.workLocations,
+          otherLocations: join.otherLocations,
+          workLocationsConfirmed: join.workLocationsConfirmed,
+          securityClearance: details.securityClearance,
+          workPatterns: join.workPatterns,
+        }).length === 0,
       activeConsents: active,
     });
     return { contractor, fields, decision };

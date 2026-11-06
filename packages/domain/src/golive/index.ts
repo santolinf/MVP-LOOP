@@ -7,6 +7,8 @@ export type GoLiveBlocker =
   | "ELIGIBILITY_MISSING"
   | "AVAILABILITY_NOT_CONFIRMED"
   | "PROFILE_FIELD_MISSING"
+  | "PROFILE_INCOMPLETE"
+  | "PREFERENCES_INCOMPLETE"
   | "CONSENT_PROFILE_VISIBILITY"
   | "CONSENT_OPERATIONAL_EMAIL";
 
@@ -19,6 +21,10 @@ export interface GoLiveInput {
   availabilityConfirmed: boolean;
   /** Count of contractor-confirmed profile fields of a kind that identifies them (see GO_LIVE_PROFILE_FIELD_KEYS). */
   confirmedProfileFields: number;
+  /** Title, at least five skills and a confirmed location (profileGaps is empty). */
+  profileComplete: boolean;
+  /** Rates, IR35, umbrella, work locations, clearance and work pattern (preferenceGaps is empty). */
+  preferencesComplete: boolean;
   activeConsents: ReadonlySet<ConsentPurpose>;
 }
 
@@ -38,6 +44,8 @@ export function decideGoLive(input: GoLiveInput): GoLiveDecision {
   if (!input.eligibilityDeclared) blockers.push("ELIGIBILITY_MISSING");
   if (!input.availabilityConfirmed) blockers.push("AVAILABILITY_NOT_CONFIRMED");
   if (input.confirmedProfileFields < 1) blockers.push("PROFILE_FIELD_MISSING");
+  if (!input.profileComplete) blockers.push("PROFILE_INCOMPLETE");
+  if (!input.preferencesComplete) blockers.push("PREFERENCES_INCOMPLETE");
   for (const p of missingRequiredConsents(input.activeConsents)) {
     const b = CONSENT_BLOCKER[p];
     if (b) blockers.push(b);

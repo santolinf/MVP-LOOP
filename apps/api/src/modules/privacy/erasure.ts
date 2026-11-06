@@ -26,6 +26,7 @@ export async function eraseContractor(contractorId: string, store: ObjectStore, 
     await tx.confirmedProfileField.deleteMany({ where: { contractorId } });
     await tx.contractorPreferences.deleteMany({ where: { contractorId } });
     await tx.contractorProfileDetails.deleteMany({ where: { contractorId } });
+    await tx.contractorJoinProfile.deleteMany({ where: { contractorId } });
     await tx.assignment.deleteMany({ where: { contractorId } });
     await tx.consentRecord.deleteMany({ where: { contractorId } });
     await tx.eligibilityDeclaration.deleteMany({ where: { contractorId } });

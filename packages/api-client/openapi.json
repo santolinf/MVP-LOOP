@@ -702,6 +702,58 @@
         ]
       }
     },
+    "/api/v1/me/profile/join": {
+      "get": {
+        "operationId": "getJoinProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Profile review and contract preference answers from registration",
+        "tags": [
+          "me"
+        ]
+      },
+      "put": {
+        "operationId": "updateJoinProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinProfileDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/api/v1/me/name": {
       "put": {
         "operationId": "updateName",
@@ -4166,6 +4218,176 @@
         ],
         "additionalProperties": false
       },
+      "JoinProfileDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "nullable": true
+          },
+          "preferredRoles": {
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          },
+          "additionalRoles": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "nullable": true
+          },
+          "linkedinUrl": {
+            "type": "string",
+            "maxLength": 300,
+            "format": "uri",
+            "nullable": true
+          },
+          "location": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "nullable": true
+          },
+          "locationConfirmed": {
+            "type": "boolean"
+          },
+          "noticePeriodText": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "nullable": true
+          },
+          "earliestStartDate": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "nullable": true
+          },
+          "targetDayRatePence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500000,
+            "nullable": true
+          },
+          "minDayRatePence": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500000,
+            "nullable": true
+          },
+          "usesUmbrella": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "umbrellaProvider": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "nullable": true
+          },
+          "workLocations": {
+            "maxItems": 11,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ANYWHERE",
+                "LONDON",
+                "SOUTH_EAST",
+                "SOUTH_WEST",
+                "MIDLANDS",
+                "NORTH_WEST",
+                "NORTH_EAST",
+                "YORKSHIRE",
+                "SCOTLAND",
+                "WALES",
+                "NORTHERN_IRELAND"
+              ]
+            }
+          },
+          "otherLocations": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "nullable": true
+          },
+          "londonAreas": {
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "ANYWHERE_LONDON",
+                "CENTRAL",
+                "NORTH",
+                "SOUTH",
+                "EAST",
+                "WEST"
+              ]
+            }
+          },
+          "londonOther": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "nullable": true
+          },
+          "workLocationsConfirmed": {
+            "type": "boolean"
+          },
+          "remoteUk": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "workPatterns": {
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "REMOTE",
+                "HYBRID",
+                "ONSITE"
+              ]
+            }
+          },
+          "hybridDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4,
+            "nullable": true
+          }
+        },
+        "required": [
+          "title",
+          "preferredRoles",
+          "additionalRoles",
+          "linkedinUrl",
+          "location",
+          "locationConfirmed",
+          "noticePeriodText",
+          "earliestStartDate",
+          "targetDayRatePence",
+          "minDayRatePence",
+          "usesUmbrella",
+          "umbrellaProvider",
+          "workLocations",
+          "otherLocations",
+          "londonAreas",
+          "londonOther",
+          "workLocationsConfirmed",
+          "remoteUk",
+          "workPatterns",
+          "hybridDays"
+        ],
+        "additionalProperties": false
+      },
       "UpdateNameDto": {
         "type": "object",
         "properties": {
@@ -4464,6 +4686,8 @@
                 "ELIGIBILITY_MISSING",
                 "AVAILABILITY_NOT_CONFIRMED",
                 "PROFILE_FIELD_MISSING",
+                "PROFILE_INCOMPLETE",
+                "PREFERENCES_INCOMPLETE",
                 "CONSENT_PROFILE_VISIBILITY",
                 "CONSENT_OPERATIONAL_EMAIL"
               ]

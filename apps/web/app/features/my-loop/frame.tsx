@@ -13,15 +13,19 @@ export const BTN_SMALL = "rounded-full border border-[#465366] px-4 py-2 text-xs
 export const BTN_PRIMARY = "rounded-full bg-lime px-5 py-2.5 text-xs font-extrabold text-[#0a1114] disabled:opacity-40";
 export const BTN_DANGER = "rounded-full border border-red px-4 py-2 text-xs font-extrabold text-red disabled:opacity-40";
 
+/** Order and labels follow the V33 reference dashboard; the rest are real My LOOP screens the reference does not show. */
 const SECTIONS = [
-  { id: "overview", to: "/my-loop", label: "Overview" },
-  { id: "profile", to: "/my-loop/profile", label: "Profile" },
+  { id: "overview", to: "/my-loop", label: "My Profile" },
   { id: "availability", to: "/my-loop/availability", label: "Availability" },
+  { id: "messages", to: "/my-loop/messages", label: "Messages" },
+  { id: "authorisations", to: null, label: "My Authorisations" },
+  { id: "assignments", to: "/my-loop/assignments", label: "Experience" },
+  { id: "introduce", to: "/introduce", label: "Introductions & rewards" },
+  { id: "edit", to: "/my-loop/edit", label: "Edit my profile" },
+  { id: "profile", to: "/my-loop/profile", label: "Profile details" },
   { id: "preferences", to: "/my-loop/preferences", label: "Preferences" },
-  { id: "assignments", to: "/my-loop/assignments", label: "Assignments" },
   { id: "cv", to: "/my-loop/cv", label: "CV & documents" },
   { id: "privacy", to: "/my-loop/privacy", label: "Privacy & visibility" },
-  { id: "introduce", to: "/introduce", label: "Introduce contractors" },
 ] as const;
 
 export type SectionId = (typeof SECTIONS)[number]["id"];
@@ -57,11 +61,18 @@ export function MyLoopNav({ selected }: { selected: SectionId }) {
 
   return (
     <nav aria-label="My LOOP" className="flex flex-col gap-[5px] border-[#1b4052] bg-[#041726] px-2.5 py-[22px] md:border-r">
-      {SECTIONS.map((s) => (
-        <SideLink key={s.id} to={s.to} selected={s.id === selected}>
-          {s.label}
-        </SideLink>
-      ))}
+      {SECTIONS.map((s) =>
+        s.to === null ? (
+          <span key={s.id} aria-disabled="true" className="flex items-center justify-between gap-2.5 rounded-[5px] px-[11px] py-[13px] text-xs text-[#6f8797]">
+            {s.label}
+            <small className="text-[9px] font-extrabold uppercase text-[#bce44f]">Soon</small>
+          </span>
+        ) : (
+          <SideLink key={s.id} to={s.to} selected={s.id === selected}>
+            {s.label}
+          </SideLink>
+        ),
+      )}
       <button
         type="button"
         onClick={signOut}
