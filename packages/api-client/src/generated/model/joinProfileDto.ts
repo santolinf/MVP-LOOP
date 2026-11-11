@@ -5,6 +5,7 @@
  * OpenAPI spec version: 1
  */
 import type { JoinProfileDtoLondonAreasItem } from './joinProfileDtoLondonAreasItem';
+import type { JoinProfileDtoOccasionalTravel } from './joinProfileDtoOccasionalTravel';
 import type { JoinProfileDtoWorkLocationsItem } from './joinProfileDtoWorkLocationsItem';
 import type { JoinProfileDtoWorkPatternsItem } from './joinProfileDtoWorkPatternsItem';
 
@@ -78,6 +79,12 @@ export interface JoinProfileDto {
      * @nullable
      */
   otherLocations: string | null;
+  /**
+     * @maxItems 20
+     * @items.minLength 1
+     * @items.maxLength 60
+     */
+  otherPlaces?: string[];
   /** @maxItems 6 */
   londonAreas: JoinProfileDtoLondonAreasItem[];
   /**
@@ -97,4 +104,6 @@ export interface JoinProfileDto {
      * @nullable
      */
   hybridDays: number | null;
+  /** @nullable */
+  occasionalTravel?: JoinProfileDtoOccasionalTravel;
 }

@@ -12,7 +12,18 @@ export async function customFetch<T>(url: string, init: RequestInit = {}): Promi
   const csrf = csrfToken();
   if (csrf && method !== "GET" && method !== "HEAD") headers.set("x-csrf-token", csrf);
   const res = await fetch(url, { ...init, headers, credentials: "include" });
-  const body: unknown = res.status === 204 ? undefined : await res.json();
-  if (!res.ok) throw body;
+  // Read as text first: an empty or non-JSON body (proxy page, 304, truncated reply) must surface as a readable
+  // problem with the HTTP status, not as an opaque SyntaxError that the UI can only show as "Something went wrong".
+  const text = res.status === 204 ? "" : await res.text();
+  let body: unknown;
+  if (text) {
+    try {
+      body = JSON.parse(text);
+    } catch {
+      if (res.ok) throw { title: "Unexpected response", status: res.status, detail: `The server returned a non-JSON reply (HTTP ${res.status}).` };
+    }
+  }
+  if (!res.ok) throw body && typeof body === "object" ? { status: res.status, ...(body as object) } : { title: res.statusText || "Request failed", status: res.status };
+  if (res.status !== 204 && body === undefined) throw { title: "Empty response", status: res.status, detail: `The server returned no data (HTTP ${res.status}).` };
   return { data: body, status: res.status, headers: res.headers } as T;
 }

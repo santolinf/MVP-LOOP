@@ -21,6 +21,8 @@ export const WorkLocationSchema = z.enum([
 export const LondonAreaSchema = z.enum(["ANYWHERE_LONDON", "CENTRAL", "NORTH", "SOUTH", "EAST", "WEST"]);
 export const WorkPatternChoiceSchema = z.enum(["REMOTE", "HYBRID", "ONSITE"]);
 
+export const OccasionalTravelSchema = z.enum(["YES", "NO", "DEPENDS"]);
+
 const distinct = <T extends z.ZodTypeAny>(item: T, max: number) =>
   z.array(item).max(max).refine((a) => new Set(a).size === a.length, "Duplicate values");
 
@@ -51,12 +53,16 @@ export const JoinProfileSchema = z
     umbrellaProvider: z.string().trim().min(1).max(120).nullable().meta({ type: "string", nullable: true } as never),
     workLocations: distinct(WorkLocationSchema, 11),
     otherLocations: z.string().trim().min(1).max(200).nullable().meta({ type: "string", nullable: true } as never),
+    /** Individually chosen additional towns/cities. Optional on input so older clients keep working; `otherLocations` is derived from it. */
+    otherPlaces: distinct(z.string().trim().min(1).max(60), 20).default([]),
     londonAreas: distinct(LondonAreaSchema, 6),
     londonOther: z.string().trim().min(1).max(200).nullable().meta({ type: "string", nullable: true } as never),
     workLocationsConfirmed: z.boolean(),
     remoteUk: nullableBool(),
     workPatterns: distinct(WorkPatternChoiceSchema, 3),
     hybridDays: z.number().int().min(1).max(4).nullable().meta({ type: "integer", nullable: true } as never),
+    /** Occasional travel for client meetings. Null = not answered; never assume willingness to travel. */
+    occasionalTravel: OccasionalTravelSchema.nullable().default(null).meta({ type: "string", enum: ["YES", "NO", "DEPENDS"], nullable: true } as never),
   })
   .strict();
 export type JoinProfile = z.infer<typeof JoinProfileSchema>;
@@ -76,10 +82,12 @@ export const EMPTY_JOIN_PROFILE: JoinProfile = {
   umbrellaProvider: null,
   workLocations: [],
   otherLocations: null,
+  otherPlaces: [],
   londonAreas: [],
   londonOther: null,
   workLocationsConfirmed: false,
   remoteUk: null,
   workPatterns: [],
   hybridDays: null,
+  occasionalTravel: null,
 };

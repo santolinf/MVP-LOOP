@@ -4317,6 +4317,16 @@
             "maxLength": 200,
             "nullable": true
           },
+          "otherPlaces": {
+            "default": [],
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 60
+            }
+          },
           "londonAreas": {
             "maxItems": 6,
             "type": "array",
@@ -4361,6 +4371,17 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 4,
+            "nullable": true
+          },
+          "occasionalTravel": {
+            "type": "string",
+            "enum": [
+              "YES",
+              "NO",
+              "DEPENDS",
+              null
+            ],
+            "default": null,
             "nullable": true
           }
         },

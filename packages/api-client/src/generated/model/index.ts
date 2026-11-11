@@ -211,6 +211,7 @@ export * from './introducerLookupRequestDto';
 export * from './introducerLookupResultDto';
 export * from './joinProfileDto';
 export * from './joinProfileDtoLondonAreasItem';
+export * from './joinProfileDtoOccasionalTravel';
 export * from './joinProfileDtoWorkLocationsItem';
 export * from './joinProfileDtoWorkPatternsItem';
 export * from './logoutAllResultDto';

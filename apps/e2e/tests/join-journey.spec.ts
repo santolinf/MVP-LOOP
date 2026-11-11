@@ -100,17 +100,31 @@ test("@api new contractor follows the V33 journey from eligibility to My LOOP", 
   await page.getByLabel(/Minimum acceptable day rate/).fill("500");
   await page.getByRole("group", { name: /IR35 preference/ }).getByLabel("Outside").check();
   await page.getByRole("group", { name: "Do you currently use an umbrella company?" }).getByLabel("No").check();
+  await expect(
+    page.getByText("Only select regions where you would genuinely consider attending a workplace regularly. You can specify individual towns or cities below."),
+  ).toBeVisible();
   await page.getByLabel("Scotland").check();
+  // Additional towns/cities are separate, removable selections.
+  const places = page.getByLabel("Additional towns or cities (optional)");
+  for (const town of ["Edinburgh", "Glasgow", "Stirling"]) {
+    await places.fill(town);
+    await page.getByRole("option", { name: new RegExp(`^${town},`) }).click();
+  }
+  await page.getByRole("button", { name: "Remove Glasgow, Scotland" }).click();
+  await expect(page.getByRole("list", { name: "Selected towns and cities" }).getByRole("listitem")).toHaveCount(2);
   await page.getByLabel(/I confirm these are the locations/).check();
   await page.getByRole("group", { name: /security clearance/ }).getByLabel("No").check();
-  await page.getByRole("group", { name: /Work pattern preference/ }).getByLabel("Remote").check();
+  // Saying yes to UK-wide remote also selects Remote, so the two answers cannot contradict each other.
+  await page.getByRole("group", { name: /fully remote contracts anywhere/ }).getByLabel("Yes").check();
+  await expect(page.getByRole("group", { name: /Work pattern preference/ }).getByLabel("Remote")).toBeChecked();
+  await page.getByRole("group", { name: /occasional travel/ }).getByLabel("Depends on location and frequency").check();
   await page.getByRole("button", { name: /Continue/ }).click();
 
   // 6. GO LIVE: the summary shows every answer; the accuracy box and the two required consents unlock the button.
   await expect(page).toHaveURL(/\/join\/review$/);
   await step(6);
   const summary = page.getByRole("region", { name: "Your details" });
-  for (const text of ["Ada Lovelace", "Senior platform engineer", "Edinburgh", "£600/day", "£500/day", "Outside", "Scotland", "Remote"])
+  for (const text of ["Ada Lovelace", "Senior platform engineer", "Edinburgh", "£600/day", "£500/day", "Outside", "Scotland", "Edinburgh, Scotland", "Stirling, Scotland", "Remote", "Depends on location and frequency"])
     await expect(summary).toContainText(text);
   const accurate = page.getByLabel(/information I have entered is accurate/);
   const choices = page.getByRole("group", { name: "Your choices" }).getByRole("checkbox");
@@ -126,17 +140,18 @@ test("@api new contractor follows the V33 journey from eligibility to My LOOP", 
   await expect(goLive).toBeEnabled();
   await goLive.click();
 
-  // 7. Get the app: honest placeholders only, no live store links, and no separate app preview page.
+  // 7. Get the app (app-first): Founding wording, no demo/"coming soon"/bypass controls, no fake store links.
   await expect(page).toHaveURL(/\/welcome$/);
   await expect(page.getByRole("heading", { name: "Welcome to LOOP." })).toBeVisible();
   await expect(page.getByText("You're LIVE. Now stay in the LOOP.")).toBeVisible();
-  await expect(page.getByText("App Store · coming soon")).toBeVisible();
-  await expect(page.getByText("Google Play · coming soon")).toBeVisible();
-  await expect(page.locator('a[href*="apps.apple.com"], a[href*="play.google.com"]')).toHaveCount(0);
+  await expect(page.getByText("Complete your app sign-in to become eligible for Founding Membership.")).toBeVisible();
+  await expect(page.getByText(/coming soon/i)).toHaveCount(0);
+  await expect(page.getByText(/Continue without app/i)).toHaveCount(0);
   await expect(page.getByRole("link", { name: /Preview contractor app/ })).toHaveCount(0);
+  await expect(page.locator('a[href*="apps.apple.com"], a[href*="play.google.com"]')).toHaveCount(0); // none configured in test builds
 
   // 8. My LOOP shows what was entered.
-  await page.getByRole("link", { name: /Continue without app/ }).click();
+  await page.getByRole("link", { name: /Go to My LOOP/ }).click();
   await expect(page).toHaveURL(/\/my-loop$/);
   await expect(page.getByRole("heading", { name: "My Profile", level: 1 })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Ada Lovelace" })).toBeVisible();

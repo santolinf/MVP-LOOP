@@ -8,6 +8,17 @@ type Row = NonNullable<Awaited<ReturnType<typeof prisma.contractorJoinProfile.fi
 
 const day = (d: Date | null): string | null => (d ? d.toISOString().slice(0, 10) : null);
 
+/** Legacy rows only have the free-text field; split it so earlier answers become individual places and nothing is lost. */
+const splitPlaces = (text: string | null): string[] =>
+  (text ?? "")
+    .split(/[,;]/)
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .slice(0, 20);
+
+const placesFrom = (r: Row): string[] =>
+  r.otherPlaces.length > 0 ? r.otherPlaces : splitPlaces(r.otherLocations);
+
 /** Rows are written only through validated requests; parsing again guards against hand-edited data. */
 function toJoinProfile(r: Row | null): JoinProfile {
   if (!r) return EMPTY_JOIN_PROFILE;
@@ -27,12 +38,14 @@ function toJoinProfile(r: Row | null): JoinProfile {
     umbrellaProvider: r.umbrellaProvider,
     workLocations: r.workLocations,
     otherLocations: r.otherLocations,
+    otherPlaces: placesFrom(r),
     londonAreas: r.londonAreas,
     londonOther: r.londonOther,
     workLocationsConfirmed: r.workLocationsConfirmed,
     remoteUk: r.remoteUk,
     workPatterns: r.workPatterns,
     hybridDays: r.hybridDays,
+    occasionalTravel: r.occasionalTravel,
   });
   return parsed.success ? parsed.data : EMPTY_JOIN_PROFILE;
 }
@@ -71,7 +84,10 @@ export class JoinProfileService {
     if (!exists) throw new NotFoundException("Contractor not found");
     const before = await this.get(contractorId);
     const { title, earliestStartDate, ...rest } = req;
-    const data = { ...rest, earliestStartDate: earliestStartDate ? new Date(`${earliestStartDate}T00:00:00Z`) : null };
+    // Places are the structured source; the legacy text mirrors them so older readers (admin, export) still see the answer.
+    // An older client sends only the free text: split it so its answer still becomes places.
+    const places = [...new Set(rest.otherPlaces.length > 0 ? rest.otherPlaces.map((p) => p.trim()).filter(Boolean) : splitPlaces(rest.otherLocations))].slice(0, 20);
+    const data = { ...rest, otherPlaces: places, otherLocations: places.length > 0 ? places.join(", ").slice(0, 200) : null, earliestStartDate: earliestStartDate ? new Date(`${earliestStartDate}T00:00:00Z`) : null };
     if (title !== before.title) {
       const typed = await this.profile.get(contractorId);
       await this.profile.replace(contractorId, { headline: title, skills: typed.skills });

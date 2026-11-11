@@ -90,7 +90,7 @@ export function MyLoopPage() {
   const status = me.paused ? "PAUSED" : me.live ? "LIVE" : "NOT LIVE";
   const title = j?.title ?? headline ?? "UK IT contractor";
   const confirmed = me.availability.lastConfirmedAt ? new Date(me.availability.lastConfirmedAt).toLocaleDateString("en-GB") : "Not yet confirmed";
-  const regions = j ? [...j.workLocations.map((l) => LOCATION_LABELS[l] ?? l), j.otherLocations ?? ""].filter(Boolean) : [];
+  const regions = j ? [...j.workLocations.map((l) => LOCATION_LABELS[l] ?? l), ...((j.otherPlaces ?? []).length > 0 ? (j.otherPlaces ?? []) : j.otherLocations ? [j.otherLocations] : [])].filter(Boolean) : [];
 
   const overview = (
     <>
@@ -124,7 +124,6 @@ export function MyLoopPage() {
         <Panel title="Role preferences" to="/my-loop/profile">
           <Detail label="Primary role" value={title} />
           <Detail label="Other roles" value={j?.preferredRoles.join(" · ")} />
-          <Detail label="LinkedIn" value={j?.linkedinUrl ?? "Optional · not added"} />
         </Panel>
       </div>
       <section className={`${PANEL} mt-2.5`}>
@@ -287,7 +286,6 @@ export function MyLoopPage() {
                   ✓ CV uploaded at registration
                   <br />✓ Contractor verifies AI suggestions
                   <br />✓ Availability confirmed by you
-                  <br />○ LinkedIn and photo optional
                 </p>
                 <Link to="/my-loop/edit" className={`${BTN_OUTLINE} !px-4 !py-2 text-xs`}>
                   Confirm profile is current

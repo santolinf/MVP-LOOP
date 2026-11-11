@@ -72,7 +72,6 @@ export function summaryItems(me: MeDto, title: string, skills: string[], j: Join
     ["Preferred roles", j.preferredRoles.join(", ")],
     ["Skills", skills.join(", ")],
     ["Location", j.location ?? ""],
-    ["LinkedIn", j.linkedinUrl ?? "Not provided"],
     ["Situation", me.employment ? (SITUATION_LABELS[me.employment] ?? "") : ""],
     ["Expected end date", me.contractEndDate ?? "Not applicable"],
     ["Availability", me.availability.label],
@@ -83,11 +82,12 @@ export function summaryItems(me: MeDto, title: string, skills: string[], j: Join
     ["Security cleared", d.securityClearance === "YES" ? "Yes" : d.securityClearance === "NO" ? "No" : ""],
     ["Work pattern", list(j.workPatterns, PATTERN_LABELS)],
     ["Work locations", list(j.workLocations, LOCATION_LABELS)],
-    ["Other locations", j.otherLocations ?? ""],
+    ["Other locations", (j.otherPlaces ?? []).length > 0 ? (j.otherPlaces ?? []).join(", ") : (j.otherLocations ?? "")],
     ["London areas", list(j.londonAreas, LONDON_LABELS)],
     ["Specific London areas", j.londonOther ?? ""],
     ["UK-wide remote", j.remoteUk === null ? "" : j.remoteUk ? "Yes" : "No"],
     ["Hybrid days", j.hybridDays ? String(j.hybridDays) : ""],
+    ["Occasional travel", j.occasionalTravel === "YES" ? "Yes" : j.occasionalTravel === "NO" ? "No" : j.occasionalTravel === "DEPENDS" ? "Depends on location and frequency" : ""],
   ];
 }
 
@@ -211,7 +211,9 @@ export function ReviewStep() {
           <Muted className="text-sm">Service and security emails, such as sign-in codes, are always sent. Your marketing choices never switch them off.</Muted>
         </div>
         <Note>
-          <span className="font-semibold">Not shown to agencies:</span> {body.hidden.join(", ")}.
+          {/* TODO(spec): QA-008 — exact visibility and permission wording is pending legal review; make no absolute claim until then. */}
+          <span className="font-semibold">Your privacy:</span> your contact details and CV are not shared with agencies automatically. What agencies can see,
+          and when, is governed by your permissions and our Privacy Policy.
         </Note>
         {error && (
           <p role="alert" className="mt-4 text-red">

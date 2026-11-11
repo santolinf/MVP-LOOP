@@ -14,6 +14,7 @@ import {
 } from "@loop/api-client";
 import { BTN_OUTLINE, BTN_SOLID, Muted } from "../marketing/primitives";
 import { Check, ConfirmBox, Note, OptionGroup, Radio, TextField, toggle, INPUT } from "./form-bits";
+import { PlacePicker } from "./place-picker";
 
 const IR35 = [["INSIDE", "Inside"], ["OUTSIDE", "Outside"], ["EITHER", "Both"]] as const;
 const LOCATIONS = [
@@ -37,6 +38,7 @@ const LONDON_AREAS = [
   ["EAST", "East London"],
   ["WEST", "West London"],
 ] as const;
+const TRAVEL_LABELS = { YES: "Yes", NO: "No", DEPENDS: "Depends on location and frequency" } as const;
 const PATTERNS = [["REMOTE", "Remote"], ["HYBRID", "Hybrid"], ["ONSITE", "On-site"]] as const;
 
 type Yn = "yes" | "no" | null;
@@ -51,7 +53,7 @@ interface Draft {
   umbrella: Yn;
   umbrellaProvider: string;
   locations: string[];
-  otherLocations: string;
+  otherPlaces: string[];
   londonAreas: string[];
   londonOther: string;
   locationsConfirmed: boolean;
@@ -59,6 +61,7 @@ interface Draft {
   clearance: Yn;
   patterns: string[];
   hybridDays: string;
+  travel: string | null;
 }
 
 const pounds = (pence: number | null) => (pence ? String(Math.round(pence / 100)) : "");
@@ -71,7 +74,7 @@ function draftFrom(j: JoinProfileDto, d: ProfileDetailsDto): Draft {
     umbrella: yn(j.usesUmbrella),
     umbrellaProvider: j.umbrellaProvider ?? "",
     locations: j.workLocations,
-    otherLocations: j.otherLocations ?? "",
+    otherPlaces: j.otherPlaces ?? [],
     londonAreas: j.londonAreas,
     londonOther: j.londonOther ?? "",
     locationsConfirmed: j.workLocationsConfirmed,
@@ -79,6 +82,7 @@ function draftFrom(j: JoinProfileDto, d: ProfileDetailsDto): Draft {
     clearance: d.securityClearance === "YES" ? "yes" : d.securityClearance === "NO" ? "no" : null,
     patterns: j.workPatterns,
     hybridDays: j.hybridDays ? String(j.hybridDays) : "",
+    travel: j.occasionalTravel ?? null,
   };
 }
 
@@ -93,13 +97,16 @@ export function preferenceProblems(d: Draft): string[] {
   if (!d.ir35) out.push("Choose your IR35 preference.");
   if (d.umbrella === null) out.push("Tell us whether you currently use an umbrella company.");
   else if (d.umbrella === "yes" && !d.umbrellaProvider.trim()) out.push("Enter your umbrella company name.");
-  const hasLocation = d.locations.length > 0 || !!d.otherLocations.trim();
+  const hasLocation = d.locations.length > 0 || d.otherPlaces.length > 0;
   if ((d.patterns.includes("HYBRID") || d.patterns.includes("ONSITE")) && !hasLocation)
     out.push("Select at least one work location or enter a town/city for Hybrid or On-site work.");
   else if (!hasLocation) out.push("Select at least one work location or enter a town or city.");
   else if (!d.locationsConfirmed) out.push("Confirm the locations you would consider working.");
   if (d.clearance === null) out.push("Tell us whether you hold security clearance.");
   if (d.patterns.length === 0) out.push("Select at least one work pattern.");
+  if (d.patterns.includes("HYBRID") && !d.hybridDays) out.push("Choose the maximum on-site days per week you would accept for hybrid work.");
+  if (d.remoteUk === "yes" && d.patterns.length > 0 && !d.patterns.includes("REMOTE"))
+    out.push("You said you'd consider fully remote contracts anywhere in the UK, so select Remote as a work pattern too (or change that answer).");
   return out;
 }
 
@@ -111,13 +118,15 @@ export async function savePreferences(d: Draft, joined: JoinProfileDto, details:
     usesUmbrella: bool(d.umbrella),
     umbrellaProvider: d.umbrella === "yes" ? d.umbrellaProvider.trim() : null,
     workLocations: d.locations as JoinProfileDto["workLocations"],
-    otherLocations: d.otherLocations.trim() || null,
+    otherPlaces: d.otherPlaces,
+    otherLocations: d.otherPlaces.length > 0 ? d.otherPlaces.join(", ").slice(0, 200) : null,
     londonAreas: d.locations.includes("LONDON") ? (d.londonAreas as JoinProfileDto["londonAreas"]) : [],
     londonOther: d.locations.includes("LONDON") ? d.londonOther.trim() || null : null,
     workLocationsConfirmed: d.locationsConfirmed,
     remoteUk: bool(d.remoteUk),
     workPatterns: d.patterns as JoinProfileDto["workPatterns"],
     hybridDays: d.patterns.includes("HYBRID") && d.hybridDays ? Number(d.hybridDays) : null,
+    occasionalTravel: (d.travel as JoinProfileDto["occasionalTravel"]) ?? null,
   });
   if (saved.status !== 200) throw new Error("preferences");
   const det = await updateProfileDetails({
@@ -179,18 +188,12 @@ function Form({ joined, details, onSaved, back, submitLabel }: { joined: JoinPro
       {d.umbrella === "yes" && (
         <TextField label="Umbrella company name" required value={d.umbrellaProvider} placeholder="Enter umbrella company name" maxLength={120} onChange={(v) => set("umbrellaProvider", v)} />
       )}
-      <OptionGroup legend="Where would you consider working?" help="Select all that apply. These locations are for roles requiring regular attendance.">
+      <OptionGroup legend="Where would you consider working?" help="Only select regions where you would genuinely consider attending a workplace regularly. You can specify individual towns or cities below.">
         {LOCATIONS.map(([v, label]) => (
           <Check key={v} label={label} checked={d.locations.includes(v)} onChange={(on) => set("locations", toggle(d.locations, v, on))} />
         ))}
       </OptionGroup>
-      <TextField
-        label="Other towns, cities or regions (optional)"
-        value={d.otherLocations}
-        placeholder="e.g. Edinburgh, Glasgow, Stirling"
-        maxLength={200}
-        onChange={(v) => set("otherLocations", v)}
-      />
+      <PlacePicker label="Additional towns or cities (optional)" value={d.otherPlaces} onChange={(v) => set("otherPlaces", v)} />
       {d.locations.includes("LONDON") && (
         <>
           <OptionGroup legend="London — which areas would you work in?" help="Select all that apply.">
@@ -210,7 +213,15 @@ function Form({ joined, details, onSaved, back, submitLabel }: { joined: JoinPro
       <ConfirmBox checked={d.locationsConfirmed} onChange={(v) => set("locationsConfirmed", v)}>
         I confirm these are the locations I would consider working. *
       </ConfirmBox>
-      {yesNo("Would you consider fully remote contracts anywhere in the UK?", "remoteUK", d.remoteUk, (v) => set("remoteUk", v))}
+      {yesNo("Would you consider fully remote contracts anywhere in the UK?", "remoteUK", d.remoteUk, (v) =>
+        // Keep the two remote answers consistent: Yes also accepts remote work as a pattern.
+        setD((x) => ({ ...x, remoteUk: v, patterns: v === "yes" && !x.patterns.includes("REMOTE") ? [...x.patterns, "REMOTE"] : x.patterns })),
+      )}
+      <OptionGroup legend="Would you consider occasional travel for client meetings?" help="Remote work with occasional visits is different from fully remote work.">
+        {(["YES", "NO", "DEPENDS"] as const).map((v) => (
+          <Radio key={v} name="occasionalTravel" label={TRAVEL_LABELS[v]} checked={d.travel === v} onChange={() => set("travel", v)} />
+        ))}
+      </OptionGroup>
       {yesNo("Do you hold security clearance?", "securityCleared", d.clearance, (v) => set("clearance", v), true)}
       <OptionGroup legend="Work pattern preference" help="Select all that suit you." required>
         {PATTERNS.map(([v, label]) => (

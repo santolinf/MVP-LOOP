@@ -52,6 +52,7 @@ const baseJoin = {
   umbrellaProvider: null,
   workLocations: ["SCOTLAND"],
   otherLocations: null,
+  otherPlaces: [],
   workLocationsConfirmed: true,
   workPatterns: ["REMOTE"],
 };

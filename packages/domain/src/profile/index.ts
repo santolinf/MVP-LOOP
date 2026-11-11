@@ -20,3 +20,4 @@ export function validateAssignmentDates(r: DateRange, today: string): string | n
   if (r.endDate !== null && r.endDate < r.startDate) return "endDate: cannot be before the start date";
   return null;
 }
+export * from "./work-match.js";

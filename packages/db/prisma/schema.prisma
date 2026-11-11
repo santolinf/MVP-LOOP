@@ -453,12 +453,16 @@ model ContractorJoinProfile {
   umbrellaProvider       String?
   workLocations          String[]
   otherLocations         String?
+  /// Individually chosen towns/cities (display names). `otherLocations` is kept as the joined legacy text.
+  otherPlaces            String[]  @default([])
   londonAreas            String[]
   londonOther            String?
   workLocationsConfirmed Boolean   @default(false)
   remoteUk               Boolean?
   workPatterns           String[]
   hybridDays             Int?
+  /// YES | NO | DEPENDS: occasional travel for client meetings. Null means not answered (never assume travel).
+  occasionalTravel       String?
   createdAt              DateTime  @default(now()) @db.Timestamptz
   updatedAt              DateTime  @updatedAt @db.Timestamptz
 }

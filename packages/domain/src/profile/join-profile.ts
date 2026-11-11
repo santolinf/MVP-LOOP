@@ -57,6 +57,10 @@ export interface PreferenceFacts {
   /** YES | NO */
   securityClearance: string | null;
   workPatterns: readonly string[];
+  /** Hybrid on-site days per week (1-4). Required only when hybrid work is accepted. */
+  hybridDays?: number | null;
+  /** UK-wide fully remote answer; Yes must agree with accepting remote work. */
+  remoteUk?: boolean | null;
 }
 
 export type PreferenceGap =
@@ -69,7 +73,9 @@ export type PreferenceGap =
   | "WORK_LOCATIONS"
   | "WORK_LOCATIONS_CONFIRMATION"
   | "SECURITY_CLEARANCE"
-  | "WORK_PATTERN";
+  | "WORK_PATTERN"
+  | "HYBRID_DAYS"
+  | "REMOTE_CONFLICT";
 
 /** Everything the Preferences step requires. Empty means complete. */
 export function preferenceGaps(f: PreferenceFacts): PreferenceGap[] {
@@ -84,5 +90,9 @@ export function preferenceGaps(f: PreferenceFacts): PreferenceGap[] {
   else if (!f.workLocationsConfirmed) gaps.push("WORK_LOCATIONS_CONFIRMATION");
   if (!f.securityClearance) gaps.push("SECURITY_CLEARANCE");
   if (f.workPatterns.length === 0) gaps.push("WORK_PATTERN");
+  // The hybrid-day limit belongs to hybrid roles only; it is not asked, or enforced, for fully on-site work.
+  if (f.workPatterns.includes("HYBRID") && !(f.hybridDays && f.hybridDays >= 1 && f.hybridDays <= MAX_HYBRID_DAYS)) gaps.push("HYBRID_DAYS");
+  // Saying yes to UK-wide remote work while not accepting remote work is contradictory and must be resolved.
+  if (f.remoteUk === true && f.workPatterns.length > 0 && !f.workPatterns.includes("REMOTE")) gaps.push("REMOTE_CONFLICT");
   return gaps;
 }

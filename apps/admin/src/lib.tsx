@@ -15,7 +15,8 @@ export function errMsg(e: unknown): string {
     if (typeof p.detail === "string") return p.detail;
     if (typeof p.title === "string") return p.title;
   }
-  return "Something went wrong";
+  const status = e && typeof e === "object" ? (e as { status?: unknown }).status : undefined;
+  return typeof status === "number" ? `Something went wrong (HTTP ${status})` : "Something went wrong (no response from the server)";
 }
 
 export function DataTable<T extends RowData>({ data, columns, empty = "Nothing to show." }: { data: T[]; columns: ColumnDef<typeof features, T>[]; empty?: string }) {

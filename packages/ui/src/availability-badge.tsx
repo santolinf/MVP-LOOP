@@ -2,8 +2,8 @@ import type { AvailabilityColour } from "@loop/contracts";
 
 const META: Record<AvailabilityColour, { label: string; icon: string; className: string }> = {
   LIME: { label: "Available Now", icon: "✓", className: "bg-panel-2 text-lime" },
-  ORANGE: { label: "Available soon", icon: "◔", className: "bg-panel-2 text-orange" },
-  RED: { label: "Unavailable", icon: "✕", className: "bg-panel-2 text-red" },
+  ORANGE: { label: "Available Soon", icon: "◔", className: "bg-panel-2 text-orange" },
+  RED: { label: "In Contract", icon: "✕", className: "bg-panel-2 text-red" },
   BLUE: { label: "Permanently Employed", icon: "▣", className: "bg-panel-2 text-blue" },
   GREY: { label: "Unconfirmed", icon: "?", className: "bg-panel-2 text-grey" },
 };

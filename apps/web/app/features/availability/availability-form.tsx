@@ -26,7 +26,7 @@ type Situation = "in-contract" | "available-now" | "available-soon" | "permanent
 const OPTIONS: { value: Situation; label: string }[] = [
   { value: "in-contract", label: "Currently in contract" },
   { value: "available-now", label: "Available now" },
-  { value: "available-soon", label: "Available soon" },
+  { value: "available-soon", label: "Available Soon" },
   { value: "permanent", label: "Permanently employed — open to contracting" },
 ];
 

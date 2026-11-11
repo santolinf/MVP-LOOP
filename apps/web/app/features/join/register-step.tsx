@@ -27,6 +27,9 @@ function isUkMobile(input: string): boolean {
   return /^\+447[1-57-9]\d{8}$/.test(n);
 }
 
+/** Client-side pause between code requests; the server's own rate limit still decides. */
+const RESEND_SECONDS = 60;
+
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Best effort: the registrant typed the introducer, so a failure is reported on the next step rather than blocking sign-up. */
@@ -68,6 +71,10 @@ export function RegisterStep() {
   const requestOtp = useRequestOtp();
   const verifyOtp = useVerifyOtp();
   const [busy, setBusy] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  // Set once the account exists but the introducer could not be matched: the contractor can correct it or skip, never lose it silently.
+  const [introFailed, setIntroFailed] = useState(false);
+  const [introBusy, setIntroBusy] = useState(false);
   const set = <K extends keyof AccountDraft>(k: K, v: AccountDraft[K]) => setForm((f) => ({ ...f, [k]: v }));
   const mobileOk = isUkMobile(form.mobile);
   const emailOk = EMAIL.test(form.email.trim());
@@ -75,10 +82,26 @@ export function RegisterStep() {
   const name = splitFullName(profile.fullName);
 
   useEffect(() => writeAccountDraft(form), [form]);
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
   // The profile review comes first; without it there is no name to register.
   useEffect(() => {
-    if (!splitFullName(readProfileDraft().fullName)) navigate("/join/profile", { replace: true });
-  }, [navigate]);
+    if (!introFailed && !splitFullName(readProfileDraft().fullName)) navigate("/join/profile", { replace: true });
+  }, [navigate, introFailed]);
+
+  async function retryIntroducer() {
+    if (introBusy) return;
+    setIntroBusy(true);
+    setError(null);
+    const ok = await attachIntroducer(form.introducer);
+    setIntroBusy(false);
+    if (!ok) return setError("We still couldn't match them. Check the email address or introduction code, or skip this for now.");
+    clearJoinDrafts();
+    navigate("/join/availability");
+  }
 
   async function sendCode() {
     if (busy) return;
@@ -86,17 +109,20 @@ export function RegisterStep() {
     if (!emailOk) return setError("Enter a valid email address.");
     if (!mobileOk) return setError("Enter a UK mobile number, for example 07700 900123.");
     const email = form.email.trim().toLowerCase();
-    if (sentTo === email) return setStatus(`We've already emailed a code to ${form.email.trim()}.`);
+    if (cooldown > 0) return setStatus(`You can ask for another code in ${cooldown}s. The code we emailed is still valid until it expires.`);
     setBusy(true);
     try {
       await requestOtp.mutateAsync({ data: { email: form.email.trim(), purpose: "REGISTER", clientType: "WEB" } });
       setSentTo(email);
-      setStatus(`We've emailed a code to ${form.email.trim()}.`);
+      setCode("");
+      setCooldown(RESEND_SECONDS);
+      setStatus(`We've emailed ${sentTo === email ? "a new" : "a"} code to ${form.email.trim()}. It expires shortly, so enter it now.`);
     } catch (e) {
       const s = typeof e === "object" && e !== null ? (e as { status?: number }).status : undefined;
+      if (s === 429) setCooldown(RESEND_SECONDS);
       setError(
         s === 429
-          ? "A code was sent recently. Please wait a minute before asking for another, or use the one we emailed you."
+          ? "A code was sent recently. Please wait a moment before asking for another, or use the one we emailed you."
           : "We couldn't send your code. Please check your email address and try again.",
       );
     } finally {
@@ -152,9 +178,8 @@ export function RegisterStep() {
     } catch {
       notes.push("We couldn't save your profile review. Please check it again before you go live.");
     }
-    if (form.introduced === "yes" && !(await attachIntroducer(form.introducer))) {
-      notes.push("We couldn't match the person who introduced you. Check their email address or introduction code.");
-    }
+    let introducerMissed = false;
+    if (form.introduced === "yes" && !(await attachIntroducer(form.introducer))) introducerMissed = true;
     if (form.offers) {
       try {
         await grantOffers();
@@ -163,9 +188,49 @@ export function RegisterStep() {
       }
     }
     if (notes.length > 0) setJoinNotice(notes.join(" "));
+    if (introducerMissed) {
+      // Stay here with the answer preserved; do not jump ahead and strand the attribution.
+      setBusy(false);
+      setIntroFailed(true);
+      return;
+    }
     clearJoinDrafts();
     navigate("/join/availability");
   }
+
+  if (introFailed)
+    return (
+      <section className="mx-auto max-w-[720px] px-5 py-12">
+        <StepBar step={3} />
+        <Card className="!border-[#294357] !bg-[#0b2237] !bg-none !p-8">
+          <h1 className={PAGE_H1}>Your account is created</h1>
+          <p role="alert" className="mb-4 text-orange">
+            We couldn't match the person who introduced you. Check their email address or introduction code and try again, or skip this for now.
+          </p>
+          <TextField label="Who introduced you?" value={form.introducer} placeholder="Their email address or introduction code" maxLength={254} onChange={(v) => set("introducer", v)} />
+          {error && (
+            <p role="alert" className="mt-3 text-red">
+              {error}
+            </p>
+          )}
+          <div className="mt-6 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              className={BTN_OUTLINE}
+              onClick={() => {
+                clearJoinDrafts();
+                navigate("/join/availability");
+              }}
+            >
+              Skip for now
+            </button>
+            <button type="button" className={BTN_SOLID} disabled={introBusy} onClick={retryIntroducer}>
+              Try again
+            </button>
+          </div>
+        </Card>
+      </section>
+    );
 
   return (
     <section className="mx-auto max-w-[720px] px-5 py-12">
@@ -180,7 +245,7 @@ export function RegisterStep() {
             <strong>Email verification</strong>
             <p className="mb-3 mt-1 text-muted">We'll email you a one-time code to confirm it's you.</p>
             <button type="button" className={BTN_OUTLINE} disabled={busy} onClick={sendCode}>
-              Email me a code
+              {sentTo ? (cooldown > 0 ? `Resend code (${cooldown}s)` : "Resend code") : "Email me a code"}
             </button>
             {status && (
               <p role="status" className="mt-3 text-fg">
