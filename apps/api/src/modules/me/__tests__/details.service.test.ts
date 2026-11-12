@@ -28,6 +28,18 @@ describe("ProfileDetailsSchema", () => {
   ])("rejects %s", (_n, body) => expect(ProfileDetailsSchema.safeParse(body).success).toBe(false));
 });
 
+describe("ProfileDetailsSchema summary and qualifications", () => {
+  it("are optional, so older clients that do not send them still validate", () => {
+    expect(ProfileDetailsSchema.safeParse(EMPTY).success).toBe(true);
+  });
+  it("accept text or null, trimmed, up to 2000 characters", () => {
+    expect(ProfileDetailsSchema.parse({ ...EMPTY, summary: "  Test lead  ", qualifications: null })).toMatchObject({ summary: "Test lead", qualifications: null });
+    expect(ProfileDetailsSchema.safeParse({ ...EMPTY, summary: "x".repeat(2001) }).success).toBe(false);
+    expect(ProfileDetailsSchema.safeParse({ ...EMPTY, qualifications: "x".repeat(2001) }).success).toBe(false);
+    expect(ProfileDetailsSchema.safeParse({ ...EMPTY, summary: 5 }).success).toBe(false);
+  });
+});
+
 describe("UpdateNameRequestSchema", () => {
   it("uses the registration limits", () => {
     expect(UpdateNameRequestSchema.safeParse({ firstName: " ", lastName: "B" }).success).toBe(false);
@@ -49,6 +61,28 @@ describe("DetailsService", () => {
     expect(db.contractorProfileDetails.upsert).toHaveBeenCalledWith({ where: { contractorId: "c1" }, create: { contractorId: "c1", ...req }, update: req });
     expect(db.contractor.update).not.toHaveBeenCalled();
     expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: "profile.details.updated", before: EMPTY, after: req }));
+  });
+
+  it("returns a stored summary and qualifications, and saves them with the rest", async () => {
+    db.contractorProfileDetails.findUnique.mockResolvedValue({
+      securityClearance: "NO",
+      ir35Status: "EITHER",
+      workPattern: null,
+      summary: "Test lead",
+      qualifications: "ISTQB Advanced",
+    });
+    expect(await svc.get("c1")).toEqual({ securityClearance: "NO", ir35Status: "EITHER", workPattern: null, summary: "Test lead", qualifications: "ISTQB Advanced" });
+
+    const req = { ...EMPTY, summary: "Principal tester", qualifications: null };
+    await svc.replace("c1", req);
+    expect(db.contractorProfileDetails.upsert).toHaveBeenCalledWith({ where: { contractorId: "c1" }, create: { contractorId: "c1", ...req }, update: req });
+  });
+
+  it("leaves a stored summary alone when a client omits it (the preferences save does)", async () => {
+    await svc.replace("c1", EMPTY);
+    const call = db.contractorProfileDetails.upsert.mock.calls[0]?.[0] as { update: Record<string, unknown> };
+    expect(call.update).not.toHaveProperty("summary");
+    expect(call.update).not.toHaveProperty("qualifications");
   });
 
   it("updates the name and audits the previous one", async () => {

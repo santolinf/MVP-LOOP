@@ -37,6 +37,14 @@ describe("CvController", () => {
     expect(drafts.resolve).not.toHaveBeenCalled();
   });
 
+  it("asks for an inline download only for disposition=inline", async () => {
+    const { ctrl, cv } = build();
+    await ctrl.download("u1", { ip: "1.2.3.4", contractorId: "c1" }, undefined, "inline");
+    await ctrl.download("u1", { ip: "1.2.3.4", contractorId: "c1" }, undefined, "bogus");
+    expect(cv.download).toHaveBeenNthCalledWith(1, { contractorId: "c1" }, "u1", true);
+    expect(cv.download).toHaveBeenNthCalledWith(2, { contractorId: "c1" }, "u1", false);
+  });
+
   it("resolves the anonymous draft token for every owner-scoped endpoint", async () => {
     const { ctrl, cv, eligibility } = build();
     const req = { ip: "1.2.3.4" };
@@ -48,7 +56,7 @@ describe("CvController", () => {
     expect(cv.presign).toHaveBeenCalledWith({ draftId: "d1" }, expect.anything(), "1.2.3.4");
     expect(cv.complete).toHaveBeenCalledWith({ draftId: "d1" }, "u1");
     expect(cv.status).toHaveBeenCalledWith({ draftId: "d1" }, "u1");
-    expect(cv.download).toHaveBeenCalledWith({ draftId: "d1" }, "u1");
+    expect(cv.download).toHaveBeenCalledWith({ draftId: "d1" }, "u1", false);
     expect(eligibility.record).toHaveBeenCalledWith({ draftId: "d1" }, expect.anything(), "1.2.3.4");
   });
 

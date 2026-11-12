@@ -190,6 +190,8 @@ export * from './cvVersionListDtoItemsItem';
 export * from './dataExportDto';
 export * from './dataExportDtoData';
 export * from './deleteAccountDto';
+export * from './downloadCvUploadDisposition';
+export * from './downloadCvUploadParams';
 export * from './eligibilityRequestDto';
 export * from './eligibilityResultDto';
 export * from './extractedFieldDto';

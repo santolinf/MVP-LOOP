@@ -1261,6 +1261,19 @@
         "operationId": "downloadCvUpload",
         "parameters": [
           {
+            "name": "disposition",
+            "required": false,
+            "in": "query",
+            "description": "inline opens a PDF in the browser; anything else downloads",
+            "schema": {
+              "enum": [
+                "attachment",
+                "inline"
+              ],
+              "type": "string"
+            }
+          },
+          {
             "name": "id",
             "required": true,
             "in": "path",
@@ -4315,6 +4328,16 @@
               null
             ],
             "nullable": true
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 2000,
+            "nullable": true
+          },
+          "qualifications": {
+            "type": "string",
+            "maxLength": 2000,
+            "nullable": true
           }
         },
         "required": [
@@ -5515,11 +5538,15 @@
             "type": "integer",
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
+          },
+          "inline": {
+            "type": "boolean"
           }
         },
         "required": [
           "url",
-          "expiresInSeconds"
+          "expiresInSeconds",
+          "inline"
         ]
       },
       "CvVersionListDto": {

@@ -435,6 +435,10 @@ model ContractorProfileDetails {
   ir35Status        String?
   /// FULL_TIME | PART_TIME | FLEXIBLE
   workPattern       String?
+  /// Contractor-written professional summary (desktop profile). Never AI-generated; AI suggestions live in ExtractionRun.
+  summary           String?
+  /// Contractor-written qualifications and certifications (desktop profile).
+  qualifications    String?
   createdAt         DateTime @default(now()) @db.Timestamptz
   updatedAt         DateTime @updatedAt @db.Timestamptz
 }

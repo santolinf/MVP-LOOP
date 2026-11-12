@@ -1,14 +1,29 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { getJoinProfile, updateJoinProfile, useConfirmAvailability, useGetJoinProfile, type ConfirmAvailabilityDto, type MeDto } from "@loop/api-client";
+import { Link } from "react-router";
+import {
+  deleteMyPhoto,
+  getJoinProfile,
+  getProfileDetails,
+  updateJoinProfile,
+  updateProfileDetails,
+  useConfirmAvailability,
+  useGetJoinProfile,
+  useGetProfileDetails,
+  useListAssignments,
+  type ConfirmAvailabilityDto,
+  type MeDto,
+} from "@loop/api-client";
 import { uuid } from "../../lib/uuid";
 import { OptionGroup, Radio, TextField } from "../join/form-bits";
 import type { ProfileDraft } from "../join/join-draft";
 import { PreferencesEditor } from "../join/preferences-form";
-import { ProfileForm, profileProblems, saveProfileDraft } from "../join/profile-form";
+import { uploadPhoto } from "../join/photo-upload";
+import { PhotoEditor, ProfileForm, profileProblems, saveProfileDraft, type PhotoChange } from "../join/profile-form";
 import { useServerProfileDraft } from "../join/profile-step";
 import { Muted } from "../marketing/primitives";
 import { BTN, BTN_PRIMARY, BTN_SMALL, PROTO_BUTTONS_WITHIN, PROTO_FONT } from "./desktop-profile-ui";
+import { Field, INPUT } from "./frame";
 
 /** Overlay editors for the desktop My LOOP profile (approved prototype): edit in place, then return to the page. They reuse the existing APIs and rules. */
 
@@ -169,90 +184,170 @@ export function AvailabilityEditor({ me, onClose }: { me: MeDto; onClose: () => 
   );
 }
 
-function ProfileDetails({ initial, onClose }: { initial: ProfileDraft; onClose: () => void }) {
+/** Work history is the contractor's assignments. They have their own screen and save as they are made, so they are listed here, not edited under Save. */
+function WorkHistory() {
+  const q = useListAssignments();
+  const items = q.data?.status === 200 ? q.data.data.items : [];
+  return (
+    <div>
+      <span className="mb-1 block text-xs font-semibold text-[#c5d4dc]">Work history</span>
+      {items.length ? (
+        <ul className="mb-2 grid gap-1 text-[15px] text-[#d5e5ec]">
+          {items.map((a) => (
+            <li key={a.id}>
+              <strong>{a.role}</strong> · {a.clientName} · {a.startDate} – {a.endDate ?? "Present"}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mb-2 text-[15px] text-[#d5e5ec]">Add work history and assignments.</p>
+      )}
+      <Link to="/my-loop/assignments" className={`${BTN} ${BTN_SMALL}`}>
+        Add or edit assignments
+      </Link>
+      <p className="mt-1.5 text-xs text-[#9fb1b8]">Assignments are saved as you make them, on their own screen.</p>
+    </div>
+  );
+}
+
+/**
+ * Which pane is being edited. Each has its own button on the page and its own editor, but every editor works the same
+ * way as the prototype's: nothing is saved until Save changes, which saves and closes; Cancel (or Close) discards.
+ */
+export type ProfileScope = "all" | "professional" | "preferences" | "photo";
+
+const SCOPE_TITLE: Record<ProfileScope, string> = {
+  all: "Edit my profile",
+  professional: "Edit professional details",
+  preferences: "Edit locations & working preferences",
+  photo: "Change profile photograph",
+};
+
+const PREFS_FORM_ID = "my-loop-preferences-form";
+
+export function ProfileEditor({ scope, onClose }: { scope: ProfileScope; onClose: () => void }) {
   const qc = useQueryClient();
-  const [value, setValue] = useState(initial);
+  const withProfile = scope === "all" || scope === "professional";
+  const withPreferences = scope === "all" || scope === "preferences";
+  const { draft } = useServerProfileDraft();
+  const [value, setValue] = useState<ProfileDraft | null>(null);
+  const [photo, setPhoto] = useState<PhotoChange | null>(null);
+  const details = useGetProfileDetails({ query: { enabled: withProfile } });
+  const storedDetails = details.data?.status === 200 ? details.data.data : null;
+  const [extras, setExtras] = useState<{ summary: string; qualifications: string } | null>(null);
   const [problems, setProblems] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Start from what is stored, once, so a background refetch never overwrites what is being typed.
+  useEffect(() => {
+    if (draft && !value) setValue(draft);
+  }, [draft, value]);
+  useEffect(() => {
+    if (storedDetails && !extras) setExtras({ summary: storedDetails.summary ?? "", qualifications: storedDetails.qualifications ?? "" });
+  }, [storedDetails, extras]);
 
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    if (busy) return;
-    const found = profileProblems(value);
-    setProblems(found);
-    if (found.length > 0) return;
+  /** Everything except the preferences form, which saves itself through its own validation first. */
+  async function applyAndClose() {
+    if (value && withProfile) {
+      const found = profileProblems(value);
+      setProblems(found);
+      if (found.length > 0) return;
+    }
     setError(null);
     setBusy(true);
     try {
-      await saveProfileDraft(value);
+      if (value && withProfile) await saveProfileDraft(value);
+      if (extras && withProfile) {
+        // Read the current details first so a preferences save made a moment ago (or by the app) is not overwritten.
+        const current = await getProfileDetails();
+        if (current.status !== 200) throw new Error("details");
+        await updateProfileDetails({ ...current.data, summary: extras.summary.trim() || null, qualifications: extras.qualifications.trim() || null });
+      }
+      if (photo?.file) await uploadPhoto(photo.file);
+      else if (photo?.remove) await deleteMyPhoto();
       await qc.invalidateQueries();
       onClose();
     } catch {
-      setError("We couldn’t save your profile. Please check the details and try again.");
+      setError("We couldn’t save your changes. Please check the details and try again.");
     } finally {
       setBusy(false);
     }
   }
 
-  return (
-    <form onSubmit={submit} noValidate aria-label="Professional details" className="grid gap-4">
-      <ProfileForm value={value} onChange={setValue} signedIn />
-      {problems.length > 0 && (
-        <ul role="alert" className="grid gap-1 text-xs text-orange">
-          {problems.map((p) => (
-            <li key={p}>{p}</li>
-          ))}
-        </ul>
-      )}
-      {error && (
-        <p role="alert" className="text-xs text-red">
-          {error}
-        </p>
-      )}
-      <div className="flex justify-end gap-2.5">
-        <button type="button" onClick={onClose} className={BTN}>
-          Cancel
-        </button>
-        <button type="submit" className={BTN_PRIMARY} disabled={busy}>
-          Save changes
-        </button>
-      </div>
-    </form>
-  );
-}
+  function save() {
+    if (busy) return;
+    if (value && withProfile) {
+      const found = profileProblems(value);
+      setProblems(found);
+      if (found.length > 0) return;
+    }
+    // The preferences form validates and saves first; it calls applyAndClose once that has worked.
+    if (withPreferences) (document.getElementById(PREFS_FORM_ID) as HTMLFormElement | null)?.requestSubmit();
+    else void applyAndClose();
+  }
 
-/** "Edit my profile": professional details, then rates, locations and working pattern, each saved through the existing profile APIs. */
-export function ProfileEditor({ onClose }: { onClose: () => void }) {
-  const qc = useQueryClient();
-  const { draft } = useServerProfileDraft();
-  const [initial, setInitial] = useState<ProfileDraft | null>(null);
-  const [prefsSaved, setPrefsSaved] = useState(false);
-  // Start from what is stored, once, so a background refetch never overwrites what is being typed.
-  useEffect(() => {
-    if (draft && !initial) setInitial(draft);
-  }, [draft, initial]);
-
+  const loading = withProfile && (!value || !extras);
   return (
-    <Modal title="Edit my profile" onClose={onClose}>
-      <p className="mb-3 text-xs text-[#9fb4c3]">Only save the details you want to change. Saving here never changes your availability confirmation.</p>
-      {initial ? <ProfileDetails initial={initial} onClose={onClose} /> : <Muted>Loading…</Muted>}
-      <h3 className="mb-2 mt-6 border-t border-[#1a4153] pt-4 text-sm font-bold text-[#f0f6fa]">Rates, locations &amp; working pattern</h3>
-      <div className="[&_a[href='/my-loop']]:hidden">
-        <PreferencesEditor
-          backTo="/my-loop"
-          submitLabel="Save preferences"
-          onSaved={() => {
-            setPrefsSaved(true);
-            void qc.invalidateQueries();
-          }}
-        />
+    <Modal title={SCOPE_TITLE[scope]} onClose={onClose}>
+      <p className="mb-3 text-xs text-[#9fb1b8]">
+        Only save the details you want to change.{scope === "preferences" ? "" : " Saving here never changes your availability confirmation."}
+      </p>
+      <div className="grid gap-4">
+        {loading && <Muted>Loading…</Muted>}
+        {withProfile && value && <ProfileForm value={value} onChange={setValue} signedIn onPhotoStage={setPhoto} />}
+        {withProfile && extras && (
+          <>
+            <Field label="Professional summary">
+              <textarea
+                className={INPUT}
+                rows={4}
+                maxLength={2000}
+                value={extras.summary}
+                placeholder="Add your professional summary."
+                onChange={(ev) => setExtras({ ...extras, summary: ev.target.value })}
+              />
+            </Field>
+            <WorkHistory />
+            <Field label="Qualifications & certifications">
+              <textarea
+                className={INPUT}
+                rows={3}
+                maxLength={2000}
+                value={extras.qualifications}
+                placeholder="Add qualifications and certifications."
+                onChange={(ev) => setExtras({ ...extras, qualifications: ev.target.value })}
+              />
+            </Field>
+          </>
+        )}
+        {scope === "photo" && <PhotoEditor signedIn onStage={setPhoto} />}
+        {problems.length > 0 && (
+          <ul role="alert" className="grid gap-1 text-xs text-orange">
+            {problems.map((p) => (
+              <li key={p}>{p}</li>
+            ))}
+          </ul>
+        )}
+        {withPreferences && (
+          <>
+            {scope === "all" && <h3 className="mt-2 border-t border-[#1a4153] pt-4 text-base font-bold text-[#f0f6fa]">Rates, locations &amp; working pattern</h3>}
+            <PreferencesEditor backTo="/my-loop" submitLabel="Save" formId={PREFS_FORM_ID} hideActions onSaved={() => void applyAndClose()} />
+          </>
+        )}
+        {error && (
+          <p role="alert" className="text-xs text-red">
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end gap-2.5">
+          <button type="button" onClick={onClose} className={BTN}>
+            Cancel
+          </button>
+          <button type="button" onClick={save} className={BTN_PRIMARY} disabled={busy || loading}>
+            Save changes
+          </button>
+        </div>
       </div>
-      {prefsSaved && (
-        <p role="status" className="mt-2 text-xs text-lime">
-          Preferences saved.
-        </p>
-      )}
     </Modal>
   );
 }

@@ -14,11 +14,10 @@ import {
 import type { AvailabilityColour } from "@loop/contracts";
 import { Muted } from "../marketing/primitives";
 import { SignInRequired } from "../auth/sign-in-required";
-import { RewardsFoundingCard } from "../rewards/rewards-founding-card";
 import { LOCATION_LABELS } from "../join/review-step";
 import { BTN, BTN_PRIMARY, BTN_SMALL, EYEBROW, PROTO_FONT } from "./desktop-profile-ui";
 import { MyLoopNav } from "./frame";
-import { AvailabilityEditor, ProfileEditor } from "./profile-editors";
+import { AvailabilityEditor, ProfileEditor, type ProfileScope } from "./profile-editors";
 import { useMe } from "./use-me";
 
 /** Desktop My Profile follows the approved desktop prototype: the status colour (not static lime) borders each card. */
@@ -35,27 +34,16 @@ const CARD = "rounded-[10px] border border-[#20485b] border-x-4 border-x-[var(--
 const PATTERNS: Record<string, string> = { REMOTE: "Remote", HYBRID: "Hybrid", ONSITE: "On-site" };
 const IR35: Record<string, string> = { INSIDE: "Inside", OUTSIDE: "Outside", EITHER: "Both", UNSURE: "Not sure" };
 const TRAVEL: Record<string, string> = { YES: "Occasional travel", NO: "No travel", DEPENDS: "Travel depends" };
+const IOS_URL = import.meta.env.VITE_IOS_APP_URL || undefined;
+const ANDROID_URL = import.meta.env.VITE_ANDROID_APP_URL || undefined;
 const rate = (p: number | null | undefined) => (p ? `£${Math.round(p / 100)}` : null);
 
-type Editing = "availability" | "profile" | null;
+type Editing = "availability" | ProfileScope | null;
 
-function Card({ title, to, edit, onEdit, children, label }: { title: string; to?: string; edit?: Exclude<Editing, null>; onEdit?: (e: Exclude<Editing, null>) => void; children: ReactNode; label?: string }) {
+function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section aria-label={label ?? title} className={CARD}>
-      <div className="mb-2.5 flex items-center justify-between gap-2">
-        <h3 className="text-base font-bold text-[#f0f6fa]">{title}</h3>
-        {edit && onEdit ? (
-          <button type="button" onClick={() => onEdit(edit)} aria-label={`Edit ${title}`} className="text-xs text-[#71d9e6] hover:underline">
-            ✎ Edit
-          </button>
-        ) : (
-          to && (
-            <Link to={to} aria-label={`Edit ${title}`} className="text-xs text-[#71d9e6] hover:underline">
-              ✎ Edit
-            </Link>
-          )
-        )}
-      </div>
+    <section aria-label={title} className={CARD}>
+      <h3 className="mb-2.5 text-base font-bold text-[#f0f6fa]">{title}</h3>
       {children}
     </section>
   );
@@ -165,11 +153,13 @@ export function MyLoopPage() {
     setCvError(null);
     const win = mode === "view" ? window.open("", "_blank") : null;
     try {
-      const res = await downloadCvUpload(latestCv.uploadId);
-      if (win) {
+      const res = await downloadCvUpload(latestCv.uploadId, mode === "view" ? { disposition: "inline" } : undefined);
+      // The API opens only a PDF inline; a Word document comes back as a download, so drop the blank tab and download it.
+      if (win && res.data.inline) {
         win.opener = null;
         win.location.href = res.data.url;
       } else {
+        win?.close();
         const a = document.createElement("a");
         a.href = res.data.url;
         a.download = "";
@@ -225,7 +215,7 @@ export function MyLoopPage() {
                 <button type="button" onClick={() => setEditing("availability")} className={BTN_PRIMARY}>
                   Update availability
                 </button>
-                <button type="button" onClick={() => setEditing("profile")} className={BTN}>
+                <button type="button" onClick={() => setEditing("all")} className={BTN}>
                   Edit my profile
                 </button>
                 <button
@@ -249,22 +239,22 @@ export function MyLoopPage() {
             <Fact label="Working preferences" value={patterns || "Not provided"} note={regions.join(", ") || "No locations provided"} />
           </div>
 
-          <h2 className="mb-1 mt-7 text-xl font-bold text-[#f4f9ff]">Professional profile</h2>
-          <p className="mb-3 text-[13px] text-[#aebfc4]">Information supplied during registration. Edit it whenever your circumstances change.</p>
+          <section aria-label="Professional profile" className="mt-[18px] rounded-[13px] border border-[#20485b] bg-[#082336] p-[23px]">
+            <h2 className="mb-1 text-xl font-bold text-[#f4f9ff]">Professional profile</h2>
+            <p className="mb-3 text-[13px] text-[#aebfc4]">Information supplied during registration. Edit it whenever your circumstances change.</p>
+            <Skills skills={skills} />
 
-          <div className="grid gap-3.5">
-            <Card title="Skills" edit="profile" onEdit={setEditing}>
-              <Skills skills={skills} />
-            </Card>
-
-            <div className="grid gap-3.5 md:grid-cols-2">
-              <Card title="Preferred roles & experience" edit="profile" onEdit={setEditing}>
+            <div className="mt-3 grid gap-3.5 md:grid-cols-2">
+              <Card title="Preferred roles & experience">
                 <p className="mb-2 text-[15px] text-[#d5e5ec]">{roles.join(", ") || title}</p>
-                <Sub title="Professional summary">Add your professional summary.</Sub>
+                <Sub title="Professional summary">{d?.summary || "Add your professional summary."}</Sub>
                 <Sub title="Security clearance">{clearance ?? "Not declared"} (self-declared)</Sub>
                 {j?.linkedinUrl && <Line label="LinkedIn" value={j.linkedinUrl} />}
+                <button type="button" onClick={() => setEditing("professional")} className={`${BTN} ${BTN_SMALL}`}>
+                  Edit professional details
+                </button>
               </Card>
-              <Card title="Current situation" edit="availability" onEdit={setEditing}>
+              <Card title="Current situation">
                 <p className="mb-2 text-[15px] text-[#d5e5ec]">
                   {me.availability.label}
                   {end ? ` · ${end}` : ""}
@@ -273,81 +263,98 @@ export function MyLoopPage() {
                   Umbrella: {j?.usesUmbrella ? (j.umbrellaProvider ?? "Name to confirm") : j?.usesUmbrella === false ? "No" : "Not provided"}
                 </p>
                 <p className="mb-2 text-[15px] text-[#d5e5ec]">Notice: {j?.noticePeriodText || "Not applicable"}</p>
-                <p className="text-xs text-[#9fb1b8]">Expected end dates never automatically mark you Available Now.</p>
+                <p className="mb-3 text-xs text-[#9fb1b8]">Expected end dates never automatically mark you Available Now.</p>
+                <button type="button" onClick={() => setEditing("availability")} className={`${BTN_PRIMARY} ${BTN_SMALL}`}>
+                  Update availability
+                </button>
               </Card>
             </div>
 
-            <Card title="Locations, work pattern & travel" edit="profile" onEdit={setEditing}>
-              <p className="mb-2 text-[15px] text-[#d5e5ec]">
-                Locations: {regions.join(", ") || "Not provided"} · Patterns: {patterns || "Not provided"} · Hybrid office days:{" "}
-                {j?.hybridDays ? `${j.hybridDays} per week` : "Flexible"} · Travel: {j?.occasionalTravel ? TRAVEL[j.occasionalTravel] : "Not provided"}
-              </p>
-              {j?.location && <Line label="Based in" value={j.location} />}
-            </Card>
-
-            <Card title="CV & profile photograph" to="/my-loop/cv">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <strong className="text-[15px] text-[#f0f6fa]">
-                  {latestCv ? `CV on file · Version ${latestCv.versionNumber} · ${new Date(latestCv.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}` : "No CV on file"}
-                </strong>
-                <button type="button" disabled={!latestCv} onClick={() => openCv("view")} className={`${BTN} ${BTN_SMALL}`}>
-                  View CV
-                </button>
-                <button type="button" disabled={!latestCv} onClick={() => openCv("download")} className={`${BTN} ${BTN_SMALL}`}>
-                  Download CV
-                </button>
-                <Link to="/my-loop/cv" className={`${BTN} ${BTN_SMALL}`}>
-                  Replace CV
-                </Link>
-              </div>
-              {cvError && (
-                <p role="alert" className="mt-2 text-[13px] text-red">
-                  {cvError}
+            <div className="mt-3.5 grid gap-3.5">
+              <Card title="Locations, work pattern & travel">
+                <p className="mb-2 text-[15px] text-[#d5e5ec]">
+                  Locations: {regions.join(", ") || "Not provided"} · Patterns: {patterns || "Not provided"} · Hybrid office days:{" "}
+                  {j?.hybridDays ? `${j.hybridDays} per week` : "Flexible"} · Travel: {j?.occasionalTravel ? TRAVEL[j.occasionalTravel] : "Not provided"}
                 </p>
-              )}
-              <p className="mt-2 text-xs text-[#9fb1b8]">A replacement CV is compared with what you have confirmed; nothing is overwritten automatically.</p>
-              <button type="button" onClick={() => setEditing("profile")} className={`${BTN} ${BTN_SMALL} mt-3`}>
-                {photoUrl ? "Change photograph" : "Add photograph"}
-              </button>
-            </Card>
+                {j?.location && <Line label="Based in" value={j.location} />}
+                <button type="button" onClick={() => setEditing("preferences")} className={`${BTN} ${BTN_SMALL}`}>
+                  Edit locations &amp; preferences
+                </button>
+              </Card>
 
-            <Card title="Work history & qualifications" to="/my-loop/assignments">
-              {items.length ? (
-                items.map((a) => (
-                  <p key={a.id} className="mb-2 text-[15px] text-[#d5e5ec]">
-                    <strong>{a.role}</strong> · {a.clientName} · {a.startDate} – {a.endDate ?? "Present"}
+              <Card title="CV & profile photograph">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <strong className="text-[15px] text-[#f0f6fa]">
+                    {latestCv
+                      ? `CV on file · Version ${latestCv.versionNumber} · ${new Date(latestCv.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}`
+                      : "No CV on file"}
+                  </strong>
+                  <button type="button" disabled={!latestCv} onClick={() => openCv("view")} className={`${BTN} ${BTN_SMALL}`}>
+                    View CV
+                  </button>
+                  <button type="button" disabled={!latestCv} onClick={() => openCv("download")} className={`${BTN} ${BTN_SMALL}`}>
+                    Download CV
+                  </button>
+                  <Link to="/my-loop/cv" className={`${BTN} ${BTN_SMALL}`}>
+                    Replace CV
+                  </Link>
+                </div>
+                {cvError && (
+                  <p role="alert" className="mt-2 text-[13px] text-red">
+                    {cvError}
                   </p>
-                ))
-              ) : (
-                <p className="mb-2 text-[15px] text-[#d5e5ec]">Add work history and assignments.</p>
-              )}
-              <Sub title="Qualifications & certifications">Add qualifications and certifications.</Sub>
-              <button type="button" onClick={() => setEditing("profile")} className={`${BTN} ${BTN_SMALL}`}>
-                Edit professional details
-              </button>
-            </Card>
+                )}
+                <p className="mt-2 text-xs text-[#9fb1b8]">A replacement CV is compared with what you have confirmed; nothing is overwritten automatically.</p>
+                <button type="button" onClick={() => setEditing("photo")} className={`${BTN} ${BTN_SMALL} mt-3`}>
+                  {photoUrl ? "Change photograph" : "Add photograph"}
+                </button>
+              </Card>
 
-            <section aria-label="Rewards and introductions" className={CARD}>
-              <RewardsFoundingCard />
-              <Link to="/introduce" className="mt-2 inline-block text-xs text-[#71d9e6] hover:underline">
-                Invite a contractor →
-              </Link>
-            </section>
-          </div>
+              <Card title="Work history & qualifications">
+                {items.length ? (
+                  items.map((a) => (
+                    <p key={a.id} className="mb-2 text-[15px] text-[#d5e5ec]">
+                      <strong>{a.role}</strong> · {a.clientName} · {a.startDate} – {a.endDate ?? "Present"}
+                    </p>
+                  ))
+                ) : (
+                  <p className="mb-2 text-[15px] text-[#d5e5ec]">Add work history and assignments.</p>
+                )}
+                <Sub title="Qualifications & certifications">{d?.qualifications || "Add qualifications and certifications."}</Sub>
+                <button type="button" onClick={() => setEditing("professional")} className={`${BTN} ${BTN_SMALL}`}>
+                  Edit professional details
+                </button>
+              </Card>
+            </div>
+          </section>
 
           <div id="loop-app" tabIndex={-1} className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[#3d5949] bg-[#192a26] p-[17px] outline-none">
             <div>
               <strong className="text-lime">LOOP lives on your phone</strong>
               <p className="my-1.5 text-[15px] text-[#c2d1d6]">One-tap availability updates, push reminders, invitations and messages belong in the contractor app.</p>
             </div>
-            <Link to="/welcome" className={BTN_PRIMARY}>
-              Get the app
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              {IOS_URL && (
+                <a href={IOS_URL} rel="noopener" className={BTN_PRIMARY}>
+                  Download on the App Store
+                </a>
+              )}
+              {ANDROID_URL && (
+                <a href={ANDROID_URL} rel="noopener" className={BTN_PRIMARY}>
+                  Get it on Google Play
+                </a>
+              )}
+              {!IOS_URL && !ANDROID_URL && (
+                <Link to="/welcome" className={BTN_PRIMARY}>
+                  Get the app
+                </Link>
+              )}
+            </div>
           </div>
         </section>
       </div>
       {editing === "availability" && <AvailabilityEditor me={me} onClose={() => setEditing(null)} />}
-      {editing === "profile" && <ProfileEditor onClose={() => setEditing(null)} />}
+      {editing && editing !== "availability" && <ProfileEditor scope={editing} onClose={() => setEditing(null)} />}
     </div>
   );
 }

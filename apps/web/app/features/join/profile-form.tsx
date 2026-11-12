@@ -71,7 +71,9 @@ export async function saveProfileDraft(d: ProfileDraft): Promise<void> {
  * Profile photograph. Signed in, a chosen image is uploaded and attached straight away; before an account exists it is
  * held in memory and uploaded when registration completes (see register-step), so it is never lost on the way to My LOOP.
  */
-function PhotoEditor({ signedIn }: { signedIn: boolean }) {
+export type PhotoChange = { file: File | null; remove: boolean };
+
+export function PhotoEditor({ signedIn, onStage }: { signedIn: boolean; onStage?: (change: PhotoChange) => void }) {
   const qc = useQueryClient();
   const stored = useGetMyPhoto({ query: { enabled: signedIn } });
   const storedUrl = stored.data?.status === 200 ? stored.data.data.url : null;
@@ -79,7 +81,8 @@ function PhotoEditor({ signedIn }: { signedIn: boolean }) {
   const [notice, setNotice] = useState(PHOTO_HELP);
   const [busy, setBusy] = useState(false);
   const [broken, setBroken] = useState(false);
-  const shown = local ?? (broken ? null : storedUrl);
+  const [removed, setRemoved] = useState(false);
+  const shown = removed ? null : (local ?? (broken ? null : storedUrl));
 
   async function pick(file: File | undefined) {
     if (!file) return;
@@ -92,6 +95,14 @@ function PhotoEditor({ signedIn }: { signedIn: boolean }) {
     reader.onerror = () => setNotice("Could not read this image.");
     reader.onload = async () => {
       const preview = typeof reader.result === "string" ? reader.result : null;
+      if (onStage) {
+        // Inside an editor with Save / Cancel: nothing is uploaded until the contractor saves.
+        setLocal(preview);
+        setRemoved(false);
+        onStage({ file, remove: false });
+        setNotice("Your photo will be saved when you choose Save changes.");
+        return;
+      }
       if (!signedIn) {
         setPendingPhoto(file);
         setLocal(preview);
@@ -115,6 +126,13 @@ function PhotoEditor({ signedIn }: { signedIn: boolean }) {
   }
 
   async function remove() {
+    if (onStage) {
+      setLocal(null);
+      setRemoved(true);
+      onStage({ file: null, remove: true });
+      setNotice("Your photo will be removed when you choose Save changes.");
+      return;
+    }
     if (!signedIn) {
       setPendingPhoto(null);
       setLocal(null);
@@ -176,7 +194,17 @@ function PhotoEditor({ signedIn }: { signedIn: boolean }) {
 }
 
 /** The Profile review fields, exactly as the V33 reference shows them. Controlled; the caller owns validation and saving. */
-export function ProfileForm({ value, onChange, signedIn = false }: { value: ProfileDraft; onChange: (v: ProfileDraft) => void; signedIn?: boolean }) {
+export function ProfileForm({
+  value,
+  onChange,
+  signedIn = false,
+  onPhotoStage,
+}: {
+  value: ProfileDraft;
+  onChange: (v: ProfileDraft) => void;
+  signedIn?: boolean;
+  onPhotoStage?: (change: PhotoChange) => void;
+}) {
   const set = <K extends keyof ProfileDraft>(k: K, v: ProfileDraft[K]) => onChange({ ...value, [k]: v });
   const setRole = (i: number, v: string) => {
     const roles: [string, string, string] = [...value.preferredRoles];
@@ -185,7 +213,7 @@ export function ProfileForm({ value, onChange, signedIn = false }: { value: Prof
   };
   return (
     <div className="grid gap-4">
-      <PhotoEditor signedIn={signedIn} />
+      <PhotoEditor signedIn={signedIn} onStage={onPhotoStage} />
       <TextField label="Full name" required value={value.fullName} placeholder="Your name" autoComplete="name" maxLength={160} onChange={(v) => set("fullName", v)} />
       <TextField label="Professional title" required value={value.title} placeholder="e.g. Senior Data Engineer" maxLength={200} onChange={(v) => set("title", v)} />
       <Note>

@@ -137,7 +137,23 @@ export async function savePreferences(d: Draft, joined: JoinProfileDto, details:
   if (det.status !== 200) throw new Error("details");
 }
 
-function Form({ joined, details, onSaved, back, submitLabel }: { joined: JoinProfileDto; details: ProfileDetailsDto; onSaved: () => void; back: ReactNode; submitLabel: string }) {
+function Form({
+  joined,
+  details,
+  onSaved,
+  back,
+  submitLabel,
+  formId,
+  hideActions = false,
+}: {
+  joined: JoinProfileDto;
+  details: ProfileDetailsDto;
+  onSaved: () => void;
+  back: ReactNode;
+  submitLabel: string;
+  formId?: string;
+  hideActions?: boolean;
+}) {
   const qc = useQueryClient();
   const [d, setD] = useState<Draft>(() => draftFrom(joined, details));
   const [problems, setProblems] = useState<string[]>([]);
@@ -176,7 +192,7 @@ function Form({ joined, details, onSaved, back, submitLabel }: { joined: JoinPro
   );
 
   return (
-    <form onSubmit={submit} noValidate className="grid gap-5">
+    <form id={formId} onSubmit={submit} noValidate className="grid gap-5">
       <TextField label="Target day rate (£)" type="number" required value={d.targetRate} placeholder="e.g. 600" onChange={(v) => set("targetRate", v)} />
       <TextField label="Minimum acceptable day rate (£)" type="number" required value={d.minRate} placeholder="e.g. 500" onChange={(v) => set("minRate", v)} />
       <OptionGroup legend="IR35 preference" required>
@@ -258,18 +274,33 @@ function Form({ joined, details, onSaved, back, submitLabel }: { joined: JoinPro
           {error}
         </p>
       )}
-      <div className="flex items-center justify-between gap-3">
-        {back}
-        <button type="submit" className={BTN_SOLID} disabled={busy}>
-          {submitLabel}
-        </button>
-      </div>
+      {!hideActions && (
+        <div className="flex items-center justify-between gap-3">
+          {back}
+          <button type="submit" className={BTN_SOLID} disabled={busy}>
+            {submitLabel}
+          </button>
+        </div>
+      )}
     </form>
   );
 }
 
 /** Loads what is stored and renders the V33 Preferences fields. Used by join step 5 and by My LOOP. */
-export function PreferencesEditor({ onSaved, backTo, submitLabel }: { onSaved: () => void; backTo: string; submitLabel: string }) {
+export function PreferencesEditor({
+  onSaved,
+  backTo,
+  submitLabel,
+  formId,
+  hideActions,
+}: {
+  onSaved: () => void;
+  backTo: string;
+  submitLabel: string;
+  /** With `hideActions`, the caller submits the form (e.g. its own Save button with `form={formId}` or `requestSubmit()`). */
+  formId?: string;
+  hideActions?: boolean;
+}) {
   const joined = useGetJoinProfile();
   const details = useGetProfileDetails();
   const j = joined.data?.status === 200 ? joined.data.data : null;
@@ -281,6 +312,8 @@ export function PreferencesEditor({ onSaved, backTo, submitLabel }: { onSaved: (
       details={d}
       onSaved={onSaved}
       submitLabel={submitLabel}
+      formId={formId}
+      hideActions={hideActions}
       back={
         <Link to={backTo} className={BTN_OUTLINE}>
           ← Back

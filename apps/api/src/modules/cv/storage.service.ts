@@ -65,6 +65,20 @@ export class StorageService {
     );
   }
 
+  /** Presigned GET that shows a verified PDF in the browser. Only for PDFs: other types stay on {@link presignGet}. */
+  presignInlinePdf(key: string, filename: string, expiresInSeconds: number): Promise<string> {
+    return getSignedUrl(
+      this.presigner,
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ResponseContentDisposition: `inline; filename="${filename.replace(/[^\w.-]/g, "_")}"`,
+        ResponseContentType: "application/pdf",
+      }),
+      { expiresIn: expiresInSeconds },
+    );
+  }
+
   /**
    * Presigned GET for showing a verified raster image inline (the profile photograph). Unlike {@link presignGet} it
    * serves the real image type so an <img> can render it; callers must only pass a type they have verified (never SVG).

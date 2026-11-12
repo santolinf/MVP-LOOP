@@ -13,6 +13,9 @@ export const ProfileDetailsSchema = z
     securityClearance: SecurityClearanceSchema.nullable(),
     ir35Status: Ir35StatusSchema.nullable(),
     workPattern: WorkPatternSchema.nullable(),
+    /** Optional so existing clients that do not send them keep working; omitted means unchanged, null clears. */
+    summary: z.string().trim().max(2000).nullable().optional(),
+    qualifications: z.string().trim().max(2000).nullable().optional(),
   })
   .strict();
 export type ProfileDetails = z.infer<typeof ProfileDetailsSchema>;

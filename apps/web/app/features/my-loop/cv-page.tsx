@@ -77,13 +77,27 @@ export function Upload({ onUploaded }: { onUploaded: () => void }) {
       <Muted className="text-xs">
         Uploading a new CV never changes your profile by itself. We compare it with what you have confirmed and ask you to review any differences.
       </Muted>
-      <input
-        type="file"
-        aria-label="Choose a CV"
-        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        onChange={(e) => choose(e.target.files?.[0])}
-        className="text-xs"
-      />
+      {/* The native control is visually hidden; the label is the visible button, so it looks like the other buttons and shows what was chosen. */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <label className={`${BTN_SMALL} cursor-pointer focus-within:outline focus-within:outline-2 focus-within:outline-lime`}>
+          {file ? "Choose a different file" : "Choose a file"}
+          <input
+            type="file"
+            aria-label="Choose a CV"
+            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            onChange={(e) => {
+              choose(e.target.files?.[0]);
+              // Lets the same file be chosen again after an error or a completed upload.
+              e.target.value = "";
+            }}
+            className="sr-only"
+          />
+        </label>
+        <span data-testid="cv-chosen" className="text-xs text-[#d5e5ec]">
+          {file ? file.name : "No file chosen"}
+        </span>
+      </div>
+      <Muted className="text-xs">{file ? "Ready to upload." : "Choose a PDF, DOC or DOCX file (up to 10 MB). Upload CV is enabled once you have chosen one."}</Muted>
       <Status error={error} saved={false} />
       {busy && (
         <p role="status" className="text-xs">
