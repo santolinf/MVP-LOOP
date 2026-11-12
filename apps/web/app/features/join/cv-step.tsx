@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { completeCvUpload, createCvDraft, presignCvUpload, recordEligibility } from "@loop/api-client";
-import { Card, Eyebrow, Muted } from "../marketing/primitives";
+import { COPY } from "../../lib/copy";
+import { Card, Muted } from "../marketing/primitives";
+import { Note } from "./form-bits";
+import { StepBar } from "./step-bar";
 import { isEligible, readEligibility } from "./eligibility-store";
 import { readDraft, writeDraft } from "./draft-store";
 
@@ -82,13 +85,8 @@ export function CvStep() {
   }
 
   return (
-    <section className="mx-auto max-w-3xl px-[26px] py-[70px] md:py-[90px]">
-      <Eyebrow>Step 1 of 6</Eyebrow>
-      <div className="mb-[30px] mt-[25px] flex gap-[7px]" role="img" aria-label="Step 1 of 6">
-        {[0, 1, 2, 3, 4, 5].map((i) => (
-          <span key={i} className={`h-[5px] flex-1 rounded-full ${i === 0 ? "bg-lime" : "bg-[#294356]"}`} />
-        ))}
-      </div>
+    <section className="mx-auto max-w-[720px] px-5 py-12">
+      <StepBar step={1} />
       <Card className="!border-[#294357] !bg-[#0b2237] !bg-none !p-8">
         <h1 className="mb-4 text-[clamp(30px,4vw,43px)] font-black leading-[1.12] tracking-[-0.04em] text-fg">Start with your CV</h1>
         <Muted className="mb-6">Upload a PDF or Word CV. You’ll review and correct the details before creating an account.</Muted>
@@ -114,6 +112,12 @@ export function CvStep() {
             Uploading your CV…
           </p>
         )}
+        <div className="mb-6">
+          <Note label="How AI is used">
+            <p className="mb-1 font-bold uppercase tracking-wide text-lime">How we use AI</p>
+            <p className="text-fg">{COPY.aiDisclosure}</p>
+          </Note>
+        </div>
         <div className="flex items-center justify-between gap-3">
           <Link to="/join" className="inline-flex items-center gap-2.5 rounded-full border border-[#465366] px-[25px] py-3.5 font-extrabold text-fg transition-transform duration-200 hover:-translate-y-0.5">
             ← Back

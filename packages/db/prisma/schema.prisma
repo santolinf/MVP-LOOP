@@ -96,6 +96,10 @@ model Contractor {
   /// Phase 7: set when the contractor asks to delete their account; the erasure job anonymises the row.
   erasureRequestedAt  DateTime?            @db.Timestamptz
   erasedAt            DateTime?            @db.Timestamptz
+  /// Profile photograph: private object-store key (photos/<contractorId>/<uuid>) and its verified MIME type.
+  photoKey            String?
+  photoContentType    String?
+  photoUpdatedAt      DateTime?            @db.Timestamptz
   createdAt           DateTime             @default(now()) @db.Timestamptz
   updatedAt           DateTime             @updatedAt @db.Timestamptz
   /// B5: introductions this contractor made, and the single introduction (if any) that brought them in.
@@ -431,8 +435,44 @@ model ContractorProfileDetails {
   ir35Status        String?
   /// FULL_TIME | PART_TIME | FLEXIBLE
   workPattern       String?
+  /// Contractor-written professional summary (desktop profile). Never AI-generated; AI suggestions live in ExtractionRun.
+  summary           String?
+  /// Contractor-written qualifications and certifications (desktop profile).
+  qualifications    String?
   createdAt         DateTime @default(now()) @db.Timestamptz
   updatedAt         DateTime @updatedAt @db.Timestamptz
+}
+
+/// V33 registration journey (issue #18): the profile review and contract preference answers that have no home in
+/// the typed headline/skills, ContractorPreferences or ContractorProfileDetails. Values are validated against
+/// `JoinProfileSchema` in `@loop/contracts` on write. Money is integer pence.
+model ContractorJoinProfile {
+  contractorId           String    @id
+  preferredRoles         String[]
+  additionalRoles        String?
+  linkedinUrl            String?
+  location               String?
+  locationConfirmed      Boolean   @default(false)
+  noticePeriodText       String?
+  earliestStartDate      DateTime? @db.Date
+  targetDayRatePence     Int?
+  minDayRatePence        Int?
+  usesUmbrella           Boolean?
+  umbrellaProvider       String?
+  workLocations          String[]
+  otherLocations         String?
+  /// Individually chosen towns/cities (display names). `otherLocations` is kept as the joined legacy text.
+  otherPlaces            String[]  @default([])
+  londonAreas            String[]
+  londonOther            String?
+  workLocationsConfirmed Boolean   @default(false)
+  remoteUk               Boolean?
+  workPatterns           String[]
+  hybridDays             Int?
+  /// YES | NO | DEPENDS: occasional travel for client meetings. Null means not answered (never assume travel).
+  occasionalTravel       String?
+  createdAt              DateTime  @default(now()) @db.Timestamptz
+  updatedAt              DateTime  @updatedAt @db.Timestamptz
 }
 
 // ---- Phase 8: messaging engine and reminders ------------------------------------------------------------------

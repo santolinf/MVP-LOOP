@@ -15,7 +15,19 @@ const consents = { active: vi.fn(), list: vi.fn() };
 const me = { get: vi.fn() };
 const prefs = { get: vi.fn() };
 const referrals = { lockOnRegistration: vi.fn() };
-const svc = new GoLiveService(audit as never, consents as never, me as never, prefs as never, referrals as never);
+const profile = { get: vi.fn() };
+const details = { get: vi.fn() };
+const joinProfile = { get: vi.fn() };
+const svc = new GoLiveService(
+  audit as never,
+  consents as never,
+  me as never,
+  prefs as never,
+  referrals as never,
+  profile as never,
+  details as never,
+  joinProfile as never,
+);
 const now = new Date("2026-10-26T10:00:00Z");
 
 const contractor = {
@@ -30,11 +42,29 @@ const contractor = {
 const availability = { colour: "LIME", label: "Available now", lastConfirmedAt: now.toISOString(), underlyingStatus: "AVAILABLE_NOW", freshnessState: "CURRENT" };
 const both: ConsentPurpose[] = ["PROFILE_VISIBILITY", "OPERATIONAL_EMAIL"];
 
-function ready(over: { c?: object; fields?: object[]; elig?: number; active?: ConsentPurpose[] } = {}) {
+const baseJoin = {
+  title: "Platform engineer",
+  location: "Edinburgh",
+  locationConfirmed: true,
+  targetDayRatePence: 60000,
+  minDayRatePence: 50000,
+  usesUmbrella: false,
+  umbrellaProvider: null,
+  workLocations: ["SCOTLAND"],
+  otherLocations: null,
+  otherPlaces: [],
+  workLocationsConfirmed: true,
+  workPatterns: ["REMOTE"],
+};
+
+function ready(over: { c?: object; fields?: object[]; elig?: number; active?: ConsentPurpose[]; skills?: string[]; join?: object; ir35?: string | null } = {}) {
   db.contractor.findUnique.mockResolvedValue({ ...contractor, ...over.c });
   db.confirmedProfileField.findMany.mockResolvedValue(over.fields ?? [{ key: "headline", value: "Platform engineer" }]);
   db.eligibilityDeclaration.count.mockResolvedValue(over.elig ?? 1);
   consents.active.mockResolvedValue(new Set(over.active ?? both));
+  if (over.skills) profile.get.mockResolvedValue({ headline: "Platform engineer", skills: over.skills });
+  if (over.join) joinProfile.get.mockResolvedValue({ ...baseJoin, ...over.join });
+  if (over.ir35 !== undefined) details.get.mockResolvedValue({ securityClearance: "NO", ir35Status: over.ir35, workPattern: null });
 }
 
 beforeEach(() => {
@@ -42,6 +72,9 @@ beforeEach(() => {
   db.contractor.updateMany.mockResolvedValue({ count: 1 });
   consents.list.mockResolvedValue({ items: [] });
   me.get.mockResolvedValue({ id: "c1", live: true, availability });
+  profile.get.mockResolvedValue({ headline: "Platform engineer", skills: ["a", "b", "c", "d", "e"] });
+  details.get.mockResolvedValue({ securityClearance: "NO", ir35Status: "OUTSIDE", workPattern: null });
+  joinProfile.get.mockResolvedValue(baseJoin);
   prefs.get.mockResolvedValue({ workTypes: [], rateBand: null, remote: null, regions: [], sectors: [], noticePeriod: null });
 });
 
@@ -58,6 +91,9 @@ describe("goLive", () => {
     ["no visibility consent", { active: ["OPERATIONAL_EMAIL"] }, "CONSENT_PROFILE_VISIBILITY"],
     ["no operational consent", { active: ["PROFILE_VISIBILITY"] }, "CONSENT_OPERATIONAL_EMAIL"],
     ["no eligibility", { elig: 0 }, "ELIGIBILITY_MISSING"],
+    ["fewer than five skills", { skills: ["a", "b"] }, "PROFILE_INCOMPLETE"],
+    ["no day rate", { join: { targetDayRatePence: null } }, "PREFERENCES_INCOMPLETE"],
+    ["no IR35 answer", { ir35: null }, "PREFERENCES_INCOMPLETE"],
     ["availability never confirmed", { c: { lastConfirmedAt: null } }, "AVAILABILITY_NOT_CONFIRMED"],
     ["no employment situation", { c: { employmentSituation: null } }, "AVAILABILITY_NOT_CONFIRMED"],
     ["no name", { c: { lastName: null } }, "NAME_MISSING"],

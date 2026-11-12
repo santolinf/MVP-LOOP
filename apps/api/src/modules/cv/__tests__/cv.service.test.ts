@@ -91,6 +91,7 @@ function build() {
   const storage = {
     presignPut: vi.fn(async (key: string) => `https://s3.test/${key}?sig`),
     presignGet: vi.fn(async (key: string, name: string) => `https://s3.test/${key}?name=${name}`),
+    presignInlinePdf: vi.fn(async (key: string, name: string) => `https://s3.test/${key}?inline=${name}`),
     size: vi.fn(async (): Promise<number | null> => 500),
     readHead: vi.fn(async () => pdfHead),
     readStream: vi.fn(async () => ({}) as never),
@@ -263,7 +264,19 @@ describe("CvService.download", () => {
     const res = await svc.download(auth, uploadId);
     expect(res.expiresInSeconds).toBe(300);
     expect(res.url).toMatch(/^https:\/\/s3\.test\/cv\//);
+    expect(res.inline).toBe(false);
     expect(storage.presignGet).toHaveBeenCalledWith(expect.stringMatching(/^cv\//), "cv.pdf", 300);
+    expect(storage.presignInlinePdf).not.toHaveBeenCalled();
+  });
+
+  it("opens a PDF inline only when asked", async () => {
+    const { svc, storage } = build();
+    const { uploadId } = await svc.presign(auth, { mimeType: PDF, sizeBytes: 500 }, "1.2.3.4");
+    await svc.complete(auth, uploadId);
+    const res = await svc.download(auth, uploadId, true);
+    expect(res.inline).toBe(true);
+    expect(res.url).toContain("inline=cv.pdf");
+    expect(storage.presignInlinePdf).toHaveBeenCalledWith(expect.stringMatching(/^cv\//), "cv.pdf", 300);
   });
 
   it("refuses a rejected upload", async () => {

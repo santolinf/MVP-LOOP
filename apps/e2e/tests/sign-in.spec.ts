@@ -72,7 +72,7 @@ test("@api signed-out visitor signs in, resumes at the page they wanted, and sig
   await expect(nav.getByRole("link", { name: "My LOOP" })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Log in" })).toHaveCount(0);
   // The members' pages sit inside the layout's <main>, so each must have exactly one main landmark.
-  for (const path of ["/my-loop", "/my-loop/profile", "/join/details", "/join/review", "/welcome"]) {
+  for (const path of ["/my-loop", "/my-loop/profile", "/join/preferences", "/join/review", "/welcome", "/my-loop/edit", "/my-loop/messages"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 }), path).toHaveCount(1);
     await expect(page.getByRole("main"), path).toHaveCount(1);

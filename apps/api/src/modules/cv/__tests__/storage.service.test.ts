@@ -25,6 +25,16 @@ describe("StorageService presigned URLs", () => {
     expect(await storage.presignPut("quarantine/a", "application/pdf", 60)).toMatch(/^http:\/\/minio:9000\//);
   });
 
+  it("presigns a PDF for inline viewing and everything else as an attachment", async () => {
+    const storage = new StorageService(loadEnv({ ...creds, S3_ENDPOINT: "http://minio:9000" }));
+    const inline = new URL(await storage.presignInlinePdf("cv/a", "cv.pdf", 60)).searchParams;
+    expect(inline.get("response-content-disposition")).toBe('inline; filename="cv.pdf"');
+    expect(inline.get("response-content-type")).toBe("application/pdf");
+    const attach = new URL(await storage.presignGet("cv/a", "cv.pdf", 60)).searchParams;
+    expect(attach.get("response-content-disposition")).toMatch(/^attachment/);
+    expect(attach.get("response-content-type")).toBe("application/octet-stream");
+  });
+
   it("signs the content type into the upload URL", async () => {
     const storage = new StorageService(loadEnv({ ...creds, S3_ENDPOINT: "http://minio:9000" }));
     expect(new URL(await storage.presignPut("quarantine/a", "application/pdf", 60)).searchParams.get("X-Amz-SignedHeaders")).toContain("content-type");

@@ -3,9 +3,9 @@
 Purpose: one shared DEV environment on a single Compute Engine VM so the team can start manual testing of the LOOP
 contractor journey. The VM runs Docker, and Docker runs the app and every service it depends on.
 
-Status: **plan, not yet provisioned.** The compose file and env template referenced here are new and have been
-validated for syntax only (`docker compose config`); the full stack has not yet been brought up on a VM. Section 9
-lists what to verify first.
+Status: **infrastructure provisioned** with `infra/terraform/gcp` (VM `loop-dev`, project `join-loop-dev-513314`).
+The compose file and env template are validated with `docker compose config`. Section 7.1 is the checklist for
+updating the VM to a new build (the V33 contractor journey, issue #18). Section 9 lists what to verify on a fresh VM.
 
 ---
 
@@ -25,7 +25,7 @@ lists what to verify first.
 | 8 | Email provider | Undecided (Open Question 4). **Postmark is interim** for dev/test/staging; the provider must be decided, contracted and UK/EU-reviewed **before any real contractor is invited**. | ADR 0013 |
 | 9 | Bug found by testing against real MinIO | Presigned uploads did not sign the content type, so any type was accepted. Fixed. | `storage.service.ts` |
 
-### Built so far (all uncommitted in the working tree on `feature/web-sign-in`)
+### Built so far (see `git log` on `feature/loop-v33`)
 
 - Scanner client now speaks the HTTP contract; raw-TCP clamd client removed; dev compose runs the same scanner image.
 - Storage conformance suite and scanner contract suite (the "definition of supported" for any backend).
@@ -283,6 +283,30 @@ docker compose -f docker-compose.vm-dev.yml --env-file .env.vm-dev ps -a
 
 `migrate` should show `Exited (0)` and `app` should become healthy. The scanner takes a minute or two to download
 signatures; `app` waits for it.
+
+### 7.1 Updating an existing VM to a new build
+
+For a VM that already runs the stack (for example to take the V33 contractor journey, issue #18). The Terraform
+infrastructure does not change, and this build adds no new environment variables, ports or containers. It adds one
+migration (`20261105000000_add_contractor_join_profile`), which the `migrate` container applies before the app starts.
+
+```bash
+gcloud compute instances start loop-dev --zone $ZONE          # if it was stopped
+gcloud compute ssh loop-dev --zone $ZONE --tunnel-through-iap
+```
+
+On the VM, in the repository directory:
+
+```bash
+git fetch && git checkout <branch-to-test> && git pull
+docker compose -f docker-compose.vm-dev.yml --env-file .env.vm-dev up -d --build
+docker compose -f docker-compose.vm-dev.yml --env-file .env.vm-dev ps -a      # migrate: Exited (0); app: healthy
+docker compose -f docker-compose.vm-dev.yml --env-file .env.vm-dev logs migrate | tail -5
+```
+
+Contractors registered on an older build have no profile or preference answers, so GO LIVE reports them as incomplete
+until they fill the new fields in My LOOP. Use fresh test accounts, or reset with `down -v` (deletes all data) and
+re-seed.
 
 ### Seed reference data (once)
 

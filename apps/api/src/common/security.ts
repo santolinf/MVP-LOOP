@@ -34,7 +34,8 @@ export function inlineScriptHashes(root: string): string[] {
 
 /**
  * `connectOrigins` are extra origins the browser may call with fetch: the object store, because CVs are uploaded and
- * downloaded straight to presigned URLs rather than through the API (ADR 0012).
+ * downloaded straight to presigned URLs rather than through the API (ADR 0012). The same origins may serve images,
+ * because the profile photograph is shown from a presigned URL.
  */
 export function buildCsp(scriptHashes: string[], production: boolean, connectOrigins: string[] = []): string {
   const directives = [
@@ -42,7 +43,7 @@ export function buildCsp(scriptHashes: string[], production: boolean, connectOri
     `script-src ${["'self'", ...scriptHashes].join(" ")}`,
     // TODO(spec): style-src keeps 'unsafe-inline' because React/Tailwind emit style attributes; tighten with nonces later.
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
+    `img-src ${["'self'", "data:", ...connectOrigins].join(" ")}`,
     "font-src 'self'",
     `connect-src ${["'self'", ...connectOrigins].join(" ")}`,
     "object-src 'none'",

@@ -1,9 +1,10 @@
 import { useAdminOverview } from "@loop/api-client";
+import { errMsg } from "../lib.js";
 
 export function Overview() {
   const { data, error } = useAdminOverview();
   const o = data?.data;
-  if (error) return <p role="alert" className="error">Could not load the overview.</p>;
+  if (error) return <p role="alert" className="error">Could not load the overview. {errMsg(error)}</p>;
   if (!o) return <p className="muted">Loading…</p>;
   const tiles: [string, number | string][] = [
     ["Contractors", o.contractors.total],

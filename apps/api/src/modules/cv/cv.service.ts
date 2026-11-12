@@ -113,13 +113,17 @@ export class CvService {
     return toStatus(await this.findOwned(owner, uploadId));
   }
 
-  /** Short-lived presigned GET (attachment, octet-stream). Only READY uploads. */
-  async download(owner: CvOwner, uploadId: string): Promise<CvDownload> {
+  /** Short-lived presigned GET. Attachment by default; a PDF can be opened inline. Only READY uploads. */
+  async download(owner: CvOwner, uploadId: string, inline = false): Promise<CvDownload> {
     const upload = await this.findOwned(owner, uploadId);
     if (upload.status !== "READY" || !upload.objectKey || !upload.detectedType) throw new NotFoundException("Upload not found");
     const ttl = this.env.CV_PRESIGN_TTL_SECONDS;
     const ext = EXT[upload.detectedType as keyof typeof EXT] ?? "bin";
-    return { url: await this.storage.presignGet(upload.objectKey, `cv.${ext}`, ttl), expiresInSeconds: ttl };
+    // Only a verified PDF is ever shown in the browser; DOC/DOCX cannot be rendered, so they download either way.
+    if (inline && upload.detectedType === "PDF") {
+      return { url: await this.storage.presignInlinePdf(upload.objectKey, `cv.${ext}`, ttl), expiresInSeconds: ttl, inline: true };
+    }
+    return { url: await this.storage.presignGet(upload.objectKey, `cv.${ext}`, ttl), expiresInSeconds: ttl, inline: false };
   }
 
   private async reject(id: string, quarantineKey: string, owner: CvOwner, reason: string): Promise<CvUploadStatus> {
