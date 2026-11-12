@@ -49,6 +49,11 @@ describe("inlineScriptHashes / buildCsp", () => {
     expect(csp).toContain("connect-src 'self' http://localhost:9000;");
     expect(csp).toContain("default-src 'self'");
   });
+
+  it("allows the object store origin in img-src so the profile photograph can be shown", () => {
+    expect(buildCsp([], false, ["http://localhost:9000"])).toContain("img-src 'self' data: http://localhost:9000;");
+    expect(buildCsp([], true)).toContain("img-src 'self' data:;");
+  });
 });
 
 describe("securityHeaders", () => {

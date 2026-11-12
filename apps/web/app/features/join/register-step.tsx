@@ -15,6 +15,7 @@ import { readReferralCode } from "../referrals/referral-capture";
 import { clearDraft, readDraft } from "./draft-store";
 import { ConfirmBox, Note, OptionGroup, Radio, TextField } from "./form-bits";
 import { clearJoinDrafts, readAccountDraft, readProfileDraft, setJoinNotice, writeAccountDraft, type AccountDraft } from "./join-draft";
+import { uploadPendingPhoto } from "./photo-upload";
 import { saveProfileDraft, splitFullName } from "./profile-form";
 import { StepBar } from "./step-bar";
 
@@ -178,6 +179,7 @@ export function RegisterStep() {
     } catch {
       notes.push("We couldn't save your profile review. Please check it again before you go live.");
     }
+    if (!(await uploadPendingPhoto())) notes.push("We couldn't save your profile photo. You can add it again from My LOOP.");
     let introducerMissed = false;
     if (form.introduced === "yes" && !(await attachIntroducer(form.introducer))) introducerMissed = true;
     if (form.offers) {

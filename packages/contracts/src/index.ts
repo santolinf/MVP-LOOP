@@ -15,3 +15,4 @@ export * from "./my-loop.js";
 export * from "./join-profile.js";
 export * from "./messaging.js";
 export * from "./admin.js";
+export * from "./photo.js";

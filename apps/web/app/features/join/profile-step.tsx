@@ -109,7 +109,7 @@ export function ProfileStep() {
           <Muted>Loading…</Muted>
         ) : (
           <form onSubmit={submit} noValidate className="grid gap-5">
-            <ProfileForm value={value} onChange={setValue} />
+            <ProfileForm value={value} onChange={setValue} signedIn={!!me} />
             {problems.length > 0 && (
               <ul role="alert" className="grid gap-1 text-orange">
                 {problems.map((p) => (

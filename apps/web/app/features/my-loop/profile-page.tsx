@@ -42,7 +42,7 @@ function Editor({ initial }: { initial: ProfileDraft }) {
 
   return (
     <form onSubmit={submit} noValidate className={`${PANEL} grid max-w-[720px] gap-4`}>
-      <ProfileForm value={value} onChange={setValue} />
+      <ProfileForm value={value} onChange={setValue} signedIn />
       {problems.length > 0 && (
         <ul role="alert" className="grid gap-1 text-xs text-orange">
           {problems.map((p) => (

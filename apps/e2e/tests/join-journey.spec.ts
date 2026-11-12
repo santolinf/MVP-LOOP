@@ -5,6 +5,8 @@ import { expect, test } from "@playwright/test";
 // Needs the API, Postgres, MinIO, ClamAV and Mailpit (docker compose up -d), so it only runs with E2E_API=1.
 // The sign-in code is read from Mailpit's HTTP API; there is no test-only bypass in the product.
 const MAILPIT = process.env.MAILPIT_URL ?? "http://localhost:8025";
+// A 1x1 PNG used as the profile photograph chosen during registration.
+const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
 
 test.skip(!process.env.E2E_API, "@api journey: set E2E_API=1 with the API stack running");
 
@@ -25,6 +27,8 @@ async function otpFor(email: string): Promise<string> {
 }
 
 test("@api new contractor follows the V33 journey from eligibility to My LOOP", async ({ page }) => {
+  // The whole journey (CV upload + malware scan, OTP, six steps) legitimately takes longer than the 30s default, especially against a remote stack.
+  test.setTimeout(180_000);
   const stamp = Date.now();
   const email = `e2e+${stamp}@example.com`;
   const mobile = `07700 9${String(stamp).slice(-5)}`;
@@ -50,6 +54,9 @@ test("@api new contractor follows the V33 journey from eligibility to My LOOP", 
   await step(2);
   await expect(page.getByRole("heading", { name: "Review your CV profile" })).toBeVisible();
   await page.getByLabel("Full name").fill("Ada Lovelace");
+  // The photograph is chosen before an account exists, so it is held and uploaded when registration completes.
+  await page.locator('input[type="file"]').setInputFiles({ name: "ada.png", mimeType: "image/png", buffer: PNG });
+  await expect(page.getByText("Your photo will be saved when you create your account.")).toBeVisible();
   await page.getByLabel("Professional title").fill("Senior platform engineer");
   await page.getByLabel(/Key skills/).fill("Kubernetes, Go");
   await page.getByLabel("Your current town or city").fill("Edinburgh");
@@ -153,10 +160,13 @@ test("@api new contractor follows the V33 journey from eligibility to My LOOP", 
   // 8. My LOOP shows what was entered.
   await page.getByRole("link", { name: /Go to My LOOP/ }).click();
   await expect(page).toHaveURL(/\/my-loop$/);
-  await expect(page.getByRole("heading", { name: "My Profile", level: 1 })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Ada Lovelace" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ada Lovelace", level: 1 })).toBeVisible();
   await expect(page.getByText("Senior platform engineer").first()).toBeVisible();
   await expect(page.getByText("Terraform")).toBeVisible();
+  // The photograph chosen at registration was persisted and is shown (QA-005), not just the initials.
+  const photo = page.getByRole("img", { name: "Profile photograph" });
+  await expect(photo).toBeVisible();
+  await expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
 
   // 9. Edit my profile (the reference's "Profile updates").
   await page.getByRole("navigation", { name: "My LOOP" }).getByRole("link", { name: "Edit my profile" }).click();

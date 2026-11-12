@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, HttpCode, Inject, Post, Put, Req } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Headers, HttpCode, Inject, Post, Put, Req } from "@nestjs/common";
 import { ApiBody, ApiHeader, ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { createZodDto } from "nestjs-zod";
 import {
@@ -9,6 +9,10 @@ import {
   ManualProfileSchema,
   MeSchema,
   NameSchema,
+  PhotoCompleteRequestSchema,
+  PhotoPresignRequestSchema,
+  PhotoPresignResponseSchema,
+  PhotoSchema,
   PreferencesSchema,
   ProfileDetailsSchema,
   ReviewSchema,
@@ -23,6 +27,7 @@ import { GoLiveService } from "./go-live.service.js";
 import { JoinProfileService } from "./join-profile.service.js";
 import { ProfileService } from "./profile.service.js";
 import { MeService } from "./me.service.js";
+import { PhotoService } from "./photo.service.js";
 import { PreferencesService } from "./preferences.service.js";
 
 class ConfirmAvailabilityDto extends createZodDto(ConfirmAvailabilityRequestSchema) {}
@@ -38,6 +43,10 @@ class UpdateNameDto extends createZodDto(UpdateNameRequestSchema) {}
 class JoinProfileDto extends createZodDto(JoinProfileSchema) {}
 class NameDto extends createZodDto(NameSchema) {}
 class GoLiveResultDto extends createZodDto(GoLiveResultSchema) {}
+class PhotoDto extends createZodDto(PhotoSchema) {}
+class PhotoPresignRequestDto extends createZodDto(PhotoPresignRequestSchema) {}
+class PhotoPresignResponseDto extends createZodDto(PhotoPresignResponseSchema) {}
+class PhotoCompleteRequestDto extends createZodDto(PhotoCompleteRequestSchema) {}
 
 @ApiTags("me")
 @Controller("me")
@@ -51,6 +60,7 @@ export class MeController {
     @Inject(ProfileService) private readonly profile: ProfileService,
     @Inject(DetailsService) private readonly details: DetailsService,
     @Inject(JoinProfileService) private readonly joinProfile: JoinProfileService,
+    @Inject(PhotoService) private readonly photo: PhotoService,
   ) {}
 
   @Get()
@@ -166,6 +176,38 @@ export class MeController {
   @ApiOkResponse({ type: NameDto })
   updateName(@CurrentContractor() id: string, @Body() body: UpdateNameDto): Promise<NameDto> {
     return this.details.updateName(id, body);
+  }
+
+  @Get("photo")
+  @ApiOperation({ operationId: "getMyPhoto", summary: "Your profile photograph as a short-lived URL, or null" })
+  @ApiOkResponse({ type: PhotoDto })
+  getPhoto(@CurrentContractor() id: string): Promise<PhotoDto> {
+    return this.photo.get(id);
+  }
+
+  @Post("photo/presign")
+  @HttpCode(200)
+  @ApiOperation({ operationId: "presignMyPhoto", summary: "Presigned URL to upload a JPG, PNG or WebP (max 3 MB) straight to storage" })
+  @ApiBody({ type: PhotoPresignRequestDto })
+  @ApiOkResponse({ type: PhotoPresignResponseDto })
+  presignPhoto(@CurrentContractor() id: string, @Body() body: PhotoPresignRequestDto): Promise<PhotoPresignResponseDto> {
+    return this.photo.presign(id, body);
+  }
+
+  @Post("photo/complete")
+  @HttpCode(200)
+  @ApiOperation({ operationId: "completeMyPhoto", summary: "Verify, scan and attach the uploaded photograph" })
+  @ApiBody({ type: PhotoCompleteRequestDto })
+  @ApiOkResponse({ type: PhotoDto })
+  completePhoto(@CurrentContractor() id: string, @Body() body: PhotoCompleteRequestDto): Promise<PhotoDto> {
+    return this.photo.complete(id, body);
+  }
+
+  @Delete("photo")
+  @ApiOperation({ operationId: "deleteMyPhoto" })
+  @ApiOkResponse({ type: PhotoDto })
+  deletePhoto(@CurrentContractor() id: string): Promise<PhotoDto> {
+    return this.photo.remove(id);
   }
 
   @Get("review")

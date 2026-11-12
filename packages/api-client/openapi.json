@@ -786,6 +786,112 @@
         ]
       }
     },
+    "/api/v1/me/photo": {
+      "get": {
+        "operationId": "getMyPhoto",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Your profile photograph as a short-lived URL, or null",
+        "tags": [
+          "me"
+        ]
+      },
+      "delete": {
+        "operationId": "deleteMyPhoto",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/photo/presign": {
+      "post": {
+        "operationId": "presignMyPhoto",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoPresignRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoPresignResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Presigned URL to upload a JPG, PNG or WebP (max 3 MB) straight to storage",
+        "tags": [
+          "me"
+        ]
+      }
+    },
+    "/api/v1/me/photo/complete": {
+      "post": {
+        "operationId": "completeMyPhoto",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhotoCompleteRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhotoDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Verify, scan and attach the uploaded photograph",
+        "tags": [
+          "me"
+        ]
+      }
+    },
     "/api/v1/me/review": {
       "get": {
         "operationId": "getReview",
@@ -4443,6 +4549,99 @@
           "firstName",
           "lastName"
         ]
+      },
+      "PhotoDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresInSeconds": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "url",
+          "expiresInSeconds"
+        ]
+      },
+      "PhotoPresignRequestDto": {
+        "type": "object",
+        "properties": {
+          "mimeType": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "mimeType",
+          "sizeBytes"
+        ],
+        "additionalProperties": false
+      },
+      "PhotoPresignResponseDto": {
+        "type": "object",
+        "properties": {
+          "objectKey": {
+            "type": "string"
+          },
+          "uploadUrl": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "PUT"
+            ]
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "expiresInSeconds": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "maxBytes": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "objectKey",
+          "uploadUrl",
+          "method",
+          "headers",
+          "expiresInSeconds",
+          "maxBytes"
+        ]
+      },
+      "PhotoCompleteRequestDto": {
+        "type": "object",
+        "properties": {
+          "objectKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "objectKey"
+        ],
+        "additionalProperties": false
       },
       "ReviewDto": {
         "type": "object",

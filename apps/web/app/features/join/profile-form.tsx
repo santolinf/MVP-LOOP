@@ -1,8 +1,19 @@
 import { useState } from "react";
-import { getJoinProfile, updateJoinProfile, updateManualProfile, updateName, type JoinProfileDto } from "@loop/api-client";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  deleteMyPhoto,
+  getGetMyPhotoQueryKey,
+  getJoinProfile,
+  updateJoinProfile,
+  updateManualProfile,
+  updateName,
+  useGetMyPhoto,
+  type JoinProfileDto,
+} from "@loop/api-client";
 import { Muted } from "../marketing/primitives";
 import { Note, TextField, ConfirmBox } from "./form-bits";
 import type { ProfileDraft } from "./join-draft";
+import { PHOTO_ACCEPT, PHOTO_HELP, photoProblem, setPendingPhoto, uploadPhoto } from "./photo-upload";
 
 /** Mirrors MIN_SKILLS in @loop/domain; the server enforces it at GO LIVE. */
 const MIN_SKILLS = 5;
@@ -56,27 +67,79 @@ export async function saveProfileDraft(d: ProfileDraft): Promise<void> {
   if (saved.status !== 200) throw new Error("join");
 }
 
-function PhotoEditor() {
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [notice, setNotice] = useState("JPG, PNG or WebP, maximum 3 MB. Preview only — no image is uploaded.");
+/**
+ * Profile photograph. Signed in, a chosen image is uploaded and attached straight away; before an account exists it is
+ * held in memory and uploaded when registration completes (see register-step), so it is never lost on the way to My LOOP.
+ */
+function PhotoEditor({ signedIn }: { signedIn: boolean }) {
+  const qc = useQueryClient();
+  const stored = useGetMyPhoto({ query: { enabled: signedIn } });
+  const storedUrl = stored.data?.status === 200 ? stored.data.data.url : null;
+  const [local, setLocal] = useState<string | null>(null);
+  const [notice, setNotice] = useState(PHOTO_HELP);
+  const [busy, setBusy] = useState(false);
+  const [broken, setBroken] = useState(false);
+  const shown = local ?? (broken ? null : storedUrl);
 
-  function pick(file: File | undefined) {
+  async function pick(file: File | undefined) {
     if (!file) return;
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size === 0 || file.size > 3 * 1024 * 1024) {
-      setNotice("Please choose a JPG, PNG or WebP image under 3 MB.");
+    const problem = photoProblem(file);
+    if (problem) {
+      setNotice(problem);
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => setPhoto(typeof reader.result === "string" ? reader.result : null);
     reader.onerror = () => setNotice("Could not read this image.");
+    reader.onload = async () => {
+      const preview = typeof reader.result === "string" ? reader.result : null;
+      if (!signedIn) {
+        setPendingPhoto(file);
+        setLocal(preview);
+        setNotice("Your photo will be saved when you create your account.");
+        return;
+      }
+      setBusy(true);
+      try {
+        await uploadPhoto(file);
+        setLocal(preview);
+        setBroken(false);
+        setNotice("Photo saved.");
+        await qc.invalidateQueries({ queryKey: getGetMyPhotoQueryKey() });
+      } catch {
+        setNotice("We couldn't save that photo. Please try again.");
+      } finally {
+        setBusy(false);
+      }
+    };
     reader.readAsDataURL(file);
+  }
+
+  async function remove() {
+    if (!signedIn) {
+      setPendingPhoto(null);
+      setLocal(null);
+      setNotice(PHOTO_HELP);
+      return;
+    }
+    setBusy(true);
+    try {
+      await deleteMyPhoto();
+      setLocal(null);
+      setBroken(true);
+      setNotice("Photo removed.");
+      await qc.invalidateQueries({ queryKey: getGetMyPhotoQueryKey() });
+    } catch {
+      setNotice("We couldn't remove that photo. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
     <div className="flex flex-wrap items-center gap-5 rounded-xl border border-[#294357] p-4">
       <div className="grid h-[88px] w-[88px] place-items-center overflow-hidden rounded-full border-[3px] border-lime bg-[#113348]">
-        {photo ? (
-          <img src={photo} alt="Contractor profile preview" className="h-full w-full object-cover" />
+        {shown ? (
+          <img src={shown} alt="Contractor profile preview" className="h-full w-full object-cover" onError={() => (local ? undefined : setBroken(true))} />
         ) : (
           <img src="/assets/loop-logo-header.png" alt="LOOP default profile image" className="w-[70%]" />
         )}
@@ -84,12 +147,23 @@ function PhotoEditor() {
       <div className="min-w-[220px] flex-1">
         <strong>Profile photo (optional)</strong>
         <Muted className="mb-2 text-sm">Add a clear photo if you wish. If you don't, your profile will display the LOOP logo.</Muted>
-        <label className="inline-flex cursor-pointer items-center rounded-full border border-[#465366] px-4 py-2 text-sm font-extrabold text-fg hover:border-lime">
-          {photo ? "Change photo" : "Add a photo"}
-          <input type="file" className="sr-only" accept="image/jpeg,image/png,image/webp" onChange={(e) => pick(e.target.files?.[0])} />
+        <label
+          className={`inline-flex cursor-pointer items-center rounded-full border border-[#465366] px-4 py-2 text-sm font-extrabold text-fg hover:border-lime ${busy ? "pointer-events-none opacity-50" : ""}`}
+        >
+          {shown ? "Change photo" : "Add a photo"}
+          <input
+            type="file"
+            className="sr-only"
+            accept={PHOTO_ACCEPT}
+            disabled={busy}
+            onChange={(e) => {
+              void pick(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
         </label>
-        {photo && (
-          <button type="button" className="ml-2 rounded-full border border-[#465366] px-4 py-2 text-sm font-extrabold text-fg" onClick={() => setPhoto(null)}>
+        {shown && (
+          <button type="button" disabled={busy} className="ml-2 rounded-full border border-[#465366] px-4 py-2 text-sm font-extrabold text-fg disabled:opacity-50" onClick={remove}>
             Remove photo
           </button>
         )}
@@ -102,7 +176,7 @@ function PhotoEditor() {
 }
 
 /** The Profile review fields, exactly as the V33 reference shows them. Controlled; the caller owns validation and saving. */
-export function ProfileForm({ value, onChange }: { value: ProfileDraft; onChange: (v: ProfileDraft) => void }) {
+export function ProfileForm({ value, onChange, signedIn = false }: { value: ProfileDraft; onChange: (v: ProfileDraft) => void; signedIn?: boolean }) {
   const set = <K extends keyof ProfileDraft>(k: K, v: ProfileDraft[K]) => onChange({ ...value, [k]: v });
   const setRole = (i: number, v: string) => {
     const roles: [string, string, string] = [...value.preferredRoles];
@@ -111,7 +185,7 @@ export function ProfileForm({ value, onChange }: { value: ProfileDraft; onChange
   };
   return (
     <div className="grid gap-4">
-      <PhotoEditor />
+      <PhotoEditor signedIn={signedIn} />
       <TextField label="Full name" required value={value.fullName} placeholder="Your name" autoComplete="name" maxLength={160} onChange={(v) => set("fullName", v)} />
       <TextField label="Professional title" required value={value.title} placeholder="e.g. Senior Data Engineer" maxLength={200} onChange={(v) => set("title", v)} />
       <Note>

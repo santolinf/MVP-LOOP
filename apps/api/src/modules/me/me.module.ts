@@ -10,12 +10,13 @@ import { JoinProfileService } from "./join-profile.service.js";
 import { ProfileService } from "./profile.service.js";
 import { MeController } from "./me.controller.js";
 import { MeService } from "./me.service.js";
+import { PhotoService } from "./photo.service.js";
 import { PreferencesService } from "./preferences.service.js";
 
 @Module({
   imports: [ConsentModule, MessagingModule, ReferralsModule],
   controllers: [MeController, ConfirmLinkController],
-  providers: [MeService, PreferencesService, GoLiveService, ProfileService, DetailsService, JoinProfileService, AuditService],
+  providers: [MeService, PreferencesService, GoLiveService, ProfileService, DetailsService, JoinProfileService, PhotoService, AuditService],
   exports: [MeService],
 })
 export class MeModule {}

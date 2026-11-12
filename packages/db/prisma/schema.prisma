@@ -96,6 +96,10 @@ model Contractor {
   /// Phase 7: set when the contractor asks to delete their account; the erasure job anonymises the row.
   erasureRequestedAt  DateTime?            @db.Timestamptz
   erasedAt            DateTime?            @db.Timestamptz
+  /// Profile photograph: private object-store key (photos/<contractorId>/<uuid>) and its verified MIME type.
+  photoKey            String?
+  photoContentType    String?
+  photoUpdatedAt      DateTime?            @db.Timestamptz
   createdAt           DateTime             @default(now()) @db.Timestamptz
   updatedAt           DateTime             @updatedAt @db.Timestamptz
   /// B5: introductions this contractor made, and the single introduction (if any) that brought them in.
