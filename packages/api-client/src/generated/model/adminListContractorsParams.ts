@@ -4,11 +4,18 @@
  * LOOP API
  * OpenAPI spec version: 1
  */
+import type { AdminListContractorsColour } from './adminListContractorsColour';
+import type { AdminListContractorsIr35 } from './adminListContractorsIr35';
 import type { AdminListContractorsLive } from './adminListContractorsLive';
 
 export type AdminListContractorsParams = {
 q?: string;
 live?: AdminListContractorsLive;
+colour?: AdminListContractorsColour;
+role?: string;
+skill?: string;
+location?: string;
+ir35?: AdminListContractorsIr35;
 page?: number;
 pageSize?: number;
 };

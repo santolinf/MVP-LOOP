@@ -8,6 +8,7 @@ import type { AdminContractorDetailDtoColour } from './adminContractorDetailDtoC
 import type { AdminContractorDetailDtoEventsItem } from './adminContractorDetailDtoEventsItem';
 import type { AdminContractorDetailDtoIntroducer } from './adminContractorDetailDtoIntroducer';
 import type { AdminContractorDetailDtoOpenCallTask } from './adminContractorDetailDtoOpenCallTask';
+import type { AdminContractorDetailDtoProfile } from './adminContractorDetailDtoProfile';
 
 export interface AdminContractorDetailDto {
   id: string;
@@ -35,6 +36,7 @@ export interface AdminContractorDetailDto {
      * @nullable
      */
   foundingPlace: number | null;
+  profile: AdminContractorDetailDtoProfile;
   phone: string;
   /** @nullable */
   employment: string | null;

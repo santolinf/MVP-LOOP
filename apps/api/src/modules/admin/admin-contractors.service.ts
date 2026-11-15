@@ -1,6 +1,6 @@
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable, NotFoundException } from "@nestjs/common";
 import { prisma } from "@loop/db";
-import { describeAvailability, londonDate, type FreshnessThresholds } from "@loop/domain";
+import { describeAvailability, londonDate, phoneSearchVariants, type FreshnessThresholds } from "@loop/domain";
 import type {
   AdminConfirmOnBehalfSchema,
   AdminContractorDetail,
@@ -12,6 +12,7 @@ import type {
 import type { z } from "zod";
 import { AuditService } from "../../common/audit.service.js";
 import { loadFreshnessThresholds } from "../../common/freshness-config.js";
+import { StorageService } from "../cv/storage.service.js";
 import { InboxService } from "../messaging/inbox.service.js";
 import { MeService, factsFor } from "../me/me.service.js";
 import type { StaffPrincipal } from "./staff-access.js";
@@ -50,20 +51,55 @@ export class AdminContractorsService {
     @Inject(AuditService) private readonly audit: AuditService,
     @Inject(MeService) private readonly me: MeService,
     @Inject(InboxService) private readonly inbox: InboxService,
+    @Inject(StorageService) private readonly storage: StorageService,
   ) {}
 
-  async list(q: { q?: string; live?: "true" | "false" } & Page, now = new Date()) {
+  /** ids of contractors whose confirmed profile text (skills, headline) or join profile matches the operator's filters. */
+  private async profileFilterIds(q: { role?: string; skill?: string; location?: string; ir35?: string }): Promise<string[] | null> {
+    const sets: string[][] = [];
+    const ids = (rows: { contractorId: string | null }[]) => rows.flatMap((r) => (r.contractorId ? [r.contractorId] : []));
+    if (q.skill) {
+      sets.push(ids(await prisma.confirmedProfileField.findMany({ where: { key: "skill", value: { contains: q.skill, mode: "insensitive" } }, select: { contractorId: true }, distinct: ["contractorId"] })));
+    }
+    if (q.role) {
+      const [fromHeadline, fromJoin] = await Promise.all([
+        prisma.confirmedProfileField.findMany({ where: { key: "headline", value: { contains: q.role, mode: "insensitive" } }, select: { contractorId: true }, distinct: ["contractorId"] }),
+        prisma.contractorJoinProfile.findMany({ select: { contractorId: true, preferredRoles: true, additionalRoles: true } }),
+      ]);
+      const needle = q.role.toLowerCase();
+      const roleHits = fromJoin
+        .filter((j) => j.preferredRoles.some((r) => r.toLowerCase().includes(needle)) || (j.additionalRoles ?? "").toLowerCase().includes(needle))
+        .map((j) => j.contractorId);
+      sets.push([...ids(fromHeadline), ...roleHits]);
+    }
+    if (q.location) {
+      const rows = await prisma.contractorJoinProfile.findMany({ where: { location: { contains: q.location, mode: "insensitive" } }, select: { contractorId: true } });
+      sets.push(rows.map((r) => r.contractorId));
+    }
+    if (q.ir35) {
+      sets.push((await prisma.contractorProfileDetails.findMany({ where: { ir35Status: q.ir35 }, select: { contractorId: true } })).map((r) => r.contractorId));
+    }
+    if (sets.length === 0) return null;
+    return sets.reduce((acc, set) => acc.filter((id) => set.includes(id)), sets[0] ?? []);
+  }
+
+  async list(q: { q?: string; live?: "true" | "false"; colour?: string; role?: string; skill?: string; location?: string; ir35?: string } & Page, now = new Date()) {
     const term = q.q?.trim();
+    // ADM-02: a phone copied in national, 0044 or spaced form must match the stored E.164 value.
+    const phones = term ? phoneSearchVariants(term) : [];
+    const filterIds = await this.profileFilterIds(q);
     const where = {
       erasedAt: null,
       ...(q.live ? { live: q.live === "true" } : {}),
+      ...(q.colour ? { searchColour: q.colour } : {}),
+      ...(filterIds ? { id: { in: filterIds } } : {}),
       ...(term
         ? {
             OR: [
               { firstName: { contains: term, mode: "insensitive" as const } },
               { lastName: { contains: term, mode: "insensitive" as const } },
               { email: { contains: term, mode: "insensitive" as const } },
-              { phone: { contains: term } },
+              ...phones.map((p) => ({ phone: { contains: p } })),
             ],
           }
         : {}),
@@ -73,7 +109,94 @@ export class AdminContractorsService {
       prisma.contractor.count({ where }),
       loadFreshnessThresholds(),
     ]);
-    return { items: rows.map((c) => toRow(c, thresholds, now)), total, page: q.page, pageSize: q.pageSize };
+    const idList = rows.map((r) => r.id);
+    const [join, details, titles] = idList.length
+      ? await Promise.all([
+          prisma.contractorJoinProfile.findMany({ where: { contractorId: { in: idList } } }),
+          prisma.contractorProfileDetails.findMany({ where: { contractorId: { in: idList } } }),
+          prisma.confirmedProfileField.findMany({ where: { contractorId: { in: idList }, key: "headline" } }),
+        ])
+      : [[], [], []];
+    const joinBy = new Map(join.map((j) => [j.contractorId, j]));
+    const detailBy = new Map(details.map((d) => [d.contractorId, d]));
+    const titleBy = new Map(titles.map((t) => [t.contractorId, t.value]));
+    return {
+      items: rows.map((c) => ({
+        ...toRow(c, thresholds, now),
+        title: titleBy.get(c.id) ?? null,
+        location: joinBy.get(c.id)?.location ?? null,
+        targetDayRatePence: joinBy.get(c.id)?.targetDayRatePence ?? null,
+        ir35Status: detailBy.get(c.id)?.ir35Status ?? null,
+      })),
+      total,
+      page: q.page,
+      pageSize: q.pageSize,
+    };
+  }
+
+  private async profile(id: string, c: Contractor): Promise<AdminContractorDetail["profile"]> {
+    const [join, details, fields, cv] = await Promise.all([
+      prisma.contractorJoinProfile.findUnique({ where: { contractorId: id } }),
+      prisma.contractorProfileDetails.findUnique({ where: { contractorId: id } }),
+      prisma.confirmedProfileField.findMany({ where: { contractorId: id, key: { in: ["headline", "skill"] } }, orderBy: { fieldId: "asc" } }),
+      this.latestCv(id),
+    ]);
+    return {
+      title: fields.find((f) => f.key === "headline")?.value ?? null,
+      summary: details?.summary ?? null,
+      skills: fields.filter((f) => f.key === "skill").map((f) => f.value),
+      preferredRoles: join?.preferredRoles ?? [],
+      location: join?.location ?? null,
+      workLocations: join?.workLocations ?? [],
+      otherPlaces: join?.otherPlaces ?? [],
+      londonAreas: join?.londonAreas ?? [],
+      remoteUk: join?.remoteUk ?? null,
+      workPatterns: join?.workPatterns ?? [],
+      targetDayRatePence: join?.targetDayRatePence ?? null,
+      minDayRatePence: join?.minDayRatePence ?? null,
+      ir35Status: details?.ir35Status ?? null,
+      noticePeriodText: join?.noticePeriodText ?? null,
+      securityClearance: details?.securityClearance ?? null,
+      cvVersion: cv?.versionNumber ?? null,
+      hasCv: cv !== null,
+      hasPhoto: Boolean(c.photoKey),
+    };
+  }
+
+  /** Newest CV version whose file is READY (a rejected or pending upload is never offered). */
+  private async latestCv(id: string) {
+    const versions = await prisma.cvVersion.findMany({ where: { contractorId: id }, orderBy: { versionNumber: "desc" } });
+    for (const v of versions) {
+      const upload = await prisma.cvUpload.findUnique({ where: { id: v.cvUploadId } });
+      if (upload?.status === "READY" && upload.objectKey && upload.detectedType) return { versionNumber: v.versionNumber, upload };
+    }
+    return null;
+  }
+
+  /** Short-lived link to the contractor's current CV. The access itself is audited. */
+  async cvLink(id: string, staff: StaffPrincipal) {
+    await this.exists(id);
+    const cv = await this.latestCv(id);
+    if (!cv?.upload.objectKey) throw new NotFoundException("No CV on file");
+    const ttl = 300;
+    const ext = cv.upload.detectedType === "PDF" ? "pdf" : cv.upload.detectedType === "DOCX" ? "docx" : cv.upload.detectedType === "DOC" ? "doc" : "bin";
+    await this.audit.record({
+      actorId: staff.id,
+      actorType: "STAFF",
+      entityType: "Contractor",
+      entityId: id,
+      action: "admin.cv_accessed",
+      after: { versionNumber: cv.versionNumber },
+    });
+    return { url: await this.storage.presignGet(cv.upload.objectKey, `cv.${ext}`, ttl), expiresInSeconds: ttl };
+  }
+
+  async photoLink(id: string) {
+    const c = await prisma.contractor.findFirst({ where: { id, erasedAt: null }, select: { photoKey: true, photoContentType: true } });
+    if (!c) throw new NotFoundException("Contractor not found");
+    const ttl = 300;
+    if (!c.photoKey || !c.photoContentType || !["image/jpeg", "image/png", "image/webp"].includes(c.photoContentType)) return { url: null, expiresInSeconds: ttl };
+    return { url: await this.storage.presignInlineImage(c.photoKey, c.photoContentType, ttl), expiresInSeconds: ttl };
   }
 
   async detail(id: string, now = new Date()): Promise<AdminContractorDetail> {
@@ -90,6 +213,7 @@ export class AdminContractorsService {
     const a = describeAvailability(factsFor(c, now), thresholds, now);
     return {
       ...toRow(c, thresholds, now),
+      profile: await this.profile(id, c),
       phone: c.phone,
       employment: c.employmentSituation,
       availableFrom: dateOnly(c.availableFrom),
@@ -121,6 +245,10 @@ export class AdminContractorsService {
    */
   async confirmOnBehalf(id: string, body: z.infer<typeof AdminConfirmOnBehalfSchema>, staff: StaffPrincipal, now = new Date()) {
     await this.exists(id);
+    // ADM-07: same rule as the contractor form. An unknown contract end would silently derive Unconfirmed, so refuse it.
+    if (body.employment === "CONTRACTING" && !body.contractEndDate) {
+      throw new BadRequestException("contractEndDate: Enter the expected contract end date before confirming a contract");
+    }
     const me = await this.me.confirmAvailability(
       id,
       { employment: body.employment, availableFrom: body.availableFrom, contractEndDate: body.contractEndDate ?? null },

@@ -193,13 +193,23 @@ describe("AdminCommsService templates", () => {
 
 describe("AdminContractorsService.resolveCallTask", () => {
   it("audits who resolved the task and refuses one that is not open", async () => {
-    const svc = new AdminContractorsService(audit as never, {} as never, {} as never);
+    const svc = new AdminContractorsService(audit as never, {} as never, {} as never, {} as never);
     db.manualCallTask.updateMany.mockResolvedValue({ count: 1 });
     db.manualCallTask.findUnique.mockResolvedValue({ id: "t1", contractorId: "c1" });
     await svc.resolveCallTask("t1", { outcome: "DONE", note: "Spoke to them" }, staff, NOW);
     expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ actorType: "STAFF", action: "admin.call_task_resolved", after: expect.objectContaining({ status: "DONE" }) }));
     db.manualCallTask.updateMany.mockResolvedValue({ count: 0 });
     await expect(svc.resolveCallTask("t1", { outcome: "DONE" }, staff, NOW)).rejects.toThrow("not found");
+  });
+});
+
+describe("AdminContractorsService.confirmOnBehalf (ADM-07)", () => {
+  it("refuses a contract confirmation without an end date and never touches availability", async () => {
+    const me = { confirmAvailability: vi.fn() };
+    const svc = new AdminContractorsService(audit as never, me as never, {} as never, {} as never);
+    db.contractor.findFirst.mockResolvedValue({ id: "c1" });
+    await expect(svc.confirmOnBehalf("c1", { employment: "CONTRACTING", availableFrom: null, contractEndDate: null, reason: REASON }, staff, NOW)).rejects.toThrow("contractEndDate");
+    expect(me.confirmAvailability).not.toHaveBeenCalled();
   });
 });
 

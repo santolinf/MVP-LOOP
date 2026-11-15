@@ -32,4 +32,16 @@ export type AdminContractorListDtoItemsItem = {
      * @nullable
      */
   foundingPlace: number | null;
+  /** @nullable */
+  title: string | null;
+  /** @nullable */
+  location: string | null;
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  targetDayRatePence: number | null;
+  /** @nullable */
+  ir35Status: string | null;
 };

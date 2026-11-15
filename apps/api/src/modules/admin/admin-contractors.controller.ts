@@ -4,6 +4,8 @@ import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from "@nestjs
 import { createZodDto, ZodValidationPipe } from "nestjs-zod";
 import {
   AdminConfirmOnBehalfSchema,
+  AdminCvLinkSchema,
+  AdminPhotoLinkSchema,
   AdminContractorDetailSchema,
   AdminContractorListSchema,
   AdminContractorQuerySchema,
@@ -23,6 +25,8 @@ class AdminContractorListDto extends createZodDto(AdminContractorListSchema) {}
 class AdminContractorDetailDto extends createZodDto(AdminContractorDetailSchema) {}
 class AdminConfirmOnBehalfDto extends createZodDto(AdminConfirmOnBehalfSchema) {}
 class AdminConfirmedMeDto extends createZodDto(MeSchema) {}
+class AdminCvLinkDto extends createZodDto(AdminCvLinkSchema) {}
+class AdminPhotoLinkDto extends createZodDto(AdminPhotoLinkSchema) {}
 class AdminSendMessageDto extends createZodDto(AdminSendMessageSchema) {}
 class AdminSendMessageResultDto extends createZodDto(AdminSendMessageResultSchema) {}
 class AdminQueueQueryDto extends createZodDto(AdminQueueQuerySchema) {}
@@ -39,7 +43,16 @@ export class AdminContractorsController {
   @RequirePermission("contractors.read")
   @AuditAccess({ entityType: "Contractor", action: "contractors.listed" })
   @ApiOperation({ operationId: "adminListContractors" })
-  @ApiQueries({ name: "q" }, { name: "live", enum: ["true", "false"] }, ...PAGE_QUERY)
+  @ApiQueries(
+    { name: "q" },
+    { name: "live", enum: ["true", "false"] },
+    { name: "colour", enum: ["LIME", "ORANGE", "RED", "BLUE", "GREY"] },
+    { name: "role" },
+    { name: "skill" },
+    { name: "location" },
+    { name: "ir35", enum: ["INSIDE", "OUTSIDE", "EITHER", "UNSURE"] },
+    ...PAGE_QUERY,
+  )
   @ApiOkResponse({ type: AdminContractorListDto })
   list(@Query(new ZodValidationPipe(AdminContractorQuerySchema)) q: AdminContractorQueryDto): Promise<AdminContractorListDto> {
     return this.svc.list(q);
@@ -53,6 +66,26 @@ export class AdminContractorsController {
   @ApiOkResponse({ type: AdminContractorDetailDto })
   detail(@Param("id", ParseUUIDPipe) id: string): Promise<AdminContractorDetailDto> {
     return this.svc.detail(id);
+  }
+
+  @Get(":id/cv")
+  @RequirePermission("contractors.read")
+  @AuditAccess({ entityType: "Contractor", idParam: "id", action: "contractor.cv_link_requested" })
+  @ApiParam({ name: "id", type: String })
+  @ApiOperation({ operationId: "adminGetContractorCv", summary: "Short-lived link to the contractor's current CV" })
+  @ApiOkResponse({ type: AdminCvLinkDto })
+  cv(@Param("id", ParseUUIDPipe) id: string, @CurrentStaff() staff: StaffPrincipal): Promise<AdminCvLinkDto> {
+    return this.svc.cvLink(id, staff);
+  }
+
+  @Get(":id/photo")
+  @RequirePermission("contractors.read")
+  @AuditAccess({ entityType: "Contractor", idParam: "id", action: "contractor.photo_viewed" })
+  @ApiParam({ name: "id", type: String })
+  @ApiOperation({ operationId: "adminGetContractorPhoto" })
+  @ApiOkResponse({ type: AdminPhotoLinkDto })
+  photo(@Param("id", ParseUUIDPipe) id: string): Promise<AdminPhotoLinkDto> {
+    return this.svc.photoLink(id);
   }
 
   @Post(":id/confirm")

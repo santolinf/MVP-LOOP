@@ -26,6 +26,7 @@ import {
   AdminNewTemplateVersionSchema,
   AdminOkSchema,
   AdminOverrideIntroducerSchema,
+  AdminOverviewQuerySchema,
   AdminOverviewSchema,
   AdminPublishReminderConfigSchema,
   AdminRecordVerificationSchema,
@@ -51,6 +52,7 @@ import { AdminRewardsService } from "./admin-rewards.service.js";
 import { AdminStaffService } from "./admin-staff.service.js";
 import { ApiQueries, AuditAccess, CurrentStaff, PAGE_QUERY, RequirePermission, StaffController, type StaffPrincipal } from "./staff-access.js";
 
+class AdminOverviewQueryDto extends createZodDto(AdminOverviewQuerySchema) {}
 class AdminOverviewDto extends createZodDto(AdminOverviewSchema) {}
 class AdminOkDto extends createZodDto(AdminOkSchema) {}
 class AdminReferralQueryDto extends createZodDto(AdminReferralQuerySchema) {}
@@ -99,8 +101,9 @@ export class AdminOverviewController {
   @RequirePermission("contractors.read")
   @ApiOperation({ operationId: "adminOverview" })
   @ApiOkResponse({ type: AdminOverviewDto })
-  overview(): Promise<AdminOverviewDto> {
-    return this.svc.overview();
+  @ApiQueries({ name: "range", enum: ["7", "30", "90", "all"] })
+  overview(@Query(new ZodValidationPipe(AdminOverviewQuerySchema)) q: AdminOverviewQueryDto): Promise<AdminOverviewDto> {
+    return this.svc.overview(q.range);
   }
 }
 

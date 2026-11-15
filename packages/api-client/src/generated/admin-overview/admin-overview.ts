@@ -20,7 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
-  AdminOverviewDto
+  AdminOverviewDto,
+  AdminOverviewParams
 } from '../model';
 
 import { customFetch } from '../../fetcher';
@@ -57,17 +58,24 @@ export type adminOverviewResponseSuccess = (adminOverviewResponse200) & {
 
 export type adminOverviewResponse = (adminOverviewResponseSuccess)
 
-export const getAdminOverviewUrl = () => {
+export const getAdminOverviewUrl = (params?: AdminOverviewParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/v1/admin/overview`
+  return stringifiedParams.length > 0 ? `/api/v1/admin/overview?${stringifiedParams}` : `/api/v1/admin/overview`
 }
 
-export const adminOverview = async ( options?: Parameters<typeof customFetch>[1]): Promise<adminOverviewResponse> => {
+export const adminOverview = async (params?: AdminOverviewParams, options?: Parameters<typeof customFetch>[1]): Promise<adminOverviewResponse> => {
 
-  return customFetch<adminOverviewResponse>(getAdminOverviewUrl(),
+  return customFetch<adminOverviewResponse>(getAdminOverviewUrl(params),
   {
     ...options,
     method: 'GET'
@@ -80,23 +88,23 @@ export const adminOverview = async ( options?: Parameters<typeof customFetch>[1]
 
 
 
-export const getAdminOverviewQueryKey = () => {
+export const getAdminOverviewQueryKey = (params?: AdminOverviewParams,) => {
     return [
-    `/api/v1/admin/overview`
+    `/api/v1/admin/overview`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getAdminOverviewQueryOptions = <TData = Awaited<ReturnType<typeof adminOverview>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getAdminOverviewQueryOptions = <TData = Awaited<ReturnType<typeof adminOverview>>, TError = unknown>(params?: AdminOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getAdminOverviewQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getAdminOverviewQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminOverview>>> = ({ signal }) => adminOverview({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminOverview>>> = ({ signal }) => adminOverview(params, { signal, ...requestOptions });
 
 
 
@@ -110,7 +118,7 @@ export type AdminOverviewQueryError = unknown
 
 
 export function useAdminOverview<TData = Awaited<ReturnType<typeof adminOverview>>, TError = unknown>(
-  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminOverview>>, TError, TData>> & Pick<
+ params: undefined |  AdminOverviewParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminOverview>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof adminOverview>>,
           TError,
@@ -120,7 +128,7 @@ export function useAdminOverview<TData = Awaited<ReturnType<typeof adminOverview
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useAdminOverview<TData = Awaited<ReturnType<typeof adminOverview>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminOverview>>, TError, TData>> & Pick<
+ params?: AdminOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminOverview>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof adminOverview>>,
           TError,
@@ -130,16 +138,16 @@ export function useAdminOverview<TData = Awaited<ReturnType<typeof adminOverview
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useAdminOverview<TData = Awaited<ReturnType<typeof adminOverview>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ params?: AdminOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 
 export function useAdminOverview<TData = Awaited<ReturnType<typeof adminOverview>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ params?: AdminOverviewParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminOverview>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getAdminOverviewQueryOptions(options)
+  const queryOptions = getAdminOverviewQueryOptions(params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

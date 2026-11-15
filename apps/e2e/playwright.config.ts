@@ -10,7 +10,11 @@ export default defineConfig({
   use: { baseURL, trace: "on-first-retry" },
   // Public-site journeys need only the web dev server (it proxies /api to :3000).
   // Specs tagged @api additionally need the API + database; run with E2E_API=1.
+  // The admin SPA (admin-qa.spec.ts, API stubbed) is served by its own Vite dev server on :5174.
   webServer: process.env.E2E_BASE_URL
     ? undefined
-    : { command: "pnpm --filter @loop/web dev", url: baseURL, reuseExistingServer: !process.env.CI, timeout: 120_000 },
+    : [
+        { command: "pnpm --filter @loop/web dev", url: baseURL, reuseExistingServer: !process.env.CI, timeout: 120_000 },
+        { command: "pnpm --filter @loop/admin dev", url: "http://localhost:5174/admin/", reuseExistingServer: !process.env.CI, timeout: 120_000 },
+      ],
 });

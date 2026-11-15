@@ -90,3 +90,5 @@ pre { white-space: pre-wrap; background: var(--bg); padding: 0.5rem; border-radi
 .text-red { color: var(--red); }
 .text-blue { color: var(--blue); }
 .text-grey { color: var(--grey); }
+.growth-chart { width: 100%; max-width: 640px; color: var(--accent); }
+button[aria-pressed="true"] { outline: 2px solid var(--accent); }
