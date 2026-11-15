@@ -58,6 +58,9 @@ export type AdminMe = z.infer<typeof AdminMeSchema>;
 
 // ---- overview -------------------------------------------------------------------------------------------------
 
+export const AdminGrowthRangeSchema = z.enum(["7", "30", "90", "all"]);
+export const AdminOverviewQuerySchema = z.object({ range: AdminGrowthRangeSchema.default("30") });
+
 export const AdminOverviewSchema = z.object({
   contractors: z.object({ total: z.number().int(), live: z.number().int(), paused: z.number().int(), searchSuppressed: z.number().int() }),
   colours: z.object({ LIME: z.number().int(), ORANGE: z.number().int(), RED: z.number().int(), BLUE: z.number().int(), GREY: z.number().int() }),
@@ -68,6 +71,12 @@ export const AdminOverviewSchema = z.object({
     rewardsAwaitingApproval: z.number().int(),
   }),
   founding: z.object({ allocated: z.number().int(), cap: z.number().int() }),
+  /** ADM-04: registrations (contractors created) per London day over the chosen range. */
+  growth: z.object({
+    range: AdminGrowthRangeSchema,
+    total: z.number().int(),
+    points: z.array(z.object({ date: z.string(), count: z.number().int() })),
+  }),
 });
 export type AdminOverview = z.infer<typeof AdminOverviewSchema>;
 
@@ -76,6 +85,12 @@ export type AdminOverview = z.infer<typeof AdminOverviewSchema>;
 export const AdminContractorQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
   live: z.enum(["true", "false"]).optional(),
+  /** ADM-05 operational filters. Text filters are case-insensitive "contains" matches. */
+  colour: AvailabilityColourSchema.optional(),
+  role: z.string().trim().max(100).optional(),
+  skill: z.string().trim().max(100).optional(),
+  location: z.string().trim().max(100).optional(),
+  ir35: z.enum(["INSIDE", "OUTSIDE", "EITHER", "UNSURE"]).optional(),
   ...page,
 });
 export const AdminContractorRowSchema = z.object({
@@ -92,7 +107,14 @@ export const AdminContractorRowSchema = z.object({
   confirmationSource: nstr(),
   foundingPlace: nint(),
 });
-export const AdminContractorListSchema = z.object({ items: z.array(AdminContractorRowSchema), total: z.number().int(), page: z.number().int(), pageSize: z.number().int() });
+/** List rows add the profile columns operators scan (ADM-05). */
+export const AdminContractorListItemSchema = AdminContractorRowSchema.extend({
+  title: nstr(),
+  location: nstr(),
+  targetDayRatePence: nint(),
+  ir35Status: nstr(),
+});
+export const AdminContractorListSchema = z.object({ items: z.array(AdminContractorListItemSchema), total: z.number().int(), page: z.number().int(), pageSize: z.number().int() });
 export type AdminContractorRow = z.infer<typeof AdminContractorRowSchema>;
 
 export const AdminConfirmationEventSchema = z.object({
@@ -103,7 +125,32 @@ export const AdminConfirmationEventSchema = z.object({
   contractEndDate: nstr(),
   confirmedAt: z.string().datetime(),
 });
+/** ADM-06: read-only professional profile for the detail panel. */
+export const AdminContractorProfileSchema = z.object({
+  title: nstr(),
+  summary: nstr(),
+  skills: z.array(z.string()),
+  preferredRoles: z.array(z.string()),
+  location: nstr(),
+  workLocations: z.array(z.string()),
+  otherPlaces: z.array(z.string()),
+  londonAreas: z.array(z.string()),
+  remoteUk: z.boolean().nullable().meta({ type: "boolean", nullable: true } as never),
+  workPatterns: z.array(z.string()),
+  targetDayRatePence: nint(),
+  minDayRatePence: nint(),
+  ir35Status: nstr(),
+  noticePeriodText: nstr(),
+  securityClearance: nstr(),
+  cvVersion: nint(),
+  hasCv: z.boolean(),
+  hasPhoto: z.boolean(),
+});
+export const AdminCvLinkSchema = z.object({ url: z.string(), expiresInSeconds: z.number().int() });
+export const AdminPhotoLinkSchema = z.object({ url: nstr(), expiresInSeconds: z.number().int() });
+
 export const AdminContractorDetailSchema = AdminContractorRowSchema.extend({
+  profile: AdminContractorProfileSchema,
   phone: z.string(),
   employment: nstr(),
   availableFrom: nstr(),

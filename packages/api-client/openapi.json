@@ -1887,7 +1887,22 @@
     "/api/v1/admin/overview": {
       "get": {
         "operationId": "adminOverview",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "range",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "7",
+                "30",
+                "90",
+                "all"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -1926,6 +1941,59 @@
               "enum": [
                 "true",
                 "false"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "colour",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "LIME",
+                "ORANGE",
+                "RED",
+                "BLUE",
+                "GREY"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skill",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ir35",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "INSIDE",
+                "OUTSIDE",
+                "EITHER",
+                "UNSURE"
               ],
               "type": "string"
             }
@@ -1985,6 +2053,68 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminContractorDetailDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "",
+        "tags": [
+          "admin-contractors"
+        ]
+      }
+    },
+    "/api/v1/admin/contractors/{id}/cv": {
+      "get": {
+        "operationId": "adminGetContractorCv",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCvLinkDto"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Short-lived link to the contractor's current CV",
+        "tags": [
+          "admin-contractors"
+        ]
+      }
+    },
+    "/api/v1/admin/contractors/{id}/photo": {
+      "get": {
+        "operationId": "adminGetContractorPhoto",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPhotoLinkDto"
                 }
               }
             }
@@ -6286,13 +6416,58 @@
               "allocated",
               "cap"
             ]
+          },
+          "growth": {
+            "type": "object",
+            "properties": {
+              "range": {
+                "type": "string",
+                "enum": [
+                  "7",
+                  "30",
+                  "90",
+                  "all"
+                ]
+              },
+              "total": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "points": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "date": {
+                      "type": "string"
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "date",
+                    "count"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "range",
+              "total",
+              "points"
+            ]
           }
         },
         "required": [
           "contractors",
           "colours",
           "queues",
-          "founding"
+          "founding",
+          "growth"
         ]
       },
       "AdminContractorListDto": {
@@ -6355,6 +6530,24 @@
                   "minimum": -9007199254740991,
                   "maximum": 9007199254740991,
                   "nullable": true
+                },
+                "title": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "location": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "targetDayRatePence": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "nullable": true
+                },
+                "ir35Status": {
+                  "type": "string",
+                  "nullable": true
                 }
               },
               "required": [
@@ -6369,7 +6562,11 @@
                 "label",
                 "lastConfirmedAt",
                 "confirmationSource",
-                "foundingPlace"
+                "foundingPlace",
+                "title",
+                "location",
+                "targetDayRatePence",
+                "ir35Status"
               ]
             }
           },
@@ -6451,6 +6648,119 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991,
             "nullable": true
+          },
+          "profile": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "nullable": true
+              },
+              "summary": {
+                "type": "string",
+                "nullable": true
+              },
+              "skills": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "preferredRoles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "location": {
+                "type": "string",
+                "nullable": true
+              },
+              "workLocations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "otherPlaces": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "londonAreas": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "remoteUk": {
+                "type": "boolean",
+                "nullable": true
+              },
+              "workPatterns": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "targetDayRatePence": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "nullable": true
+              },
+              "minDayRatePence": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "nullable": true
+              },
+              "ir35Status": {
+                "type": "string",
+                "nullable": true
+              },
+              "noticePeriodText": {
+                "type": "string",
+                "nullable": true
+              },
+              "securityClearance": {
+                "type": "string",
+                "nullable": true
+              },
+              "cvVersion": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "nullable": true
+              },
+              "hasCv": {
+                "type": "boolean"
+              },
+              "hasPhoto": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "title",
+              "summary",
+              "skills",
+              "preferredRoles",
+              "location",
+              "workLocations",
+              "otherPlaces",
+              "londonAreas",
+              "remoteUk",
+              "workPatterns",
+              "targetDayRatePence",
+              "minDayRatePence",
+              "ir35Status",
+              "noticePeriodText",
+              "securityClearance",
+              "cvVersion",
+              "hasCv",
+              "hasPhoto"
+            ]
           },
           "phone": {
             "type": "string"
@@ -6594,6 +6904,7 @@
           "lastConfirmedAt",
           "confirmationSource",
           "foundingPlace",
+          "profile",
           "phone",
           "employment",
           "availableFrom",
@@ -6607,6 +6918,41 @@
           "introductionsMade",
           "events",
           "openCallTask"
+        ]
+      },
+      "AdminCvLinkDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "expiresInSeconds": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "url",
+          "expiresInSeconds"
+        ]
+      },
+      "AdminPhotoLinkDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresInSeconds": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "url",
+          "expiresInSeconds"
         ]
       },
       "AdminConfirmOnBehalfDto": {

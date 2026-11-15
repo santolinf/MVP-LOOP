@@ -45,7 +45,7 @@ export const LOCATION_LABELS: Record<string, string> = {
   WALES: "Wales",
   NORTHERN_IRELAND: "Northern Ireland",
 };
-const LONDON_LABELS: Record<string, string> = {
+export const LONDON_LABELS: Record<string, string> = {
   ANYWHERE_LONDON: "Anywhere in London",
   CENTRAL: "Central London",
   NORTH: "North London",

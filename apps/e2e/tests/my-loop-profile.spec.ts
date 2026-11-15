@@ -36,7 +36,7 @@ type Call = { method: string; path: string; body: unknown };
 // A 1x1 PNG, served as the stored photograph.
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64");
 
-async function stubApi(page: Page, opts: { colour: Colour; label: string; endDate: string | null; cv: boolean; photo?: boolean }): Promise<Call[]> {
+async function stubApi(page: Page, opts: { colour: Colour; label: string; endDate: string | null; cv: boolean; photo?: boolean; employment?: string; availableFrom?: string | null; join?: Record<string, unknown> }): Promise<Call[]> {
   const calls: Call[] = [];
   let photoUrl: string | null = opts.photo ? "/__e2e/photo.png" : null;
   let details: Record<string, unknown> = { securityClearance: "NO", ir35Status: "EITHER", workPattern: "HYBRID" };
@@ -47,8 +47,8 @@ async function stubApi(page: Page, opts: { colour: Colour; label: string; endDat
     lastName: "Contractor",
     live: true,
     paused: false,
-    employment: "CONTRACTING",
-    availableFrom: null,
+    employment: opts.employment ?? "CONTRACTING",
+    availableFrom: opts.availableFrom ?? null,
     contractEndDate: opts.endDate,
     availability: { colour: opts.colour, label: opts.label, lastConfirmedAt: "2026-11-07T10:00:00Z", underlyingStatus: "UNAVAILABLE", freshnessState: "FRESH" },
   };
@@ -86,7 +86,7 @@ async function stubApi(page: Page, opts: { colour: Colour; label: string; endDat
       case "/me/photo":
         return route.fulfill(json({ url: photoUrl, expiresInSeconds: 300 }));
       case "/me/profile/join":
-        return route.fulfill(json(JOIN));
+        return route.fulfill(json({ ...JOIN, ...(opts.join ?? {}) }));
       case "/me/profile/manual":
         return route.fulfill(json({ headline: "Senior Tester", skills: ["UAT", "Penetration testing", "Test strategy", "Automation", "Selenium"] }));
       case "/me/profile/details":
@@ -144,7 +144,7 @@ test("In Contract contractor sees the simplified, red-bordered profile with thei
   await expect(page.getByText("Remote, Hybrid", { exact: true })).toBeVisible();
   await expect(page.getByText("UAT", { exact: true })).toBeVisible();
   await expect(page.getByText("Billy Umbrella")).toBeVisible();
-  await expect(page.getByText("2 per week")).toBeVisible();
+  await expect(page.getByText("Maximum 2 office days/week")).toBeVisible();
   await expect(page.getByText("Occasional travel")).toBeVisible();
   await expect(page.getByText(/Test Lead/)).toBeVisible();
 
@@ -545,4 +545,115 @@ test("matches the prototype: Arial type, 8px-radius buttons and its static text"
   await expect(cancel).toHaveCSS("border-top-left-radius", "8px");
   await expect(cancel).toHaveCSS("background-color", "rgb(27, 43, 50)");
   await expect(dialog.getByRole("button", { name: "✕ Close" })).toHaveCSS("padding", "6px 10px");
+});
+
+// ---- QA 2026-11-15 regressions (requirements/LOOP_Contractor_QA_2026-11-15, C01–C06) ----
+
+test("C03: all three preferred roles are shown and a distinct professional title does not displace one", async ({ page }) => {
+  await stubApi(page, {
+    colour: "RED",
+    label: "In Contract",
+    endDate: "2027-01-07",
+    cv: true,
+    join: { title: "Principal Data Engineer QA", preferredRoles: ["Platform Engineer", "Cloud Data Engineer", "Data Quality Engineer"] },
+  });
+  await page.goto("/my-loop");
+  const card = page.getByRole("region", { name: "Preferred roles & experience" });
+  await expect(card.getByText("Platform Engineer, Cloud Data Engineer, Data Quality Engineer", { exact: true })).toBeVisible();
+  await expect(card.getByText("Principal Data Engineer QA")).toHaveCount(0);
+});
+
+test("C04: location summary shows regions, towns, London areas, UK-wide remote and a maximum hybrid qualifier", async ({ page }) => {
+  await stubApi(page, {
+    colour: "RED",
+    label: "In Contract",
+    endDate: "2027-01-07",
+    cv: true,
+    join: {
+      workLocations: ["LONDON", "SCOTLAND"],
+      otherPlaces: ["Oxford, Oxfordshire"],
+      londonAreas: ["CENTRAL", "EAST"],
+      londonOther: "Canary Wharf",
+      remoteUk: true,
+      workPatterns: ["REMOTE", "HYBRID", "ONSITE"],
+      hybridDays: 3,
+      occasionalTravel: "DEPENDS",
+    },
+  });
+  await page.goto("/my-loop");
+  const card = page.getByRole("region", { name: "Locations, work pattern & travel" });
+  await expect(card).toContainText("Regions: London, Scotland");
+  await expect(card).toContainText("Towns and cities: Oxford, Oxfordshire");
+  await expect(card).toContainText("London areas: Central London, East London");
+  await expect(card).toContainText("Specific London areas: Canary Wharf");
+  await expect(card).toContainText("Fully remote anywhere in the UK: Yes");
+  await expect(card).toContainText("Hybrid attendance: Maximum 3 office days/week");
+  await expect(card).toContainText("Travel: Depends on location and frequency");
+  await expect(card.getByText("per week")).toHaveCount(0);
+});
+
+test("C05: Available Soon shows the saved available-from date instead of a missing end date", async ({ page }) => {
+  await stubApi(page, { colour: "ORANGE", label: "Available Soon", endDate: null, cv: true, employment: "BETWEEN_CONTRACTS", availableFrom: "2026-11-29" });
+  await page.goto("/my-loop");
+  await expect(page.getByRole("group", { name: "Key facts" }).getByText("Available from 29 November 2026")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Current situation" })).toContainText("Available Soon · 29 November 2026");
+  await expect(page.getByText("No end date supplied")).toHaveCount(0);
+});
+
+test("C06: a permanent employee sees notice and earliest start, with no end-date placeholder, and stays blue", async ({ page }) => {
+  await stubApi(page, {
+    colour: "BLUE",
+    label: "Permanently Employed",
+    endDate: null,
+    cv: true,
+    employment: "PERMANENT",
+    join: { noticePeriodText: "4 weeks", earliestStartDate: "2026-12-14" },
+  });
+  await page.goto("/my-loop");
+  await expect(page.getByTestId("status-pill")).toHaveText(/Permanently Employed/);
+  await expect(page.getByRole("region", { name: "Profile summary" })).toHaveCSS("border-left-color", TONES.BLUE);
+  await expect(page.getByRole("group", { name: "Key facts" }).getByText("Earliest start: 14 December 2026")).toBeVisible();
+  const current = page.getByRole("region", { name: "Current situation" });
+  await expect(current).toContainText("Notice: 4 weeks");
+  await expect(current).toContainText("Earliest possible start: 14 December 2026");
+  await expect(page.getByText("No end date supplied")).toHaveCount(0);
+});
+
+test("C02: a typed but unselected town blocks Save with a clear message; a chosen suggestion is saved as a chip", async ({ page }) => {
+  const calls = await stubApi(page, { colour: "RED", label: "In Contract", endDate: "2027-01-07", cv: true });
+  await page.goto("/my-loop");
+  await page.getByRole("button", { name: "Edit locations & preferences" }).click();
+  const dialog = page.getByRole("dialog", { name: "Edit locations & working preferences" });
+  const search = dialog.getByLabel("Additional towns or cities (optional)");
+
+  await search.fill("Oxford");
+  await dialog.getByRole("button", { name: "Save changes" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("You typed “Oxford” but haven't chosen it");
+  await expect(dialog).toBeVisible();
+  expect(calls.filter((c) => c.method === "PUT")).toHaveLength(0);
+
+  await dialog.getByRole("option", { name: /Oxford/ }).first().getByRole("button").click();
+  await expect(dialog.getByRole("list", { name: "Selected towns and cities" }).getByRole("listitem").filter({ hasText: "Oxford" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Save changes" }).click();
+  await expect(dialog).toHaveCount(0);
+  const put = calls.find((c) => c.path === "/me/profile/join" && c.method === "PUT")?.body as { otherPlaces: string[] };
+  expect(put.otherPlaces.some((p) => p.startsWith("Oxford"))).toBe(true);
+});
+
+test("C01: the registration photograph is shown on My LOOP and 'Add photograph' is not offered while it is still loading", async ({ page }) => {
+  await stubApi(page, { colour: "RED", label: "In Contract", endDate: "2027-01-07", cv: true, photo: true });
+  // Hold the photo lookup back: while it is pending the page must not claim there is no photograph.
+  let release: () => void = () => undefined;
+  const gate = new Promise<void>((r) => (release = r));
+  await page.route("**/api/v1/me/photo", async (route) => {
+    if (route.request().method() !== "GET") return route.fallback();
+    await gate;
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ url: "/__e2e/photo.png", expiresInSeconds: 300 }) });
+  });
+  await page.goto("/my-loop");
+  await expect(page.getByRole("region", { name: "Profile summary" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add photograph" })).toHaveCount(0);
+  release();
+  await expect(page.getByRole("img", { name: "Profile photograph" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Change photograph" })).toBeVisible();
 });

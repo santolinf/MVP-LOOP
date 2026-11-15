@@ -7,6 +7,7 @@
 import type { AdminOverviewDtoColours } from './adminOverviewDtoColours';
 import type { AdminOverviewDtoContractors } from './adminOverviewDtoContractors';
 import type { AdminOverviewDtoFounding } from './adminOverviewDtoFounding';
+import type { AdminOverviewDtoGrowth } from './adminOverviewDtoGrowth';
 import type { AdminOverviewDtoQueues } from './adminOverviewDtoQueues';
 
 export interface AdminOverviewDto {
@@ -14,4 +15,5 @@ export interface AdminOverviewDto {
   colours: AdminOverviewDtoColours;
   queues: AdminOverviewDtoQueues;
   founding: AdminOverviewDtoFounding;
+  growth: AdminOverviewDtoGrowth;
 }

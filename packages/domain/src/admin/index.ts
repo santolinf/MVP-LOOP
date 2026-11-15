@@ -139,3 +139,31 @@ export function isIpAllowed(ip: string | undefined, allowList: readonly string[]
   }
   return false;
 }
+
+/**
+ * Admin phone search (ADM-02). Phones are stored as E.164 (+447...), but an operator may paste a national (07...),
+ * 0044 or spaced/punctuated copy of the same number, including a partial one. Returns every substring to match
+ * against the stored value; the original term is always included. Non-phone text yields just the term.
+ */
+export function phoneSearchVariants(term: string): string[] {
+  const raw = term.trim();
+  if (!raw) return [];
+  const out = new Set<string>([raw]);
+  if (!/^[+\d\s().-]+$/.test(raw)) return [...out];
+  const hasPlus = raw.startsWith("+");
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 0) return [...out];
+  let national: string | null = null; // digits after the country code and trunk prefix
+  if (hasPlus || digits.startsWith("00")) {
+    const intl = digits.startsWith("00") ? digits.slice(2) : digits;
+    if (intl.startsWith("44")) national = intl.slice(2).replace(/^0/, "");
+    else if (!"44".startsWith(intl)) return [...out, `+${intl}`];
+    else national = "";
+  } else if (digits.startsWith("0")) {
+    national = digits.slice(1);
+  } else if (digits.startsWith("44")) {
+    national = digits.slice(2).replace(/^0/, "");
+  }
+  if (national !== null) out.add(`+44${national}`);
+  return [...out];
+}
