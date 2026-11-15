@@ -56,6 +56,8 @@ interface Draft {
   otherPlaces: string[];
   londonAreas: string[];
   londonOther: string;
+  /** Text typed in the town search box but not yet chosen from the suggestions (never saved). */
+  pendingPlace?: string;
   locationsConfirmed: boolean;
   remoteUk: Yn;
   clearance: Yn;
@@ -97,6 +99,7 @@ export function preferenceProblems(d: Draft): string[] {
   if (!d.ir35) out.push("Choose your IR35 preference.");
   if (d.umbrella === null) out.push("Tell us whether you currently use an umbrella company.");
   else if (d.umbrella === "yes" && !d.umbrellaProvider.trim()) out.push("Enter your umbrella company name.");
+  if (d.pendingPlace) out.push(`You typed “${d.pendingPlace}” but haven't chosen it. Select it from the matching suggestions (or clear the box) before continuing.`);
   const hasLocation = d.locations.length > 0 || d.otherPlaces.length > 0;
   if ((d.patterns.includes("HYBRID") || d.patterns.includes("ONSITE")) && !hasLocation)
     out.push("Select at least one work location or enter a town/city for Hybrid or On-site work.");
@@ -209,7 +212,7 @@ function Form({
           <Check key={v} label={label} checked={d.locations.includes(v)} onChange={(on) => set("locations", toggle(d.locations, v, on))} />
         ))}
       </OptionGroup>
-      <PlacePicker label="Additional towns or cities (optional)" value={d.otherPlaces} onChange={(v) => set("otherPlaces", v)} />
+      <PlacePicker label="Additional towns or cities (optional)" value={d.otherPlaces} onChange={(v) => set("otherPlaces", v)} onPendingChange={(v) => set("pendingPlace", v)} />
       {d.locations.includes("LONDON") && (
         <>
           <OptionGroup legend="London — which areas would you work in?" help="Select all that apply.">

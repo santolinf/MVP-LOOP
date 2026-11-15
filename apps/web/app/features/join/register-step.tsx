@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getGetMeQueryKey,
+  getGetMyPhotoQueryKey,
   lookupIntroducer,
   setIntroducer,
   updateConsents,
@@ -180,6 +181,8 @@ export function RegisterStep() {
       notes.push("We couldn't save your profile review. Please check it again before you go live.");
     }
     if (!(await uploadPendingPhoto())) notes.push("We couldn't save your profile photo. You can add it again from My LOOP.");
+    // Drop any photo answer cached before the upload finished, so My LOOP never shows "Add photograph" for a saved image (C01).
+    await qc.invalidateQueries({ queryKey: getGetMyPhotoQueryKey() });
     let introducerMissed = false;
     if (form.introduced === "yes" && !(await attachIntroducer(form.introducer))) introducerMissed = true;
     if (form.offers) {

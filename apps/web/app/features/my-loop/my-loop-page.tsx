@@ -14,7 +14,7 @@ import {
 import type { AvailabilityColour } from "@loop/contracts";
 import { Muted } from "../marketing/primitives";
 import { SignInRequired } from "../auth/sign-in-required";
-import { LOCATION_LABELS } from "../join/review-step";
+import { LOCATION_LABELS, LONDON_LABELS } from "../join/review-step";
 import { BTN, BTN_PRIMARY, BTN_SMALL, EYEBROW, PROTO_FONT } from "./desktop-profile-ui";
 import { MyLoopNav } from "./frame";
 import { AvailabilityEditor, ProfileEditor, type ProfileScope } from "./profile-editors";
@@ -33,7 +33,9 @@ const ICONS: Record<AvailabilityColour, string> = { LIME: "✓", ORANGE: "◔", 
 const CARD = "rounded-[10px] border border-[#20485b] border-x-4 border-x-[var(--tone)] bg-[#09283b] p-[18px]";
 const PATTERNS: Record<string, string> = { REMOTE: "Remote", HYBRID: "Hybrid", ONSITE: "On-site" };
 const IR35: Record<string, string> = { INSIDE: "Inside", OUTSIDE: "Outside", EITHER: "Both", UNSURE: "Not sure" };
-const TRAVEL: Record<string, string> = { YES: "Occasional travel", NO: "No travel", DEPENDS: "Travel depends" };
+const TRAVEL: Record<string, string> = { YES: "Occasional travel", NO: "No travel", DEPENDS: "Depends on location and frequency" };
+const fmtDate = (iso: string | null | undefined) =>
+  iso ? new Date(`${iso}T12:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : null;
 const IOS_URL = import.meta.env.VITE_IOS_APP_URL || undefined;
 const ANDROID_URL = import.meta.env.VITE_ANDROID_APP_URL || undefined;
 const rate = (p: number | null | undefined) => (p ? `£${Math.round(p / 100)}` : null);
@@ -130,6 +132,7 @@ export function MyLoopPage() {
   const latestCv = cvVersions.reduce<(typeof cvVersions)[number] | null>((a, v) => (!a || v.versionNumber > a.versionNumber ? v : a), null);
 
   const photoUrl = photo.data?.status === 200 && !photoBroken ? photo.data.data.url : null;
+  const photoLoading = photo.isPending; // do not offer "Add photograph" until we know there is none (C01)
   const fullName = [me.firstName, me.lastName].filter(Boolean).join(" ");
   const initials = [me.firstName, me.lastName].map((n) => n?.[0] ?? "").join("").toUpperCase();
   const title = j?.title ?? headline ?? "UK IT contractor";
@@ -140,11 +143,24 @@ export function MyLoopPage() {
     ? [...j.workLocations.map((l) => LOCATION_LABELS[l] ?? l), ...((j.otherPlaces ?? []).length > 0 ? (j.otherPlaces ?? []) : j.otherLocations ? [j.otherLocations] : [])].filter(Boolean)
     : [];
   const patterns = j?.workPatterns.map((p) => PATTERNS[p] ?? p).join(", ") ?? "";
-  const roles = [j?.title, ...(j?.preferredRoles ?? [])].filter((r, i, all): r is string => !!r && all.indexOf(r) === i).slice(0, 3);
+  // Preferred roles are shown as saved, independent of the professional title (C03).
+  const roles = (j?.preferredRoles ?? []).filter((r, i, all) => !!r && all.indexOf(r) === i);
   const target = rate(j?.targetDayRatePence);
   const min = rate(j?.minDayRatePence);
   const ir35 = d?.ir35Status ? IR35[d.ir35Status] : null;
   const end = me.contractEndDate ? new Date(`${me.contractEndDate}T12:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : null;
+  // Status-specific timing (C05, C06): Available from / Expected end / Earliest start, never a contract-end placeholder for the wrong status.
+  const availableFrom = fmtDate(me.availableFrom);
+  const earliestStart = fmtDate(j?.earliestStartDate);
+  const timing =
+    me.employment === "PERMANENT"
+      ? { note: earliestStart ? `Earliest start: ${earliestStart}` : "Earliest start not supplied", date: earliestStart }
+      : me.employment === "BETWEEN_CONTRACTS"
+        ? { note: availableFrom ? `Available from ${availableFrom}` : "Available now", date: availableFrom }
+        : { note: end ? `Expected end: ${end}` : "No end date supplied", date: end };
+  const londonAreas = (j?.londonAreas ?? []).map((a) => LONDON_LABELS[a] ?? a);
+  const townList = (j?.otherPlaces ?? []).length > 0 ? (j?.otherPlaces ?? []) : j?.otherLocations ? [j.otherLocations] : [];
+  const regionList = (j?.workLocations ?? []).map((l) => LOCATION_LABELS[l] ?? l);
   const clearance = d?.securityClearance === "YES" ? "Security cleared" : d?.securityClearance === "NO" ? "Not security cleared" : null;
   const status = me.paused ? "Your profile is paused." : me.live ? "Your profile is LIVE." : "Your profile is not LIVE yet.";
 
@@ -230,7 +246,7 @@ export function MyLoopPage() {
           </section>
 
           <div className="mt-3.5 grid gap-3.5 md:grid-cols-3" aria-label="Key facts" role="group">
-            <Fact label="Availability" value={me.availability.label} note={end ? `Expected end: ${end}` : "No end date supplied"} />
+            <Fact label="Availability" value={me.availability.label} note={timing.note} />
             <Fact
               label="Target day rate"
               value={target ? `${target} / day` : "Not set"}
@@ -257,12 +273,13 @@ export function MyLoopPage() {
               <Card title="Current situation">
                 <p className="mb-2 text-[15px] text-[#d5e5ec]">
                   {me.availability.label}
-                  {end ? ` · ${end}` : ""}
+                  {timing.date ? ` · ${timing.date}` : ""}
                 </p>
                 <p className="mb-2 text-[15px] text-[#d5e5ec]">
                   Umbrella: {j?.usesUmbrella ? (j.umbrellaProvider ?? "Name to confirm") : j?.usesUmbrella === false ? "No" : "Not provided"}
                 </p>
                 <p className="mb-2 text-[15px] text-[#d5e5ec]">Notice: {j?.noticePeriodText || "Not applicable"}</p>
+                {me.employment === "PERMANENT" && <p className="mb-2 text-[15px] text-[#d5e5ec]">Earliest possible start: {earliestStart ?? "Not provided"}</p>}
                 <p className="mb-3 text-xs text-[#9fb1b8]">Expected end dates never automatically mark you Available Now.</p>
                 <button type="button" onClick={() => setEditing("availability")} className={`${BTN_PRIMARY} ${BTN_SMALL}`}>
                   Update availability
@@ -272,10 +289,20 @@ export function MyLoopPage() {
 
             <div className="mt-3.5 grid gap-3.5">
               <Card title="Locations, work pattern & travel">
-                <p className="mb-2 text-[15px] text-[#d5e5ec]">
-                  Locations: {regions.join(", ") || "Not provided"} · Patterns: {patterns || "Not provided"} · Hybrid office days:{" "}
-                  {j?.hybridDays ? `${j.hybridDays} per week` : "Flexible"} · Travel: {j?.occasionalTravel ? TRAVEL[j.occasionalTravel] : "Not provided"}
-                </p>
+                <Line label="Regions" value={regionList.join(", ")} />
+                <Line label="Towns and cities" value={townList.join(", ")} />
+                {regionList.includes("London") && (
+                  <>
+                    <Line label="London areas" value={londonAreas.join(", ")} />
+                    {j?.londonOther && <Line label="Specific London areas" value={j.londonOther} />}
+                  </>
+                )}
+                <Line label="Fully remote anywhere in the UK" value={j?.remoteUk === true ? "Yes" : j?.remoteUk === false ? "No" : null} />
+                <Line label="Patterns" value={patterns} />
+                {j?.workPatterns.includes("HYBRID") && (
+                  <Line label="Hybrid attendance" value={j.hybridDays ? `Maximum ${j.hybridDays} office day${j.hybridDays === 1 ? "" : "s"}/week` : "Flexible"} />
+                )}
+                <Line label="Travel" value={j?.occasionalTravel ? TRAVEL[j.occasionalTravel] : null} />
                 {j?.location && <Line label="Based in" value={j.location} />}
                 <button type="button" onClick={() => setEditing("preferences")} className={`${BTN} ${BTN_SMALL}`}>
                   Edit locations &amp; preferences
@@ -305,8 +332,8 @@ export function MyLoopPage() {
                   </p>
                 )}
                 <p className="mt-2 text-xs text-[#9fb1b8]">A replacement CV is compared with what you have confirmed; nothing is overwritten automatically.</p>
-                <button type="button" onClick={() => setEditing("photo")} className={`${BTN} ${BTN_SMALL} mt-3`}>
-                  {photoUrl ? "Change photograph" : "Add photograph"}
+                <button type="button" disabled={photoLoading} onClick={() => setEditing("photo")} className={`${BTN} ${BTN_SMALL} mt-3`}>
+                  {photoLoading ? "Photograph…" : photoUrl ? "Change photograph" : "Add photograph"}
                 </button>
               </Card>
 

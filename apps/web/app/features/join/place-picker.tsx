@@ -7,15 +7,32 @@ import { INPUT } from "./form-bits";
  * A place that is not in the list can still be added by typing it and pressing Enter, so nothing a contractor already
  * saved is lost.
  */
-export function PlacePicker({ label, value, onChange, max = 20 }: { label: string; value: string[]; onChange: (v: string[]) => void; max?: number }) {
+export function PlacePicker({
+  label,
+  value,
+  onChange,
+  onPendingChange,
+  max = 20,
+}: {
+  label: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+  /** Reports text typed in the search box that has not been chosen yet, so the form can refuse to drop it silently (C02). */
+  onPendingChange?: (pending: string) => void;
+  max?: number;
+}) {
   const id = useId();
   const [q, setQ] = useState("");
   const options = searchPlaces(q, value);
+  const updateQ = (next: string) => {
+    setQ(next);
+    onPendingChange?.(next.trim());
+  };
   const add = (p: string) => {
     const name = p.trim();
     if (!name || value.length >= max || value.some((v) => v.toLowerCase() === name.toLowerCase())) return;
     onChange([...value, name]);
-    setQ("");
+    updateQ("");
   };
   return (
     <div className="grid gap-2">
@@ -40,7 +57,7 @@ export function PlacePicker({ label, value, onChange, max = 20 }: { label: strin
         placeholder="Search for a town or city, e.g. Edinburgh"
         autoComplete="off"
         maxLength={60}
-        onChange={(e) => setQ(e.target.value)}
+        onChange={(e) => updateQ(e.target.value)}
         onKeyDown={(e) => {
           if (e.key !== "Enter") return;
           e.preventDefault();
