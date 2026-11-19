@@ -30,6 +30,7 @@ import type {
   CvPresignRequestDto,
   CvPresignResponseDto,
   CvUploadStatusDto,
+  DownloadCvUploadParams,
   EligibilityRequestDto,
   EligibilityResultDto,
   ExtractedFieldDto,
@@ -550,20 +551,29 @@ export type downloadCvUploadResponseSuccess = (downloadCvUploadResponse200) & {
 
 export type downloadCvUploadResponse = (downloadCvUploadResponseSuccess)
 
-export const getDownloadCvUploadUrl = (id: string,) => {
+export const getDownloadCvUploadUrl = (id: string,
+    params?: DownloadCvUploadParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/v1/cv/uploads/${id}/download`
+  return stringifiedParams.length > 0 ? `/api/v1/cv/uploads/${id}/download?${stringifiedParams}` : `/api/v1/cv/uploads/${id}/download`
 }
 
 /**
  * @summary Short-lived presigned download URL
  */
-export const downloadCvUpload = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<downloadCvUploadResponse> => {
+export const downloadCvUpload = async (id: string,
+    params?: DownloadCvUploadParams, options?: Parameters<typeof customFetch>[1]): Promise<downloadCvUploadResponse> => {
 
-  return customFetch<downloadCvUploadResponse>(getDownloadCvUploadUrl(id),
+  return customFetch<downloadCvUploadResponse>(getDownloadCvUploadUrl(id,params),
   {
     ...options,
     method: 'GET'
@@ -576,23 +586,25 @@ export const downloadCvUpload = async (id: string, options?: Parameters<typeof c
 
 
 
-export const getDownloadCvUploadQueryKey = (id: string,) => {
+export const getDownloadCvUploadQueryKey = (id: string,
+    params?: DownloadCvUploadParams,) => {
     return [
-    `/api/v1/cv/uploads/${id}/download`
+    `/api/v1/cv/uploads/${id}/download`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getDownloadCvUploadQueryOptions = <TData = Awaited<ReturnType<typeof downloadCvUpload>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCvUpload>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+export const getDownloadCvUploadQueryOptions = <TData = Awaited<ReturnType<typeof downloadCvUpload>>, TError = unknown>(id: string,
+    params?: DownloadCvUploadParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCvUpload>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getDownloadCvUploadQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getDownloadCvUploadQueryKey(id,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadCvUpload>>> = ({ signal }) => downloadCvUpload(id, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadCvUpload>>> = ({ signal }) => downloadCvUpload(id,params, { signal, ...requestOptions });
 
 
 
@@ -606,7 +618,8 @@ export type DownloadCvUploadQueryError = unknown
 
 
 export function useDownloadCvUpload<TData = Awaited<ReturnType<typeof downloadCvUpload>>, TError = unknown>(
- id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCvUpload>>, TError, TData>> & Pick<
+ id: string,
+    params: undefined |  DownloadCvUploadParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCvUpload>>, TError, TData>> & Pick<
         DefinedInitialDataOptions<
           Awaited<ReturnType<typeof downloadCvUpload>>,
           TError,
@@ -616,7 +629,8 @@ export function useDownloadCvUpload<TData = Awaited<ReturnType<typeof downloadCv
  , queryClient?: QueryClient
   ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useDownloadCvUpload<TData = Awaited<ReturnType<typeof downloadCvUpload>>, TError = unknown>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCvUpload>>, TError, TData>> & Pick<
+ id: string,
+    params?: DownloadCvUploadParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCvUpload>>, TError, TData>> & Pick<
         UndefinedInitialDataOptions<
           Awaited<ReturnType<typeof downloadCvUpload>>,
           TError,
@@ -626,7 +640,8 @@ export function useDownloadCvUpload<TData = Awaited<ReturnType<typeof downloadCv
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 export function useDownloadCvUpload<TData = Awaited<ReturnType<typeof downloadCvUpload>>, TError = unknown>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCvUpload>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ id: string,
+    params?: DownloadCvUploadParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCvUpload>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
   ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
 /**
@@ -634,11 +649,12 @@ export function useDownloadCvUpload<TData = Awaited<ReturnType<typeof downloadCv
  */
 
 export function useDownloadCvUpload<TData = Awaited<ReturnType<typeof downloadCvUpload>>, TError = unknown>(
- id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCvUpload>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ id: string,
+    params?: DownloadCvUploadParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof downloadCvUpload>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
  , queryClient?: QueryClient
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getDownloadCvUploadQueryOptions(id,options)
+  const queryOptions = getDownloadCvUploadQueryOptions(id,params,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

@@ -12,4 +12,5 @@ export interface CvDownloadDto {
      * @maximum 9007199254740991
      */
   expiresInSeconds: number;
+  inline: boolean;
 }

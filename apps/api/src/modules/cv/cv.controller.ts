@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Headers, HttpCode, Inject, Param, ParseUUIDPipe, Post, Req } from "@nestjs/common";
-import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Get, Headers, HttpCode, Inject, Param, ParseUUIDPipe, Post, Query, Req } from "@nestjs/common";
+import { ApiBody, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from "@nestjs/swagger";
 import { createZodDto } from "nestjs-zod";
 import {
   CvDownloadSchema,
@@ -102,13 +102,15 @@ export class CvController {
   @Get("cv/uploads/:id/download")
   @ApiParam({ name: "id", type: String })
   @ApiOperation({ operationId: "downloadCvUpload", summary: "Short-lived presigned download URL" })
+  @ApiQuery({ name: "disposition", required: false, enum: ["attachment", "inline"], description: "inline opens a PDF in the browser; anything else downloads" })
   @ApiOkResponse({ type: CvDownloadDto })
   async download(
     @Param("id", new ParseUUIDPipe()) id: string,
     @Req() req: HttpReq,
     @Headers("x-draft-token") draftToken?: string,
+    @Query("disposition") disposition?: string,
   ): Promise<CvDownloadDto> {
-    return this.cv.download(await this.owner(req, draftToken), id);
+    return this.cv.download(await this.owner(req, draftToken), id, disposition === "inline");
   }
 
   private async owner(req: HttpReq, draftToken: string | undefined): Promise<CvOwner> {

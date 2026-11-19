@@ -14,6 +14,17 @@ provider. Set the matching variables in `.env.prod`. Personal data must stay in 
 | `CLAMAV_URL` | https URL of the scanner, no trailing slash. |
 | `CLAMAV_AUTH_TOKEN` | At least 32 chars (`openssl rand -hex 32`). The scanner's `AUTH_TOKEN` must be the same value. |
 
+## Browser access to the bucket (CORS and CSP)
+
+Browsers upload and download CVs straight to presigned URLs on the bucket's origin, not through the API. Two things
+must allow that:
+
+- **The app's Content-Security-Policy** (`connect-src`). The API adds the bucket origin itself (taken from
+  `S3_PUBLIC_ENDPOINT`, `S3_ENDPOINT`, or the provider's host), so no setting is needed.
+- **The bucket's CORS policy.** Allow `PUT` and `GET` (and `HEAD`) from your app origin (`APP_BASE_URL`), with the
+  `Content-Type` request header allowed. MinIO allows this by default; AWS S3 and Google Cloud Storage need it set
+  explicitly, and an upload then fails in the browser with no server-side error if it is missing.
+
 ## Scanner image (any provider)
 
 `infra/clamav-scanner` builds the reference scanner. It needs about 2 GB of memory, one always-warm instance so clamd

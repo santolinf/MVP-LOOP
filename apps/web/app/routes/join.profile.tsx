@@ -1,9 +1,9 @@
-import { ProfileReview } from "../features/profile-review/profile-review";
+import { ProfileStep } from "../features/join/profile-step";
 
 export function meta() {
-  return [{ title: "Review your profile — LOOP" }];
+  return [{ title: "Review your CV profile — LOOP" }];
 }
 
 export default function JoinProfile() {
-  return <ProfileReview />;
+  return <ProfileStep />;
 }

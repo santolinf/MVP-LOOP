@@ -15,4 +15,14 @@ export interface ProfileDetailsDto {
   ir35Status: ProfileDetailsDtoIr35Status;
   /** @nullable */
   workPattern: ProfileDetailsDtoWorkPattern;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  summary?: string | null;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  qualifications?: string | null;
 }

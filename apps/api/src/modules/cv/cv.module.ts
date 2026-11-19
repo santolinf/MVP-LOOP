@@ -16,6 +16,6 @@ import { CV_ENV, StorageService } from "./storage.service.js";
 @Module({
   controllers: [CvController, CvVersionsController],
   providers: [{ provide: CV_ENV, useFactory: () => loadEnv() }, StorageService, ClamavService, DraftService, EligibilityService, CvService, CvVersionsService, AuditService, { provide: JOB_QUEUE, useClass: JobQueueService }],
-  exports: [DraftService, JOB_QUEUE, StorageService],
+  exports: [DraftService, JOB_QUEUE, StorageService, ClamavService],
 })
 export class CvModule {}

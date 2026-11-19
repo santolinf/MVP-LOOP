@@ -22,6 +22,8 @@ export class DetailsService {
       securityClearance: row.securityClearance,
       ir35Status: row.ir35Status,
       workPattern: row.workPattern,
+      summary: row.summary,
+      qualifications: row.qualifications,
     });
     return parsed.success ? parsed.data : EMPTY;
   }

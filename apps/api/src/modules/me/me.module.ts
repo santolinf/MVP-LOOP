@@ -6,15 +6,17 @@ import { MessagingModule } from "../messaging/messaging.module.js";
 import { ConfirmLinkController } from "./confirm-link.controller.js";
 import { DetailsService } from "./details.service.js";
 import { GoLiveService } from "./go-live.service.js";
+import { JoinProfileService } from "./join-profile.service.js";
 import { ProfileService } from "./profile.service.js";
 import { MeController } from "./me.controller.js";
 import { MeService } from "./me.service.js";
+import { PhotoService } from "./photo.service.js";
 import { PreferencesService } from "./preferences.service.js";
 
 @Module({
   imports: [ConsentModule, MessagingModule, ReferralsModule],
   controllers: [MeController, ConfirmLinkController],
-  providers: [MeService, PreferencesService, GoLiveService, ProfileService, DetailsService, AuditService],
+  providers: [MeService, PreferencesService, GoLiveService, ProfileService, DetailsService, JoinProfileService, PhotoService, AuditService],
   exports: [MeService],
 })
 export class MeModule {}

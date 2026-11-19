@@ -80,3 +80,22 @@ describe("isIpAllowed", () => {
     expect(isIpAllowed(ip, list)).toBe(expected);
   });
 });
+
+import { phoneSearchVariants } from "./index.js";
+
+describe("phoneSearchVariants (ADM-02)", () => {
+  it.each([
+    ["+447700900015", ["+447700900015"]],
+    ["07700900015", ["07700900015", "+447700900015"]],
+    ["07700 900015", ["07700 900015", "+447700900015"]],
+    ["0044 7700 900015", ["0044 7700 900015", "+447700900015"]],
+    ["+44 (0)7700 900015", ["+44 (0)7700 900015", "+447700900015"]],
+    ["07700", ["07700", "+447700"]],
+    ["447700900015", ["447700900015", "+447700900015"]],
+    ["Avery", ["Avery"]],
+    ["avery@example.com", ["avery@example.com"]],
+    ["", []],
+  ])("%s", (input, expected) => {
+    expect(phoneSearchVariants(input).sort()).toEqual([...expected].sort());
+  });
+});

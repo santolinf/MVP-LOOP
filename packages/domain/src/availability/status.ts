@@ -11,8 +11,8 @@ import { deriveFreshness, isFreshnessGrey, type FreshnessState, type FreshnessTh
 
 export const AVAILABILITY_LABELS: Record<AvailabilityColour, string> = {
   LIME: "Available Now",
-  ORANGE: "Available soon",
-  RED: "Unavailable",
+  ORANGE: "Available Soon",
+  RED: "In Contract",
   BLUE: "Permanently Employed",
   GREY: "Unconfirmed",
 };

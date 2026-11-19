@@ -2,7 +2,7 @@ import { ConflictException, Inject, Injectable, NotFoundException } from "@nestj
 import { prisma } from "@loop/db";
 import type { CvChangeList, CvVersionList, ResolveCvChangeRequest } from "@loop/contracts";
 import { AuditService } from "../../common/audit.service.js";
-import { purgeCvData } from "./cv-changes.js";
+import { purgeCvData, recordCvVersion } from "./cv-changes.js";
 import { StorageService } from "./storage.service.js";
 
 /**
@@ -20,6 +20,7 @@ export class CvVersionsService {
   ) {}
 
   async versions(contractorId: string): Promise<CvVersionList> {
+    await this.backfillAdoptedUploads(contractorId);
     const rows = await prisma.cvVersion.findMany({ where: { contractorId }, orderBy: { versionNumber: "desc" } });
     const pending = await prisma.cvChange.groupBy({ by: ["cvVersionId"], where: { contractorId, status: "PENDING" }, _count: { _all: true } });
     const counts = new Map(pending.map((p) => [p.cvVersionId, p._count._all]));
@@ -32,6 +33,21 @@ export class CvVersionsService {
         pendingChanges: counts.get(r.id) ?? 0,
       })),
     };
+  }
+
+  /**
+   * A CV uploaded during the join journey is an anonymous draft upload that is adopted at registration, and only
+   * signed-in uploads get a version, so that CV had none and My LOOP showed "No CV on file". Gives every READY upload
+   * without a version its place, oldest first (so the first CV is version 1, which proposes no changes). Idempotent.
+   */
+  private async backfillAdoptedUploads(contractorId: string): Promise<void> {
+    const have = await prisma.cvVersion.findMany({ where: { contractorId }, select: { cvUploadId: true } });
+    const missing = await prisma.cvUpload.findMany({
+      where: { contractorId, status: "READY", id: { notIn: have.map((v) => v.cvUploadId) } },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    for (const u of missing) await recordCvVersion(contractorId, u.id);
   }
 
   async pendingChanges(contractorId: string): Promise<CvChangeList> {

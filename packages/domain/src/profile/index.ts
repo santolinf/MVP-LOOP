@@ -1,3 +1,5 @@
+export * from "./join-profile.js";
+
 // Phase 7 app-spec profile fields. Pure: no I/O.
 export const SECURITY_CLEARANCE = ["YES", "NO"] as const;
 export const IR35_STATUS = ["INSIDE", "OUTSIDE", "EITHER", "UNSURE"] as const;
@@ -18,3 +20,4 @@ export function validateAssignmentDates(r: DateRange, today: string): string | n
   if (r.endDate !== null && r.endDate < r.startDate) return "endDate: cannot be before the start date";
   return null;
 }
+export * from "./work-match.js";

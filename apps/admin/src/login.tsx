@@ -8,7 +8,7 @@ import {
   useAdminVerifyOtp,
 } from "@loop/api-client";
 import { Notice } from "./lib.js";
-import { QrCode } from "./qr-code.js";
+import { QrCode } from "@loop/ui";
 
 type Step = "EMAIL" | "CODE" | "MFA_ENROL" | "MFA_REQUIRED";
 

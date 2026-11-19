@@ -8,6 +8,8 @@ const ready: GoLiveInput = {
   eligibilityDeclared: true,
   availabilityConfirmed: true,
   confirmedProfileFields: 1,
+  profileComplete: true,
+  preferencesComplete: true,
   activeConsents: new Set<ConsentPurpose>(["PROFILE_VISIBILITY", "OPERATIONAL_EMAIL"]),
 };
 
@@ -20,6 +22,8 @@ describe("decideGoLive", () => {
     ["no eligibility", { eligibilityDeclared: false }, ["ELIGIBILITY_MISSING"]],
     ["availability not confirmed", { availabilityConfirmed: false }, ["AVAILABILITY_NOT_CONFIRMED"]],
     ["no confirmed profile field", { confirmedProfileFields: 0 }, ["PROFILE_FIELD_MISSING"]],
+    ["profile incomplete", { profileComplete: false }, ["PROFILE_INCOMPLETE"]],
+    ["preferences incomplete", { preferencesComplete: false }, ["PREFERENCES_INCOMPLETE"]],
     ["no visibility consent", { activeConsents: new Set<ConsentPurpose>(["OPERATIONAL_EMAIL"]) }, ["CONSENT_PROFILE_VISIBILITY"]],
     ["no operational consent", { activeConsents: new Set<ConsentPurpose>(["PROFILE_VISIBILITY"]) }, ["CONSENT_OPERATIONAL_EMAIL"]],
     [
@@ -38,6 +42,8 @@ describe("decideGoLive", () => {
       eligibilityDeclared: false,
       availabilityConfirmed: false,
       confirmedProfileFields: 0,
+      profileComplete: false,
+      preferencesComplete: false,
       activeConsents: new Set(),
     });
     expect(d).toEqual({
@@ -47,6 +53,8 @@ describe("decideGoLive", () => {
         "ELIGIBILITY_MISSING",
         "AVAILABILITY_NOT_CONFIRMED",
         "PROFILE_FIELD_MISSING",
+        "PROFILE_INCOMPLETE",
+        "PREFERENCES_INCOMPLETE",
         "CONSENT_PROFILE_VISIBILITY",
         "CONSENT_OPERATIONAL_EMAIL",
       ],

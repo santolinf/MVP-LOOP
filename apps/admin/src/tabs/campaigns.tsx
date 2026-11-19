@@ -20,13 +20,13 @@ type Colour = "LIME" | "ORANGE" | "RED" | "BLUE" | "GREY";
 const SITUATIONS: { id: Situation; label: string }[] = [
   { id: "BETWEEN_CONTRACTS", label: "Between contracts" },
   { id: "CONTRACTING", label: "Contracting" },
-  { id: "PERMANENT", label: "Permanent" },
+  { id: "PERMANENT", label: "Permanently Employed" },
 ];
 const COLOURS: { id: Colour; label: string }[] = [
   { id: "LIME", label: "Available now" },
-  { id: "ORANGE", label: "Ending soon" },
-  { id: "RED", label: "Unavailable" },
-  { id: "BLUE", label: "Permanent" },
+  { id: "ORANGE", label: "Available Soon" },
+  { id: "RED", label: "In Contract" },
+  { id: "BLUE", label: "Permanently Employed" },
   { id: "GREY", label: "Unconfirmed" },
 ];
 const SKIP_LABEL: Record<string, string> = {

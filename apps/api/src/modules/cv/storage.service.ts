@@ -34,6 +34,14 @@ export class StorageService {
     this.presigner = new S3Client({ ...config, endpoint: env.S3_PUBLIC_ENDPOINT ?? env.S3_ENDPOINT });
   }
 
+  /**
+   * The origin browsers use for presigned URLs (S3_PUBLIC_ENDPOINT, S3_ENDPOINT, or the provider's own host). The
+   * Content-Security-Policy must allow it in connect-src, or the browser blocks the direct upload.
+   */
+  async browserOrigin(): Promise<string> {
+    return new URL(await this.presignGet("csp-probe", "probe", 60)).origin;
+  }
+
   /** Presigned PUT. The content type is signed, so the client must send exactly the declared one. */
   presignPut(key: string, contentType: string, expiresInSeconds: number): Promise<string> {
     return getSignedUrl(this.presigner, new PutObjectCommand({ Bucket: this.bucket, Key: key, ContentType: contentType }), {
@@ -53,6 +61,32 @@ export class StorageService {
         ResponseContentDisposition: `attachment; filename="${filename.replace(/[^\w.-]/g, "_")}"`,
         ResponseContentType: "application/octet-stream",
       }),
+      { expiresIn: expiresInSeconds },
+    );
+  }
+
+  /** Presigned GET that shows a verified PDF in the browser. Only for PDFs: other types stay on {@link presignGet}. */
+  presignInlinePdf(key: string, filename: string, expiresInSeconds: number): Promise<string> {
+    return getSignedUrl(
+      this.presigner,
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ResponseContentDisposition: `inline; filename="${filename.replace(/[^\w.-]/g, "_")}"`,
+        ResponseContentType: "application/pdf",
+      }),
+      { expiresIn: expiresInSeconds },
+    );
+  }
+
+  /**
+   * Presigned GET for showing a verified raster image inline (the profile photograph). Unlike {@link presignGet} it
+   * serves the real image type so an <img> can render it; callers must only pass a type they have verified (never SVG).
+   */
+  presignInlineImage(key: string, contentType: string, expiresInSeconds: number): Promise<string> {
+    return getSignedUrl(
+      this.presigner,
+      new GetObjectCommand({ Bucket: this.bucket, Key: key, ResponseContentDisposition: "inline", ResponseContentType: contentType }),
       { expiresIn: expiresInSeconds },
     );
   }

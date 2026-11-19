@@ -28,7 +28,9 @@ import type {
   AdminConfirmedMeDto,
   AdminContractorDetailDto,
   AdminContractorListDto,
+  AdminCvLinkDto,
   AdminListContractorsParams,
+  AdminPhotoLinkDto,
   AdminSendMessageDto,
   AdminSendMessageResultDto
 } from '../model';
@@ -263,6 +265,224 @@ export function useAdminGetContractor<TData = Awaited<ReturnType<typeof adminGet
  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getAdminGetContractorQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type adminGetContractorCvResponse200 = {
+  data: AdminCvLinkDto
+  status: 200
+}
+
+export type adminGetContractorCvResponseSuccess = (adminGetContractorCvResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminGetContractorCvResponse = (adminGetContractorCvResponseSuccess)
+
+export const getAdminGetContractorCvUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/contractors/${id}/cv`
+}
+
+/**
+ * @summary Short-lived link to the contractor's current CV
+ */
+export const adminGetContractorCv = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<adminGetContractorCvResponse> => {
+
+  return customFetch<adminGetContractorCvResponse>(getAdminGetContractorCvUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetContractorCvQueryKey = (id: string,) => {
+    return [
+    `/api/v1/admin/contractors/${id}/cv`
+    ] as const;
+    }
+
+
+export const getAdminGetContractorCvQueryOptions = <TData = Awaited<ReturnType<typeof adminGetContractorCv>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminGetContractorCv>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetContractorCvQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetContractorCv>>> = ({ signal }) => adminGetContractorCv(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetContractorCv>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AdminGetContractorCvQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetContractorCv>>>
+export type AdminGetContractorCvQueryError = unknown
+
+
+export function useAdminGetContractorCv<TData = Awaited<ReturnType<typeof adminGetContractorCv>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminGetContractorCv>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminGetContractorCv>>,
+          TError,
+          Awaited<ReturnType<typeof adminGetContractorCv>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAdminGetContractorCv<TData = Awaited<ReturnType<typeof adminGetContractorCv>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminGetContractorCv>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminGetContractorCv>>,
+          TError,
+          Awaited<ReturnType<typeof adminGetContractorCv>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAdminGetContractorCv<TData = Awaited<ReturnType<typeof adminGetContractorCv>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminGetContractorCv>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Short-lived link to the contractor's current CV
+ */
+
+export function useAdminGetContractorCv<TData = Awaited<ReturnType<typeof adminGetContractorCv>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminGetContractorCv>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAdminGetContractorCvQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type adminGetContractorPhotoResponse200 = {
+  data: AdminPhotoLinkDto
+  status: 200
+}
+
+export type adminGetContractorPhotoResponseSuccess = (adminGetContractorPhotoResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminGetContractorPhotoResponse = (adminGetContractorPhotoResponseSuccess)
+
+export const getAdminGetContractorPhotoUrl = (id: string,) => {
+
+
+
+
+  return `/api/v1/admin/contractors/${id}/photo`
+}
+
+export const adminGetContractorPhoto = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<adminGetContractorPhotoResponse> => {
+
+  return customFetch<adminGetContractorPhotoResponse>(getAdminGetContractorPhotoUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetContractorPhotoQueryKey = (id: string,) => {
+    return [
+    `/api/v1/admin/contractors/${id}/photo`
+    ] as const;
+    }
+
+
+export const getAdminGetContractorPhotoQueryOptions = <TData = Awaited<ReturnType<typeof adminGetContractorPhoto>>, TError = unknown>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminGetContractorPhoto>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetContractorPhotoQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetContractorPhoto>>> = ({ signal }) => adminGetContractorPhoto(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetContractorPhoto>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type AdminGetContractorPhotoQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetContractorPhoto>>>
+export type AdminGetContractorPhotoQueryError = unknown
+
+
+export function useAdminGetContractorPhoto<TData = Awaited<ReturnType<typeof adminGetContractorPhoto>>, TError = unknown>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminGetContractorPhoto>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminGetContractorPhoto>>,
+          TError,
+          Awaited<ReturnType<typeof adminGetContractorPhoto>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAdminGetContractorPhoto<TData = Awaited<ReturnType<typeof adminGetContractorPhoto>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminGetContractorPhoto>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminGetContractorPhoto>>,
+          TError,
+          Awaited<ReturnType<typeof adminGetContractorPhoto>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useAdminGetContractorPhoto<TData = Awaited<ReturnType<typeof adminGetContractorPhoto>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminGetContractorPhoto>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useAdminGetContractorPhoto<TData = Awaited<ReturnType<typeof adminGetContractorPhoto>>, TError = unknown>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof adminGetContractorPhoto>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getAdminGetContractorPhotoQueryOptions(id,options)
 
   const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

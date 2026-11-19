@@ -9,11 +9,13 @@ const tx = vi.hoisted(() => ({
 const db = vi.hoisted(() => ({
   cvChange: { findFirst: vi.fn(), findMany: vi.fn(), groupBy: vi.fn() },
   cvVersion: { findMany: vi.fn() },
+  cvUpload: { findMany: vi.fn() },
   $transaction: vi.fn(),
 }));
 vi.mock("@loop/db", () => ({ prisma: db }));
 const purge = vi.hoisted(() => vi.fn(async () => 2));
-vi.mock("../cv-changes.js", () => ({ purgeCvData: purge }));
+const record = vi.hoisted(() => vi.fn(async () => ({ id: "v1", versionNumber: 1 })));
+vi.mock("../cv-changes.js", () => ({ purgeCvData: purge, recordCvVersion: record }));
 
 const { CvVersionsService } = await import("../cv-versions.service.js");
 const audit = { record: vi.fn() };
@@ -41,6 +43,26 @@ beforeEach(() => {
   tx.cvChange.updateMany.mockResolvedValue({ count: 1 });
   tx.confirmedProfileField.updateMany.mockResolvedValue({ count: 1 });
   db.cvChange.findMany.mockResolvedValue([]);
+});
+
+describe("CvVersionsService.versions", () => {
+  beforeEach(() => db.cvChange.groupBy.mockResolvedValue([]));
+  it("gives a READY upload that has no version its place (the CV uploaded while joining), oldest first, before listing", async () => {
+    db.cvVersion.findMany.mockResolvedValueOnce([{ cvUploadId: "old" }]).mockResolvedValueOnce([]);
+    db.cvUpload.findMany.mockResolvedValue([{ id: "joined" }, { id: "later" }]);
+    await svc.versions("c1");
+    expect(db.cvUpload.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { contractorId: "c1", status: "READY", id: { notIn: ["old"] } }, orderBy: { createdAt: "asc" } }),
+    );
+    expect(record.mock.calls).toEqual([["c1", "joined"], ["c1", "later"]]);
+  });
+
+  it("records nothing when every READY upload already has a version", async () => {
+    db.cvVersion.findMany.mockResolvedValue([]);
+    db.cvUpload.findMany.mockResolvedValue([]);
+    expect(await svc.versions("c1")).toEqual({ items: [] });
+    expect(record).not.toHaveBeenCalled();
+  });
 });
 
 describe("CvVersionsService.resolve", () => {

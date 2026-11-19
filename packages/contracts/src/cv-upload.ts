@@ -36,5 +36,7 @@ export type CvUploadStatus = z.infer<typeof CvUploadStatusSchema>;
 export const CvDownloadSchema = z.object({
   url: z.string(),
   expiresInSeconds: z.number().int(),
+  /** True when the URL opens in the browser (a PDF requested inline); false when it will download. Additive, so older clients are unaffected. */
+  inline: z.boolean(),
 });
 export type CvDownload = z.infer<typeof CvDownloadSchema>;

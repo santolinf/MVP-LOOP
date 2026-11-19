@@ -59,9 +59,10 @@ export class PrivacyService {
     const contractor = await prisma.contractor.findUnique({ where: { id: contractorId } });
     if (!contractor) throw new NotFoundException("Contractor not found");
     const where = { contractorId };
-    const [preferences, details, fields, assignments, consents, events, uploads, versions, changes, eligibility, referrals, rewards] = await Promise.all([
+    const [preferences, details, joinProfile, fields, assignments, consents, events, uploads, versions, changes, eligibility, referrals, rewards] = await Promise.all([
       prisma.contractorPreferences.findUnique({ where }),
       prisma.contractorProfileDetails.findUnique({ where }),
+      prisma.contractorJoinProfile.findUnique({ where }),
       prisma.confirmedProfileField.findMany({ where, orderBy: { createdAt: "asc" } }),
       prisma.assignment.findMany({ where, orderBy: { startDate: "asc" } }),
       prisma.consentRecord.findMany({ where, orderBy: { grantedAt: "asc" } }),
@@ -96,6 +97,7 @@ export class PrivacyService {
         },
         preferences,
         details,
+        joinProfile,
         profileFields: fields.map((f) => ({ key: f.key, value: f.value, edited: f.edited, createdAt: iso(f.createdAt) })),
         assignments,
         consents: consents.map((c) => ({ purpose: c.purpose, wordingVersion: c.wordingVersion, source: c.source, grantedAt: iso(c.grantedAt), withdrawnAt: iso(c.withdrawnAt) })),

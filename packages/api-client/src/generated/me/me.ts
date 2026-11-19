@@ -34,6 +34,7 @@ import type {
   DataExportDto,
   DeleteAccountDto,
   GoLiveResultDto,
+  JoinProfileDto,
   LoopMessageDto,
   LoopMessageListDto,
   ManualProfileDto,
@@ -41,6 +42,10 @@ import type {
   NameDto,
   NotificationDto,
   NotificationListDto,
+  PhotoCompleteRequestDto,
+  PhotoDto,
+  PhotoPresignRequestDto,
+  PhotoPresignResponseDto,
   PreferencesDto,
   PrivacyResultDto,
   ProfileDetailsDto,
@@ -1092,6 +1097,211 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getUpdateProfileDetailsMutationOptions(options), queryClient);
     }
+    export type getJoinProfileResponse200 = {
+  data: JoinProfileDto
+  status: 200
+}
+
+export type getJoinProfileResponseSuccess = (getJoinProfileResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getJoinProfileResponse = (getJoinProfileResponseSuccess)
+
+export const getGetJoinProfileUrl = () => {
+
+
+
+
+  return `/api/v1/me/profile/join`
+}
+
+/**
+ * @summary Profile review and contract preference answers from registration
+ */
+export const getJoinProfile = async ( options?: Parameters<typeof customFetch>[1]): Promise<getJoinProfileResponse> => {
+
+  return customFetch<getJoinProfileResponse>(getGetJoinProfileUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJoinProfileQueryKey = () => {
+    return [
+    `/api/v1/me/profile/join`
+    ] as const;
+    }
+
+
+export const getGetJoinProfileQueryOptions = <TData = Awaited<ReturnType<typeof getJoinProfile>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJoinProfile>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJoinProfileQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJoinProfile>>> = ({ signal }) => getJoinProfile({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJoinProfile>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetJoinProfileQueryResult = NonNullable<Awaited<ReturnType<typeof getJoinProfile>>>
+export type GetJoinProfileQueryError = unknown
+
+
+export function useGetJoinProfile<TData = Awaited<ReturnType<typeof getJoinProfile>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJoinProfile>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getJoinProfile>>,
+          TError,
+          Awaited<ReturnType<typeof getJoinProfile>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetJoinProfile<TData = Awaited<ReturnType<typeof getJoinProfile>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJoinProfile>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getJoinProfile>>,
+          TError,
+          Awaited<ReturnType<typeof getJoinProfile>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetJoinProfile<TData = Awaited<ReturnType<typeof getJoinProfile>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJoinProfile>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Profile review and contract preference answers from registration
+ */
+
+export function useGetJoinProfile<TData = Awaited<ReturnType<typeof getJoinProfile>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getJoinProfile>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetJoinProfileQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type updateJoinProfileResponse200 = {
+  data: JoinProfileDto
+  status: 200
+}
+
+export type updateJoinProfileResponseSuccess = (updateJoinProfileResponse200) & {
+  headers: Headers;
+};
+;
+
+export type updateJoinProfileResponse = (updateJoinProfileResponseSuccess)
+
+export const getUpdateJoinProfileUrl = () => {
+
+
+
+
+  return `/api/v1/me/profile/join`
+}
+
+export const updateJoinProfile = async (joinProfileDto: JoinProfileDto, options?: Parameters<typeof customFetch>[1]): Promise<updateJoinProfileResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<updateJoinProfileResponse>(getUpdateJoinProfileUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(joinProfileDto)
+  }
+);}
+
+
+
+
+
+export const getUpdateJoinProfileMutationKey = () => ['updateJoinProfile'] as const;
+
+export const getUpdateJoinProfileMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJoinProfile>>, TError,UpdateJoinProfileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateJoinProfile>>, TError,UpdateJoinProfileMutationVariables, TContext> => {
+
+const mutationKey = getUpdateJoinProfileMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateJoinProfile>>, UpdateJoinProfileMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateJoinProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateJoinProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateJoinProfile>>>
+    export type UpdateJoinProfileMutationBody = JoinProfileDto
+    export type UpdateJoinProfileMutationError = unknown
+    export type UpdateJoinProfileMutationVariables = {data: JoinProfileDto}
+
+    export const useUpdateJoinProfile = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateJoinProfile>>, TError,UpdateJoinProfileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof updateJoinProfile>>,
+        TError,
+        UpdateJoinProfileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateJoinProfileMutationOptions(options), queryClient);
+    }
     export type updateNameResponse200 = {
   data: NameDto
   status: 200
@@ -1184,6 +1394,395 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getUpdateNameMutationOptions(options), queryClient);
+    }
+    export type getMyPhotoResponse200 = {
+  data: PhotoDto
+  status: 200
+}
+
+export type getMyPhotoResponseSuccess = (getMyPhotoResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getMyPhotoResponse = (getMyPhotoResponseSuccess)
+
+export const getGetMyPhotoUrl = () => {
+
+
+
+
+  return `/api/v1/me/photo`
+}
+
+/**
+ * @summary Your profile photograph as a short-lived URL, or null
+ */
+export const getMyPhoto = async ( options?: Parameters<typeof customFetch>[1]): Promise<getMyPhotoResponse> => {
+
+  return customFetch<getMyPhotoResponse>(getGetMyPhotoUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMyPhotoQueryKey = () => {
+    return [
+    `/api/v1/me/photo`
+    ] as const;
+    }
+
+
+export const getGetMyPhotoQueryOptions = <TData = Awaited<ReturnType<typeof getMyPhoto>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyPhoto>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMyPhotoQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyPhoto>>> = ({ signal }) => getMyPhoto({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMyPhoto>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetMyPhotoQueryResult = NonNullable<Awaited<ReturnType<typeof getMyPhoto>>>
+export type GetMyPhotoQueryError = unknown
+
+
+export function useGetMyPhoto<TData = Awaited<ReturnType<typeof getMyPhoto>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyPhoto>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyPhoto>>,
+          TError,
+          Awaited<ReturnType<typeof getMyPhoto>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyPhoto<TData = Awaited<ReturnType<typeof getMyPhoto>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyPhoto>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMyPhoto>>,
+          TError,
+          Awaited<ReturnType<typeof getMyPhoto>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMyPhoto<TData = Awaited<ReturnType<typeof getMyPhoto>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyPhoto>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Your profile photograph as a short-lived URL, or null
+ */
+
+export function useGetMyPhoto<TData = Awaited<ReturnType<typeof getMyPhoto>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMyPhoto>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMyPhotoQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+export type deleteMyPhotoResponse200 = {
+  data: PhotoDto
+  status: 200
+}
+
+export type deleteMyPhotoResponseSuccess = (deleteMyPhotoResponse200) & {
+  headers: Headers;
+};
+;
+
+export type deleteMyPhotoResponse = (deleteMyPhotoResponseSuccess)
+
+export const getDeleteMyPhotoUrl = () => {
+
+
+
+
+  return `/api/v1/me/photo`
+}
+
+export const deleteMyPhoto = async ( options?: Parameters<typeof customFetch>[1]): Promise<deleteMyPhotoResponse> => {
+
+  return customFetch<deleteMyPhotoResponse>(getDeleteMyPhotoUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteMyPhotoMutationKey = () => ['deleteMyPhoto'] as const;
+
+export const getDeleteMyPhotoMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMyPhoto>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteMyPhoto>>, TError,void, TContext> => {
+
+const mutationKey = getDeleteMyPhotoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteMyPhoto>>, void> = () => {
+
+
+          return  deleteMyPhoto(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteMyPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof deleteMyPhoto>>>
+
+    export type DeleteMyPhotoMutationError = unknown
+
+
+    export const useDeleteMyPhoto = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMyPhoto>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof deleteMyPhoto>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDeleteMyPhotoMutationOptions(options), queryClient);
+    }
+    export type presignMyPhotoResponse200 = {
+  data: PhotoPresignResponseDto
+  status: 200
+}
+
+export type presignMyPhotoResponseSuccess = (presignMyPhotoResponse200) & {
+  headers: Headers;
+};
+;
+
+export type presignMyPhotoResponse = (presignMyPhotoResponseSuccess)
+
+export const getPresignMyPhotoUrl = () => {
+
+
+
+
+  return `/api/v1/me/photo/presign`
+}
+
+/**
+ * @summary Presigned URL to upload a JPG, PNG or WebP (max 3 MB) straight to storage
+ */
+export const presignMyPhoto = async (photoPresignRequestDto: PhotoPresignRequestDto, options?: Parameters<typeof customFetch>[1]): Promise<presignMyPhotoResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<presignMyPhotoResponse>(getPresignMyPhotoUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(photoPresignRequestDto)
+  }
+);}
+
+
+
+
+
+export const getPresignMyPhotoMutationKey = () => ['presignMyPhoto'] as const;
+
+export const getPresignMyPhotoMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof presignMyPhoto>>, TError,PresignMyPhotoMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof presignMyPhoto>>, TError,PresignMyPhotoMutationVariables, TContext> => {
+
+const mutationKey = getPresignMyPhotoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof presignMyPhoto>>, PresignMyPhotoMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  presignMyPhoto(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PresignMyPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof presignMyPhoto>>>
+    export type PresignMyPhotoMutationBody = PhotoPresignRequestDto
+    export type PresignMyPhotoMutationError = unknown
+    export type PresignMyPhotoMutationVariables = {data: PhotoPresignRequestDto}
+
+    /**
+ * @summary Presigned URL to upload a JPG, PNG or WebP (max 3 MB) straight to storage
+ */
+export const usePresignMyPhoto = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof presignMyPhoto>>, TError,PresignMyPhotoMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof presignMyPhoto>>,
+        TError,
+        PresignMyPhotoMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPresignMyPhotoMutationOptions(options), queryClient);
+    }
+    export type completeMyPhotoResponse200 = {
+  data: PhotoDto
+  status: 200
+}
+
+export type completeMyPhotoResponseSuccess = (completeMyPhotoResponse200) & {
+  headers: Headers;
+};
+;
+
+export type completeMyPhotoResponse = (completeMyPhotoResponseSuccess)
+
+export const getCompleteMyPhotoUrl = () => {
+
+
+
+
+  return `/api/v1/me/photo/complete`
+}
+
+/**
+ * @summary Verify, scan and attach the uploaded photograph
+ */
+export const completeMyPhoto = async (photoCompleteRequestDto: PhotoCompleteRequestDto, options?: Parameters<typeof customFetch>[1]): Promise<completeMyPhotoResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<completeMyPhotoResponse>(getCompleteMyPhotoUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(photoCompleteRequestDto)
+  }
+);}
+
+
+
+
+
+export const getCompleteMyPhotoMutationKey = () => ['completeMyPhoto'] as const;
+
+export const getCompleteMyPhotoMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeMyPhoto>>, TError,CompleteMyPhotoMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeMyPhoto>>, TError,CompleteMyPhotoMutationVariables, TContext> => {
+
+const mutationKey = getCompleteMyPhotoMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeMyPhoto>>, CompleteMyPhotoMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  completeMyPhoto(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteMyPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof completeMyPhoto>>>
+    export type CompleteMyPhotoMutationBody = PhotoCompleteRequestDto
+    export type CompleteMyPhotoMutationError = unknown
+    export type CompleteMyPhotoMutationVariables = {data: PhotoCompleteRequestDto}
+
+    /**
+ * @summary Verify, scan and attach the uploaded photograph
+ */
+export const useCompleteMyPhoto = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeMyPhoto>>, TError,CompleteMyPhotoMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof completeMyPhoto>>,
+        TError,
+        CompleteMyPhotoMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCompleteMyPhotoMutationOptions(options), queryClient);
     }
     export type getReviewResponse200 = {
   data: ReviewDto
