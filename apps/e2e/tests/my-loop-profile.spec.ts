@@ -22,6 +22,7 @@ const JOIN = {
   workLocations: [],
   otherLocations: null,
   otherPlaces: ["Reading", "Guildford"],
+  includeHomeCity: true,
   londonAreas: [],
   londonOther: null,
   workLocationsConfirmed: true,
@@ -583,7 +584,7 @@ test("C04: location summary shows regions, towns, London areas, UK-wide remote a
   await page.goto("/my-loop");
   const card = page.getByRole("region", { name: "Locations, work pattern & travel" });
   await expect(card).toContainText("Regions: London, Scotland");
-  await expect(card).toContainText("Towns and cities: Oxford, Oxfordshire");
+  await expect(card).toContainText("Towns and cities: Reading, Oxford, Oxfordshire");
   await expect(card).toContainText("London areas: Central London, East London");
   await expect(card).toContainText("Specific London areas: Canary Wharf");
   await expect(card).toContainText("Fully remote anywhere in the UK: Yes");
@@ -656,4 +657,37 @@ test("C01: the registration photograph is shown on My LOOP and 'Add photograph' 
   release();
   await expect(page.getByRole("img", { name: "Profile photograph" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Change photograph" })).toBeVisible();
+});
+
+test("REG-02: the home city is a working town by default, beside the home city field, and can be opted out", async ({ page }) => {
+  const calls = await stubApi(page, { colour: "RED", label: "In Contract", endDate: "2027-01-07", cv: true, join: { location: "Edinburgh", otherPlaces: ["Oxford"] } });
+  await page.goto("/my-loop");
+  await expect(page.locator("p", { hasText: "Towns and cities:" })).toContainText("Towns and cities: Edinburgh, Oxford");
+  await expect(page.getByText("Home city as a working location")).toHaveCount(0);
+
+  await page.getByRole("region", { name: "Profile summary" }).getByRole("button", { name: "Edit my profile" }).click();
+  const dialog = page.getByRole("dialog", { name: "Edit my profile" });
+  const include = dialog.getByLabel("Include my home city as a place I would consider working");
+  await expect(include).toBeChecked();
+  // The box sits with the home city field, so it follows what is typed there and never names an old city.
+  await dialog.getByLabel("Your current town or city").fill("Glasgow");
+  await expect(include).toBeChecked();
+  await include.uncheck();
+  await dialog.getByRole("button", { name: "Save changes" }).click();
+  await expect(dialog).toHaveCount(0);
+  const put = calls.filter((c) => c.path === "/me/profile/join" && c.method === "PUT").pop()?.body as { includeHomeCity: boolean; location: string; otherPlaces: string[] };
+  expect(put.includeHomeCity).toBe(false);
+  expect(put.location).toBe("Glasgow");
+  // Opting out never rewrites the saved towns.
+  expect(put.otherPlaces).toEqual(["Oxford"]);
+});
+
+test("REG-01: My LOOP has no sidebar; only the pages no dashboard button reaches are tabs, and Sign out is in the header", async ({ page }) => {
+  await stubApi(page, { colour: "RED", label: "In Contract", endDate: "2027-01-07", cv: true });
+  await page.goto("/my-loop");
+  const tabs = page.getByRole("navigation", { name: "My LOOP" });
+  await expect(tabs.getByRole("link")).toHaveText(["Messages", "Introductions & rewards", "Privacy & visibility"]);
+  await expect(tabs.getByText("My Authorisations")).toHaveCount(0);
+  await expect(tabs.getByRole("button", { name: "Sign out" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("button", { name: "Sign out" })).toBeVisible();
 });

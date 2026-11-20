@@ -85,6 +85,7 @@ export interface JoinProfileDto {
      * @items.maxLength 60
      */
   otherPlaces?: string[];
+  includeHomeCity?: boolean;
   /** @maxItems 6 */
   londonAreas: JoinProfileDtoLondonAreasItem[];
   /**

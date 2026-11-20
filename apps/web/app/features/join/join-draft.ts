@@ -15,6 +15,8 @@ export interface ProfileDraft {
   linkedin: string;
   location: string;
   locationConfirmed: boolean;
+  /** Whether the home city counts as a place the contractor would consider working. */
+  includeHomeCity: boolean;
 }
 
 export interface AccountDraft {
@@ -35,6 +37,7 @@ export const EMPTY_PROFILE: ProfileDraft = {
   linkedin: "",
   location: "",
   locationConfirmed: false,
+  includeHomeCity: true,
 };
 
 export const EMPTY_ACCOUNT: AccountDraft = { email: "", mobile: "", introduced: null, introducer: "", terms: false, offers: false };

@@ -11,7 +11,7 @@ import {
   type JoinProfileDto,
 } from "@loop/api-client";
 import { Muted } from "../marketing/primitives";
-import { Note, TextField, ConfirmBox } from "./form-bits";
+import { Check, ConfirmBox, Note, TextField } from "./form-bits";
 import type { ProfileDraft } from "./join-draft";
 import { PHOTO_ACCEPT, PHOTO_HELP, photoProblem, setPendingPhoto, uploadPhoto } from "./photo-upload";
 
@@ -62,6 +62,7 @@ export async function saveProfileDraft(d: ProfileDraft): Promise<void> {
     linkedinUrl: d.linkedin.trim() || null,
     location: d.location.trim(),
     locationConfirmed: d.locationConfirmed,
+    includeHomeCity: d.includeHomeCity,
   };
   const saved = await updateJoinProfile(next);
   if (saved.status !== 200) throw new Error("join");
@@ -259,10 +260,15 @@ export function ProfileForm({
       <Note>
         <strong>Your home location — please confirm manually</strong>
         <Muted className="mt-1 text-sm">
-          AI may suggest a location from your CV, but you must check and confirm where you are based. Work locations are selected separately.
+          AI may suggest a location from your CV, but you must check and confirm where you are based. Work locations are selected separately; tick the box below to include your home city.
         </Muted>
       </Note>
       <TextField label="Your current town or city" required value={value.location} placeholder="e.g. Edinburgh" maxLength={120} onChange={(v) => set("location", v)} />
+      <Check
+        label="Include my home city as a place I would consider working"
+        checked={value.includeHomeCity}
+        onChange={(v) => set("includeHomeCity", v)}
+      />
       <ConfirmBox checked={value.locationConfirmed} onChange={(v) => set("locationConfirmed", v)}>
         I confirm my current location is correct. *
       </ConfirmBox>

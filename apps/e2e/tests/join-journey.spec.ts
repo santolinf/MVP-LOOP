@@ -169,7 +169,8 @@ test("@api new contractor follows the V33 journey from eligibility to My LOOP", 
   await expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
 
   // 9. Edit my profile (the reference's "Profile updates").
-  await page.getByRole("navigation", { name: "My LOOP" }).getByRole("link", { name: "Edit my profile" }).click();
+  // The tab row no longer links here (the dashboard's "Edit my profile" opens an in-page editor), so go to the page directly.
+  await page.goto("/my-loop/edit");
   await expect(page).toHaveURL(/\/my-loop\/edit$/);
   await expect(page.getByRole("heading", { name: "Edit my profile", level: 1 })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Update your contract end date/ })).toBeVisible();

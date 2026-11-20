@@ -35,6 +35,7 @@ export function useServerProfileDraft(): { draft: ProfileDraft | null; ready: bo
       linkedin: j.linkedinUrl ?? "",
       location: j.location ?? "",
       locationConfirmed: j.locationConfirmed,
+      includeHomeCity: j.includeHomeCity ?? true,
     },
   };
 }

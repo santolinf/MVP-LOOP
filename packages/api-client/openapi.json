@@ -4586,6 +4586,10 @@
               "maxLength": 60
             }
           },
+          "includeHomeCity": {
+            "default": true,
+            "type": "boolean"
+          },
           "londonAreas": {
             "maxItems": 6,
             "type": "array",

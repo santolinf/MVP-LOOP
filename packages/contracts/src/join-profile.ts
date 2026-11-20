@@ -55,6 +55,8 @@ export const JoinProfileSchema = z
     otherLocations: z.string().trim().min(1).max(200).nullable().meta({ type: "string", nullable: true } as never),
     /** Individually chosen additional towns/cities. Optional on input so older clients keep working; `otherLocations` is derived from it. */
     otherPlaces: distinct(z.string().trim().min(1).max(60), 20).default([]),
+    /** Whether the home city (`location`) counts as a working location. Defaults to true; the contractor can opt out. */
+    includeHomeCity: z.boolean().default(true),
     londonAreas: distinct(LondonAreaSchema, 6),
     londonOther: z.string().trim().min(1).max(200).nullable().meta({ type: "string", nullable: true } as never),
     workLocationsConfirmed: z.boolean(),
@@ -83,6 +85,7 @@ export const EMPTY_JOIN_PROFILE: JoinProfile = {
   workLocations: [],
   otherLocations: null,
   otherPlaces: [],
+  includeHomeCity: true,
   londonAreas: [],
   londonOther: null,
   workLocationsConfirmed: false,
