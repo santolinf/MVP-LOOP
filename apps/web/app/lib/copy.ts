@@ -138,7 +138,6 @@ export const COPY = {
       sub: "Your availability, your control.",
       badge: "LIVE PROFILE",
       status: "Available Now",
-      ends: "Contract ends in 21 days",
       confirm: "STILL CORRECT ✓",
       update: "UPDATE AVAILABILITY",
       rows: [
