@@ -7,7 +7,10 @@ import { Reflector } from "@nestjs/core";
 const db = vi.hoisted(() => ({
   referral: { findUnique: vi.fn(), update: vi.fn() },
   referralFlag: { updateMany: vi.fn(), findUnique: vi.fn(), findMany: vi.fn() },
-  contractor: { findFirst: vi.fn() },
+  contractor: { findFirst: vi.fn(), findMany: vi.fn(), count: vi.fn() },
+  contractorJoinProfile: { findMany: vi.fn() },
+  cvVersion: { findMany: vi.fn() },
+  cvUpload: { findUnique: vi.fn() },
   reward: { findMany: vi.fn(), updateMany: vi.fn() },
   staffUser: { findUnique: vi.fn(), update: vi.fn(), count: vi.fn(), create: vi.fn() },
   templateVersion: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn() },
@@ -210,6 +213,41 @@ describe("AdminContractorsService.confirmOnBehalf (ADM-07)", () => {
     db.contractor.findFirst.mockResolvedValue({ id: "c1" });
     await expect(svc.confirmOnBehalf("c1", { employment: "CONTRACTING", availableFrom: null, contractEndDate: null, reason: REASON }, staff, NOW)).rejects.toThrow("contractEndDate");
     expect(me.confirmAvailability).not.toHaveBeenCalled();
+  });
+});
+
+describe("AdminContractorsService.cvLink (INV-02)", () => {
+  const upload = (detectedType: string) => ({ id: "u1", status: "READY", objectKey: "k", detectedType });
+  const setup = (detectedType: string) => {
+    const storage = { presignInlinePdf: vi.fn().mockResolvedValue("https://s/inline"), presignGet: vi.fn().mockResolvedValue("https://s/download") };
+    const svc = new AdminContractorsService(audit as never, {} as never, {} as never, storage as never);
+    db.contractor.findFirst.mockResolvedValue({ id: "c1" });
+    db.cvVersion.findMany.mockResolvedValue([{ versionNumber: 4, cvUploadId: "u1" }]);
+    db.cvUpload.findUnique.mockResolvedValue(upload(detectedType));
+    return { svc, storage };
+  };
+  it("returns an inline link for a PDF and audits the access", async () => {
+    const { svc } = setup("PDF");
+    expect(await svc.cvLink("c1", staff)).toMatchObject({ url: "https://s/inline", inline: true });
+    expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: "admin.cv_accessed" }));
+  });
+  it("keeps a Word document as a download", async () => {
+    const { svc } = setup("DOCX");
+    expect(await svc.cvLink("c1", staff)).toMatchObject({ url: "https://s/download", inline: false });
+  });
+});
+
+describe("AdminContractorsService.list location filter (INV-01)", () => {
+  it("matches a saved working town, not just the home city", async () => {
+    db.contractorJoinProfile.findMany.mockImplementation(async (a: { where?: unknown }) =>
+      a.where ? [] : [{ contractorId: "c1", otherPlaces: ["Oxford"], workLocations: ["LONDON"], londonAreas: [] }, { contractorId: "c2", otherPlaces: ["Leeds"], workLocations: [], londonAreas: [] }],
+    );
+    db.contractor.findMany.mockResolvedValue([]);
+    db.contractor.count.mockResolvedValue(0);
+    db.reminderConfigVersion.findFirst.mockResolvedValue(null);
+    const svc = new AdminContractorsService(audit as never, {} as never, {} as never, {} as never);
+    await svc.list({ location: "oxford", page: 1, pageSize: 25 }, NOW).catch(() => undefined);
+    expect(db.contractor.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ id: { in: ["c1"] } }) }));
   });
 });
 

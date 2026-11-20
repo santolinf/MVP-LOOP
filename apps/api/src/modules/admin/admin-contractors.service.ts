@@ -73,8 +73,18 @@ export class AdminContractorsService {
       sets.push([...ids(fromHeadline), ...roleHits]);
     }
     if (q.location) {
-      const rows = await prisma.contractorJoinProfile.findMany({ where: { location: { contains: q.location, mode: "insensitive" } }, select: { contractorId: true } });
-      sets.push(rows.map((r) => r.contractorId));
+      // INV-01: Location matches the home city OR any saved working place (towns, London areas, free text), never just home.
+      const has = { contains: q.location, mode: "insensitive" as const };
+      const needle = q.location.toLowerCase();
+      const rows = await prisma.contractorJoinProfile.findMany({
+        where: { OR: [{ location: has }, { otherLocations: has }, { londonOther: has }] },
+        select: { contractorId: true },
+      });
+      const arrays = await prisma.contractorJoinProfile.findMany({ select: { contractorId: true, otherPlaces: true, workLocations: true, londonAreas: true } });
+      const arrayHits = arrays
+        .filter((j) => [...j.otherPlaces, ...j.workLocations, ...j.londonAreas].some((v) => v.toLowerCase().replace(/_/g, " ").includes(needle)))
+        .map((j) => j.contractorId);
+      sets.push([...new Set([...rows.map((r) => r.contractorId), ...arrayHits])]);
     }
     if (q.ir35) {
       sets.push((await prisma.contractorProfileDetails.findMany({ where: { ir35Status: q.ir35 }, select: { contractorId: true } })).map((r) => r.contractorId));
@@ -151,7 +161,11 @@ export class AdminContractorsService {
       otherPlaces: join?.otherPlaces ?? [],
       londonAreas: join?.londonAreas ?? [],
       remoteUk: join?.remoteUk ?? null,
+      londonOther: join?.londonOther ?? null,
+      includeHomeCity: join?.includeHomeCity ?? true,
       workPatterns: join?.workPatterns ?? [],
+      hybridDays: join?.hybridDays ?? null,
+      occasionalTravel: join?.occasionalTravel ?? null,
       targetDayRatePence: join?.targetDayRatePence ?? null,
       minDayRatePence: join?.minDayRatePence ?? null,
       ir35Status: details?.ir35Status ?? null,
@@ -188,7 +202,11 @@ export class AdminContractorsService {
       action: "admin.cv_accessed",
       after: { versionNumber: cv.versionNumber },
     });
-    return { url: await this.storage.presignGet(cv.upload.objectKey, `cv.${ext}`, ttl), expiresInSeconds: ttl };
+    // INV-02: a verified PDF is shown in the browser; Word documents stay a forced download.
+    if (cv.upload.detectedType === "PDF") {
+      return { url: await this.storage.presignInlinePdf(cv.upload.objectKey, `cv.${ext}`, ttl), expiresInSeconds: ttl, inline: true };
+    }
+    return { url: await this.storage.presignGet(cv.upload.objectKey, `cv.${ext}`, ttl), expiresInSeconds: ttl, inline: false };
   }
 
   async photoLink(id: string) {

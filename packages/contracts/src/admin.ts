@@ -136,7 +136,12 @@ export const AdminContractorProfileSchema = z.object({
   otherPlaces: z.array(z.string()),
   londonAreas: z.array(z.string()),
   remoteUk: z.boolean().nullable().meta({ type: "boolean", nullable: true } as never),
+  londonOther: nstr(),
+  includeHomeCity: z.boolean(),
   workPatterns: z.array(z.string()),
+  hybridDays: nint(),
+  /** YES | NO | DEPENDS; null when the contractor has not answered. */
+  occasionalTravel: nstr(),
   targetDayRatePence: nint(),
   minDayRatePence: nint(),
   ir35Status: nstr(),
@@ -146,7 +151,8 @@ export const AdminContractorProfileSchema = z.object({
   hasCv: z.boolean(),
   hasPhoto: z.boolean(),
 });
-export const AdminCvLinkSchema = z.object({ url: z.string(), expiresInSeconds: z.number().int() });
+/** `inline` is true only for a verified PDF, which the browser can show; anything else is a download. */
+export const AdminCvLinkSchema = z.object({ url: z.string(), expiresInSeconds: z.number().int(), inline: z.boolean() });
 export const AdminPhotoLinkSchema = z.object({ url: nstr(), expiresInSeconds: z.number().int() });
 
 export const AdminContractorDetailSchema = AdminContractorRowSchema.extend({
