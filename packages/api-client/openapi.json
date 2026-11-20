@@ -4586,6 +4586,10 @@
               "maxLength": 60
             }
           },
+          "includeHomeCity": {
+            "default": true,
+            "type": "boolean"
+          },
           "londonAreas": {
             "maxItems": 6,
             "type": "array",
@@ -6698,11 +6702,28 @@
                 "type": "boolean",
                 "nullable": true
               },
+              "londonOther": {
+                "type": "string",
+                "nullable": true
+              },
+              "includeHomeCity": {
+                "type": "boolean"
+              },
               "workPatterns": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 }
+              },
+              "hybridDays": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991,
+                "nullable": true
+              },
+              "occasionalTravel": {
+                "type": "string",
+                "nullable": true
               },
               "targetDayRatePence": {
                 "type": "integer",
@@ -6751,7 +6772,11 @@
               "otherPlaces",
               "londonAreas",
               "remoteUk",
+              "londonOther",
+              "includeHomeCity",
               "workPatterns",
+              "hybridDays",
+              "occasionalTravel",
               "targetDayRatePence",
               "minDayRatePence",
               "ir35Status",
@@ -6930,11 +6955,15 @@
             "type": "integer",
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
+          },
+          "inline": {
+            "type": "boolean"
           }
         },
         "required": [
           "url",
-          "expiresInSeconds"
+          "expiresInSeconds",
+          "inline"
         ]
       },
       "AdminPhotoLinkDto": {

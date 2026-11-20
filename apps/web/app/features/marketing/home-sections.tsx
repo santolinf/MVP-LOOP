@@ -29,7 +29,6 @@ function PhoneMock() {
             <span aria-hidden="true">●</span> {p.badge}
           </span>
           <strong className="my-[10px] block text-[25px] font-bold leading-[1.55]">{p.status}</strong>
-          <span className="text-[13px] text-[#c4d4c9]">{p.ends}</span>
           <div className="mt-4 rounded-[10px] bg-lime p-[13px] text-center font-[850] text-[#10150c]">{p.confirm}</div>
           <div className="mt-2 rounded-[10px] bg-[#293747] p-[13px] text-center font-[850] text-[#f3f5f8]">{p.update}</div>
         </div>

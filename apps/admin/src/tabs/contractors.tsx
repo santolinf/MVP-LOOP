@@ -73,7 +73,7 @@ export function Contractors({ can }: { can: (p: string) => boolean }) {
         </label>
         <label>Role<input value={draft.role} onChange={(e) => setDraft({ ...draft, role: e.target.value })} maxLength={100} /></label>
         <label>Skill<input value={draft.skill} onChange={(e) => setDraft({ ...draft, skill: e.target.value })} maxLength={100} /></label>
-        <label>Location<input value={draft.location} onChange={(e) => setDraft({ ...draft, location: e.target.value })} maxLength={100} /></label>
+        <label>Location (home or work)<input value={draft.location} onChange={(e) => setDraft({ ...draft, location: e.target.value })} maxLength={100} /></label>
         <label>
           IR35
           <select value={draft.ir35} onChange={(e) => setDraft({ ...draft, ir35: e.target.value })}>
@@ -90,6 +90,42 @@ export function Contractors({ can }: { can: (p: string) => boolean }) {
       {selected ? <Detail key={selected} id={selected} can={can} onClose={() => setSelected(null)} /> : null}
     </>
   );
+}
+
+const REGION_LABELS: Record<string, string> = {
+  ANYWHERE: "Anywhere in the UK", LONDON: "London", SOUTH_EAST: "South East England", SOUTH_WEST: "South West England", MIDLANDS: "Midlands",
+  NORTH_WEST: "North West England", NORTH_EAST: "North East England", YORKSHIRE: "Yorkshire & Humber", SCOTLAND: "Scotland", WALES: "Wales", NORTHERN_IRELAND: "Northern Ireland",
+};
+const LONDON_AREA_LABELS: Record<string, string> = {
+  ANYWHERE_LONDON: "Anywhere in London", CENTRAL: "Central London", NORTH: "North London", SOUTH: "South London", EAST: "East London", WEST: "West London",
+};
+const PATTERN_LABELS: Record<string, string> = { REMOTE: "Remote", HYBRID: "Hybrid", ONSITE: "On-site" };
+const TRAVEL_LABELS: Record<string, string> = { YES: "Yes", NO: "No", DEPENDS: "Depends on location and frequency" };
+const labelList = (values: string[], labels: Record<string, string>) => values.map((v) => labels[v] ?? v).join(", ") || "—";
+
+/** INV-02: open the tab synchronously (inside the click) so the popup blocker allows it, then point it at the signed link. */
+async function openCv(id: string, onError: (m: string | null) => void) {
+  onError(null);
+  const win = window.open("", "_blank");
+  try {
+    const r = await adminGetContractorCv(id);
+    if (r.status !== 200) throw new Error("cv");
+    if (win && r.data.inline) {
+      win.opener = null;
+      win.location.href = r.data.url;
+    } else {
+      // Word documents (and a blocked popup) fall back to a download.
+      win?.close();
+      const a = document.createElement("a");
+      a.href = r.data.url;
+      a.download = "";
+      a.rel = "noopener";
+      a.click();
+    }
+  } catch {
+    win?.close();
+    onError("Could not open the CV. Please try again.");
+  }
 }
 
 function Detail({ id, can, onClose }: { id: string; can: (p: string) => boolean; onClose: () => void }) {
@@ -145,9 +181,13 @@ function Detail({ id, can, onClose }: { id: string; can: (p: string) => boolean;
             <dt>Title</dt><dd>{c.profile.title ?? "—"}</dd>
             <dt>Preferred roles</dt><dd>{c.profile.preferredRoles.join(", ") || "—"}</dd>
             <dt>Skills</dt><dd>{c.profile.skills.join(", ") || "—"}</dd>
-            <dt>Location</dt><dd>{c.profile.location ?? "—"}</dd>
-            <dt>Work locations</dt><dd>{[...c.profile.workLocations, ...c.profile.otherPlaces, ...c.profile.londonAreas].join(", ") || "—"}{c.profile.remoteUk ? " · Remote UK" : ""}</dd>
-            <dt>Work patterns</dt><dd>{c.profile.workPatterns.join(", ") || "—"}</dd>
+            <dt>Home location</dt><dd>{c.profile.location ?? "—"}{c.profile.location ? (c.profile.includeHomeCity ? " (also a place they would work)" : " (not a place they would work)") : ""}</dd>
+            <dt>Work regions</dt><dd>{labelList(c.profile.workLocations, REGION_LABELS)}{c.profile.remoteUk ? " · Remote UK" : ""}</dd>
+            <dt>Towns and cities</dt><dd>{c.profile.otherPlaces.join(", ") || "—"}</dd>
+            <dt>London areas</dt><dd>{[...c.profile.londonAreas.map((a) => LONDON_AREA_LABELS[a] ?? a), ...(c.profile.londonOther ? [c.profile.londonOther] : [])].join(", ") || "—"}</dd>
+            <dt>Work patterns</dt><dd>{labelList(c.profile.workPatterns, PATTERN_LABELS)}</dd>
+            <dt>Maximum hybrid office days</dt><dd>{c.profile.hybridDays ?? "—"}</dd>
+            <dt>Occasional travel</dt><dd>{c.profile.occasionalTravel ? TRAVEL_LABELS[c.profile.occasionalTravel] ?? c.profile.occasionalTravel : "Not answered"}</dd>
             <dt>Day rate (target / minimum)</dt><dd>{pence(c.profile.targetDayRatePence)} / {pence(c.profile.minDayRatePence)}</dd>
             <dt>IR35</dt><dd>{c.profile.ir35Status ?? "—"}</dd>
             <dt>Notice period</dt><dd>{c.profile.noticePeriodText ?? "—"}</dd>
@@ -155,7 +195,7 @@ function Detail({ id, can, onClose }: { id: string; can: (p: string) => boolean;
             <dt>CV</dt>
             <dd>
               {c.profile.hasCv ? (
-                <button type="button" className="link" onClick={() => { void adminGetContractorCv(id).then((r) => { if (r.status === 200) window.open(r.data.url, "_blank", "noopener,noreferrer"); }); }}>
+                <button type="button" className="link" onClick={() => void openCv(id, setFormError)}>
                   View CV (version {c.profile.cvVersion})
                 </button>
               ) : "No CV on file"}

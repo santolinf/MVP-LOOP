@@ -137,8 +137,7 @@ export const COPY = {
       title: "My LOOP",
       sub: "Your availability, your control.",
       badge: "LIVE PROFILE",
-      status: "Available Soon",
-      ends: "Contract ends in 21 days",
+      status: "Available Now",
       confirm: "STILL CORRECT ✓",
       update: "UPDATE AVAILABILITY",
       rows: [

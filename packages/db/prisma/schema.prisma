@@ -463,6 +463,8 @@ model ContractorJoinProfile {
   otherLocations         String?
   /// Individually chosen towns/cities (display names). `otherLocations` is kept as the joined legacy text.
   otherPlaces            String[]  @default([])
+  /// Whether the home city (`location`) counts as a working location. A stored choice; never expands the regions or towns list.
+  includeHomeCity        Boolean   @default(true)
   londonAreas            String[]
   londonOther            String?
   workLocationsConfirmed Boolean   @default(false)

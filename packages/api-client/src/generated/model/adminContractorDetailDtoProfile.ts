@@ -19,7 +19,18 @@ export type AdminContractorDetailDtoProfile = {
   londonAreas: string[];
   /** @nullable */
   remoteUk: boolean | null;
+  /** @nullable */
+  londonOther: string | null;
+  includeHomeCity: boolean;
   workPatterns: string[];
+  /**
+     * @minimum -9007199254740991
+     * @maximum 9007199254740991
+     * @nullable
+     */
+  hybridDays: number | null;
+  /** @nullable */
+  occasionalTravel: string | null;
   /**
      * @minimum -9007199254740991
      * @maximum 9007199254740991
