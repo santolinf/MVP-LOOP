@@ -1,8 +1,6 @@
 import type { MeDto } from "@loop/api-client";
 import type { ReactNode } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useLogout } from "@loop/api-client";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { Muted } from "../marketing/primitives";
 import { SignInRequired } from "../auth/sign-in-required";
 import { useMe } from "./use-me";
@@ -13,30 +11,33 @@ export const BTN_SMALL = "rounded-full border border-[#465366] px-4 py-2 text-xs
 export const BTN_PRIMARY = "rounded-full bg-lime px-5 py-2.5 text-xs font-extrabold text-[#0a1114] disabled:opacity-40";
 export const BTN_DANGER = "rounded-full border border-red px-4 py-2 text-xs font-extrabold text-red disabled:opacity-40";
 
-/** Order and labels follow the V33 reference dashboard; the rest are real My LOOP screens the reference does not show. */
+/**
+ * Every signed-in My LOOP screen. Only those flagged `tab` appear in the tab row: they are the ones no dashboard
+ * button leads to. The rest are reached from the dashboard (profile and availability editors, "Replace CV", the
+ * assignments link inside the profile editor) and from the header's My LOOP link.
+ */
 const SECTIONS = [
-  { id: "overview", to: "/my-loop", label: "My Profile" },
-  { id: "availability", to: "/my-loop/availability", label: "Availability" },
-  { id: "messages", to: "/my-loop/messages", label: "Messages" },
-  { id: "authorisations", to: null, label: "My Authorisations" },
-  { id: "assignments", to: "/my-loop/assignments", label: "Experience" },
-  { id: "introduce", to: "/introduce", label: "Introductions & rewards" },
-  { id: "edit", to: "/my-loop/edit", label: "Edit my profile" },
-  { id: "profile", to: "/my-loop/profile", label: "Profile details" },
-  { id: "preferences", to: "/my-loop/preferences", label: "Preferences" },
-  { id: "cv", to: "/my-loop/cv", label: "CV & documents" },
-  { id: "privacy", to: "/my-loop/privacy", label: "Privacy & visibility" },
+  { id: "overview", to: "/my-loop", label: "My Profile", tab: false },
+  { id: "availability", to: "/my-loop/availability", label: "Availability", tab: false },
+  { id: "messages", to: "/my-loop/messages", label: "Messages", tab: true },
+  { id: "assignments", to: "/my-loop/assignments", label: "Experience", tab: false },
+  { id: "introduce", to: "/introduce", label: "Introductions & rewards", tab: true },
+  { id: "edit", to: "/my-loop/edit", label: "Edit my profile", tab: false },
+  { id: "profile", to: "/my-loop/profile", label: "Profile details", tab: false },
+  { id: "preferences", to: "/my-loop/preferences", label: "Preferences", tab: false },
+  { id: "cv", to: "/my-loop/cv", label: "CV & documents", tab: false },
+  { id: "privacy", to: "/my-loop/privacy", label: "Privacy & visibility", tab: true },
 ] as const;
 
 export type SectionId = (typeof SECTIONS)[number]["id"];
 
-function SideLink({ to, children, selected }: { to: string; children: ReactNode; selected: boolean }) {
+function TabLink({ to, children, selected }: { to: string; children: ReactNode; selected: boolean }) {
   return (
     <Link
       to={to}
       aria-current={selected ? "page" : undefined}
-      className={`flex items-center gap-2.5 rounded-[5px] px-[11px] py-[13px] text-xs text-[#c5d4dc] hover:bg-[#103a50] hover:text-[#e7fffd] ${
-        selected ? "border-l-4 border-[#b9f443] bg-[#103a50] text-[#e7fffd]" : ""
+      className={`whitespace-nowrap border-b-4 px-3 py-3 text-xs text-[#c5d4dc] hover:text-[#e7fffd] ${
+        selected ? "border-[#b9f443] font-bold text-[#e7fffd]" : "border-transparent"
       }`}
     >
       {children}
@@ -44,61 +45,31 @@ function SideLink({ to, children, selected }: { to: string; children: ReactNode;
   );
 }
 
+/** Horizontal tab row shared by every signed-in My LOOP screen. Sign out lives in the site header. */
 export function MyLoopNav({ selected }: { selected: SectionId }) {
-  const navigate = useNavigate();
-  const qc = useQueryClient();
-  const logout = useLogout();
-
-  async function signOut() {
-    try {
-      await logout.mutateAsync();
-    } catch {
-      // The session may already be gone; either way this browser is signed out.
-    }
-    qc.clear();
-    navigate("/");
-  }
-
   return (
-    <nav aria-label="My LOOP" className="flex flex-col gap-[5px] border-[#1b4052] bg-[#041726] px-2.5 py-[22px] md:border-r">
-      {SECTIONS.map((s) =>
-        s.to === null ? (
-          <span key={s.id} aria-disabled="true" className="flex items-center justify-between gap-2.5 rounded-[5px] px-[11px] py-[13px] text-xs text-[#6f8797]">
-            {s.label}
-            <small className="text-[9px] font-extrabold uppercase text-[#bce44f]">Soon</small>
-          </span>
-        ) : (
-          <SideLink key={s.id} to={s.to} selected={s.id === selected}>
-            {s.label}
-          </SideLink>
-        ),
-      )}
-      <button
-        type="button"
-        onClick={signOut}
-        disabled={logout.isPending}
-        className="mt-2 flex items-center gap-2.5 rounded-[5px] border-t border-[#1b4052] px-[11px] py-[13px] text-left text-xs text-[#c5d4dc] hover:bg-[#103a50] hover:text-[#e7fffd] disabled:opacity-40"
-      >
-        Sign out
-      </button>
+    <nav aria-label="My LOOP" className="flex overflow-x-auto border-b border-[#1b4052] bg-[#041726] px-2.5">
+      {SECTIONS.filter((s) => s.tab).map((s) => (
+        <TabLink key={s.id} to={s.to} selected={s.id === selected}>
+          {s.label}
+        </TabLink>
+      ))}
     </nav>
   );
 }
 
-/** Sidebar plus content area shared by every signed-in My LOOP screen. */
+/** Tab row plus content area shared by every signed-in My LOOP screen. */
 export function MyLoopFrame({ selected, title, intro, children }: { selected: SectionId; title: string; intro?: string; children: ReactNode }) {
   return (
     <div className="mx-auto my-6 w-[min(1390px,calc(100%-20px))] overflow-hidden rounded-lg border border-[#1d4052] bg-[#041c2c]">
-      <div className="grid md:grid-cols-[198px_1fr]">
-        <MyLoopNav selected={selected} />
-        <section className="p-[23px] pb-7">
-          <div className="mb-[18px]">
-            <h1 className="text-[27px] font-bold text-[#f4f9ff]">{title}</h1>
-            {intro && <p className="text-xs text-[#9fb4c3]">{intro}</p>}
-          </div>
-          {children}
-        </section>
-      </div>
+      <MyLoopNav selected={selected} />
+      <section className="p-[23px] pb-7">
+        <div className="mb-[18px]">
+          <h1 className="text-[27px] font-bold text-[#f4f9ff]">{title}</h1>
+          {intro && <p className="text-xs text-[#9fb4c3]">{intro}</p>}
+        </div>
+        {children}
+      </section>
     </div>
   );
 }

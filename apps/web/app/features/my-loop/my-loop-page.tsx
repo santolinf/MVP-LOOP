@@ -159,7 +159,10 @@ export function MyLoopPage() {
         ? { note: availableFrom ? `Available from ${availableFrom}` : "Available now", date: availableFrom }
         : { note: end ? `Expected end: ${end}` : "No end date supplied", date: end };
   const londonAreas = (j?.londonAreas ?? []).map((a) => LONDON_LABELS[a] ?? a);
-  const townList = (j?.otherPlaces ?? []).length > 0 ? (j?.otherPlaces ?? []) : j?.otherLocations ? [j.otherLocations] : [];
+  const savedTowns = (j?.otherPlaces ?? []).length > 0 ? (j?.otherPlaces ?? []) : j?.otherLocations ? [j.otherLocations] : [];
+  // The home city counts as a working town unless the contractor opted out; it is shown, never stored in the towns list.
+  const homeCity = j?.location?.trim();
+  const townList = homeCity && j?.includeHomeCity !== false && !savedTowns.some((t) => t.toLowerCase() === homeCity.toLowerCase()) ? [homeCity, ...savedTowns] : savedTowns;
   const regionList = (j?.workLocations ?? []).map((l) => LOCATION_LABELS[l] ?? l);
   const clearance = d?.securityClearance === "YES" ? "Security cleared" : d?.securityClearance === "NO" ? "Not security cleared" : null;
   const status = me.paused ? "Your profile is paused." : me.live ? "Your profile is LIVE." : "Your profile is not LIVE yet.";
@@ -190,7 +193,7 @@ export function MyLoopPage() {
 
   return (
     <div className="mx-auto my-6 w-[min(1390px,calc(100%-20px))] overflow-hidden rounded-lg border border-[#1d4052] bg-[#041c2c] text-[15px] leading-normal" style={{ ...tone, fontFamily: PROTO_FONT }}>
-      <div className="grid md:grid-cols-[198px_1fr]">
+      <div>
         <MyLoopNav selected="overview" />
 
         <section className="p-[23px] pb-7">

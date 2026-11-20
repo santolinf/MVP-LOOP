@@ -39,6 +39,7 @@ function toJoinProfile(r: Row | null): JoinProfile {
     workLocations: r.workLocations,
     otherLocations: r.otherLocations,
     otherPlaces: placesFrom(r),
+    includeHomeCity: r.includeHomeCity,
     londonAreas: r.londonAreas,
     londonOther: r.londonOther,
     workLocationsConfirmed: r.workLocationsConfirmed,

@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { COPY } from "../lib/copy";
 import { ButtonLink } from "../features/marketing/primitives";
 import { SIGN_IN_PATH } from "../features/auth/return-target";
+import { useSignOut } from "../features/my-loop/use-sign-out";
 import { JOIN_PATH, useSignedIn } from "../features/marketing/use-member-cta";
 
 const NAV = [
@@ -13,6 +14,7 @@ const NAV = [
 
 export function SiteHeader() {
   const signedIn = useSignedIn();
+  const { signOut, pending } = useSignOut();
 
   return (
     <header className="sticky top-0 z-10 border-b border-[#263040] bg-[#090c13e8] backdrop-blur-[16px]">
@@ -33,9 +35,14 @@ export function SiteHeader() {
             </Link>
           ))}
           {signedIn ? (
-            <Link to="/my-loop" className="font-extrabold text-lime">
-              My LOOP
-            </Link>
+            <>
+              <Link to="/my-loop" className="font-extrabold text-lime">
+                My LOOP
+              </Link>
+              <button type="button" onClick={signOut} disabled={pending} className="hover:text-lime disabled:opacity-40">
+                Sign out
+              </button>
+            </>
           ) : (
             <>
               <Link to={SIGN_IN_PATH} className="hover:text-lime">
