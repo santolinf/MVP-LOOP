@@ -23,7 +23,7 @@ jobs:
       LOOP_TAG: ${{ github.sha }}
       COMPOSE: docker compose -f docker-compose.prod.yml --env-file .env.prod
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: SSH setup
         env:
