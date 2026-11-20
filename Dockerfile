@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:24-slim AS base
+FROM node:26-slim AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates     && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
@@ -20,7 +20,7 @@ RUN for src in /repo/node_modules/.pnpm/@prisma+client@*/node_modules/.prisma; d
 FROM build AS migrate
 CMD ["pnpm", "--filter", "@loop/db", "migrate:deploy"]
 
-FROM node:24-slim AS runtime
+FROM node:26-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates     && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production APP_ROLE=all PORT=3000
 WORKDIR /app
